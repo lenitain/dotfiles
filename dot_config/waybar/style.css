@@ -1,0 +1,137 @@
+* {
+    font-family: "JetBrainsMonoNL Nerd Font Propo", "Font Awesome 6 Free", FontAwesome, sans-serif;
+}
+
+window#waybar {
+    background-color: #2d353b;
+    font-size: 14px;
+    border-radius: 0px;
+    margin: 0px;
+    padding: 0;
+}
+
+/* Left-most: Arch icon */
+#custom-appmenu {
+  font-size: 4px;
+  background-image: url('/usr/share/icons/cachyos.svg');
+  background-color: #2d353b;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  padding: 0px 12px;
+
+}
+
+/* Right-most: Clock */
+#clock {
+    font-size: 14px;
+    background-color: #2d353b;
+    color: #d3c6aa;
+    border-radius: 0px;
+    padding: 0px 8px;
+}
+
+/* Active window title */
+#window {
+    font-size: 14px;
+    font-weight: 800;
+    color: #d3c6aa;
+    border-radius: 0px;
+    padding: 0px 12px;
+    background-color: #2d353b;
+}
+
+/* Workspace container */
+#workspaces {
+    background: #2d353b;
+    font-weight: bold;
+    border-radius: 0px;
+    font-size: 17px;
+    color: #d3c6aa;
+}
+
+/* Individual workspace buttons - always visible */
+#workspaces button {
+    border-radius: 0px;
+    font-size: 17px;
+    padding: 0px 8px;
+    color: #5c6a72;
+    background: #2d353b;
+    min-width: 20px;
+}
+
+#workspaces button.active {
+    border-radius: 0px;
+    color: #d3c6aa;
+    background: #2d353b;
+    border-bottom: 2px solid #a7c080;
+}
+
+#workspaces button:hover {
+    border-radius: 0px;
+    background: #475259;
+    border-width: 0px;
+}
+
+/* Power/exit button */
+#custom-exit {
+    background-color: #a7c080;
+    font-size: 14px;
+    font-weight: 800;
+    color: #2d353b;
+    padding: 0px 6px;
+    margin: 2px 2px 2px 0;
+}
+
+/* Tooltips */
+tooltip {
+    border-radius: 12px;
+    background-color: #2d353b;
+    color: #d3c6aa;
+    padding: 4px 8px;
+}
+
+/* Taskbar */
+#taskbar {
+    background-color: #2d353b;
+    margin: 0px;
+    border-radius: 0px;
+    font-weight: normal;
+}
+
+/* All system info modules */
+#backlight,
+#pulseaudio,
+#network,
+#bluetooth,
+#battery,
+#tray,
+/* #custom-updates, */
+#custom-notification,
+#custom-idle-inhibit {
+    background-color: #2d353b;
+    font-size: 14px;
+    font-weight: 800;
+    color: #d3c6aa;
+    border-radius: 0px;
+    padding: 4px 10px;
+}
+
+/* Idle Inhibit active (抑制中 - 不会锁屏) */
+#custom-idle-inhibit.active {
+    color: #a7c080;
+}
+
+/* Battery critical warning */
+#battery.critical:not(.charging) {
+    background-color: #e67e80;
+    color: #2d353b;
+    animation: blink 0.5s linear infinite alternate;
+}
+
+@keyframes blink {
+    to {
+        background-color: #2d353b;
+        color: #ffffff;
+    }
+}

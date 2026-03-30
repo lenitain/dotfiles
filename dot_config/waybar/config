@@ -1,0 +1,35 @@
+
+{
+    "layer": "top",
+    "margin-top": 0,
+    "margin-bottom": 0,
+    "margin-left": 0,
+    "margin-right": 0,
+    "spacing": 0,
+
+    "include": [
+        "~/.config/waybar/modules.json"
+    ],
+
+    "modules-left": [
+        "custom/appmenu",
+        "wlr/taskbar",
+        "niri/window"
+    ],
+
+    "modules-center": [
+        "niri/workspaces"
+    ],
+
+    "modules-right": [
+        "custom/idle-inhibit", // Idle抑制（阻止自动锁屏）
+        "bluetooth",
+        // "backlight",        // 新增：亮度模块（带亮度图标+百分比）
+        "pulseaudio",       // 原有：音量模块（补充图标后正常显示）
+        "battery",          // 新增：电池模块（带电池图标+电量/充电状态）
+        "tray",             // 原有：系统托盘
+        "clock",            // 原有：时钟（已修复格式化，正常显示）
+        "custom/exit"       // 原有：电源菜单（带󰐥图标）
+    ]
+}
+
