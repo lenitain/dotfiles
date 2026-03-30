@@ -8,6 +8,7 @@ window#waybar {
     border-radius: 0px;
     margin: 0px;
     padding: 0;
+    min-height: 36px;
 }
 
 /* Left-most: Arch icon */
@@ -39,6 +40,7 @@ window#waybar {
     border-radius: 0px;
     padding: 0px 12px;
     background-color: #2d353b;
+    min-height: 26px;
 }
 
 /* Workspace container */
@@ -46,14 +48,14 @@ window#waybar {
     background: #2d353b;
     font-weight: bold;
     border-radius: 0px;
-    font-size: 17px;
+    font-size: 20px;
     color: #d3c6aa;
 }
 
 /* Individual workspace buttons - always visible */
 #workspaces button {
     border-radius: 0px;
-    font-size: 17px;
+    font-size: 20px;
     padding: 0px 8px;
     color: #5c6a72;
     background: #2d353b;
@@ -80,7 +82,7 @@ window#waybar {
     font-weight: 800;
     color: #2d353b;
     padding: 0px 6px;
-    margin: 2px 2px 2px 0;
+    margin: 1px 1px 1px 0;
 }
 
 /* Tooltips */
@@ -97,6 +99,10 @@ tooltip {
     margin: 0px;
     border-radius: 0px;
     font-weight: normal;
+}
+
+#taskbar button {
+    padding: 2px 4px;
 }
 
 /* All system info modules */
