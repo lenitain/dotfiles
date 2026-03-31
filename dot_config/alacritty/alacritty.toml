@@ -64,24 +64,20 @@ background = "#d3c6aa"
 [font]
 size = 16
 
-# 常规字体 - 使用 JetBrainsMono Nerd Font Mono 常规样式
 [font.normal]
-family = "JetBrainsMonoNL Nerd Font Mono"
+family = "Maple Mono NL NF CN"
 style = "Regular"
 
-# 粗体字体 - 使用 JetBrainsMono Nerd Font Mono 粗体样式
 [font.bold]
-family = "JetBrainsMonoNL Nerd Font Mono"
+family = "Maple Mono NL NF CN"
 style = "Bold"
 
-# 斜体字体 - 使用 JetBrainsMono Nerd Font Mono 斜体样式
 [font.italic]
-family = "JetBrainsMonoNL Nerd Font Mono"
+family = "Maple Mono NL NF CN"
 style = "Italic"
 
-# 粗斜体字体 - 使用 JetBrainsMono Nerd Font Mono 粗斜体样式
 [font.bold_italic]
-family = "JetBrainsMonoNL Nerd Font Mono"
+family = "Maple Mono NL NF CN"
 style = "Bold Italic"
 
 [selection]
