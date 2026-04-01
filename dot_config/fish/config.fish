@@ -5,8 +5,9 @@ source /usr/share/cachyos-fish-config/cachyos-config.fish
 function fish_greeting
     # Disable fastfetch greeting
 end
-set -Ux fish_user_paths /home/pilot/.local/bin $fish_user_paths
-set -Ux fish_user_paths /home/pilot/.cargo/bin $fish_user_paths
+set -Ux fish_user_paths $HOME/.local/bin $fish_user_paths
+set -Ux fish_user_paths $HOME/.cargo/bin $fish_user_paths
+set -Ux fish_user_paths $HOME/.bun/bin $fish_user_paths
 
 # 定义 dfzf 函数：交互式查找目录并切换（带预览）
 function dfzf
@@ -39,13 +40,6 @@ end
 function pfzf
     fzf --preview "~/.config/fish/scripts/fzf_preview.sh {}" --preview-window=right:41%:wrap
 end
-
-# pnpm
-set -gx PNPM_HOME "/home/pilot/.local/share/pnpm"
-if not string match -q -- $PNPM_HOME $PATH
-    set -gx PATH "$PNPM_HOME" $PATH
-end
-# pnpm end
 
 # 别名：仅替换命令，无任何逻辑
 alias nwt='alacritty --working-directory "$PWD" & disown'
