@@ -1,3 +1,90 @@
 [user]
 	email = xt.zhu@qq.com
 	name = lenitain
+
+[core]
+	editor = nvim
+	autocrlf = input
+	pager = delta
+
+[pull]
+	rebase = true
+
+[push]
+	default = current
+	autoSetupRemote = true
+
+[fetch]
+	prune = true
+	pruneTags = true
+
+[init]
+	defaultBranch = main
+
+[merge]
+	conflictstyle = zdiff3
+
+[diff]
+	algorithm = histogram
+	colorMoved = default
+
+[rebase]
+	autoStash = true
+
+[alias]
+	s = status -sb
+	a = add
+	aa = add --all
+	c = commit
+	cm = commit -m
+	ca = commit --amend
+	can = commit --amend --no-edit
+
+	l = log --oneline --graph --decorate
+	la = log --oneline --graph --decorate --all
+	ll = log --graph --decorate --format='%C(auto)%h %C(blue)%ad %C(green)%an%C(auto)%d %s' --date=short
+
+	d = diff
+	ds = diff --staged
+	dw = diff --word-diff
+
+	p = push
+	pf = push --force-with-lease
+	pl = pull
+
+	co = checkout
+	cb = checkout -b
+	sw = switch
+	sc = switch -c
+
+	b = branch
+	bd = branch -d
+	bD = branch -D
+
+	st = stash
+	stp = stash pop
+	stl = stash list
+	sts = stash show -p
+
+	rb = rebase
+	rbi = rebase -i
+	rbc = rebase --continue
+	rba = rebase --abort
+
+	cp = cherry-pick
+	cpc = cherry-pick --continue
+	cpa = cherry-pick --abort
+
+	undo = reset --soft HEAD~1
+	unstage = reset HEAD --
+	discard = checkout --
+	nuke = !git reset --hard && git clean -df
+
+	aliases = config --get-regexp alias
+	whoami = !git config user.name && git config user.email
+
+[color]
+	ui = true
+
+[rerere]
+	enabled = true

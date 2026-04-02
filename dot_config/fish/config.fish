@@ -5,9 +5,9 @@ source /usr/share/cachyos-fish-config/cachyos-config.fish
 function fish_greeting
     # Disable fastfetch greeting
 end
-set -Ux fish_user_paths $HOME/.local/bin $fish_user_paths
-set -Ux fish_user_paths $HOME/.cargo/bin $fish_user_paths
-set -Ux fish_user_paths $HOME/.bun/bin $fish_user_paths
+fish_add_path ~/.local/bin
+fish_add_path ~/.cargo/bin
+fish_add_path ~/.bun/bin
 
 # 定义 dfzf 函数：交互式查找目录并切换（带预览）
 function dfzf
