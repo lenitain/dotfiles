@@ -186,8 +186,7 @@ binds {
     spawn-sh-at-startup "waybar" // Launch waybar
     spawn-sh-at-startup "fcitx5"
     // 剪贴板历史管理（仅文本，不保存图片，上限100条）
-    spawn-sh-at-startup "wl-paste --type text --watch cliphist store"
-    spawn-sh-at-startup "while true; do ~/.config/niri/scripts/cliphist-limit.sh; sleep 60; done"
+    spawn-sh-at-startup "wl-paste --type text --watch cliphist store --max-items 100"
     // Idle管理：5分钟后锁屏，10分钟后关闭显示器，睡眠前锁屏
     spawn-sh-at-startup "swayidle -w timeout 130 'swaylock -f' timeout 140 'niri msg action power-off-monitors' before-sleep 'swaylock -f'"
 
@@ -305,6 +304,17 @@ binds {
     window-rule {
         match app-id=r#"firefox$"# title="^Picture-in-Picture$"
         open-floating true // Always float Firefox PiP windows
+    }
+
+    // 对话框/文件选择器浮动（浏览器 Ctrl+S、应用偏好设置等）
+    window-rule {
+        match title="^(Open|Save|Choose|Select|Preferences|About|Properties|File Upload|Create New Folder)"
+        open-floating true
+    }
+
+    window-rule {
+        match title="^(打开|保存|选择|另存为|属性|上传)"
+        open-floating true
     }
 
     window-rule {
