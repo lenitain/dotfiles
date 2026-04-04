@@ -5,7 +5,6 @@
 [core]
 	editor = nvim
 	autocrlf = input
-	pager = delta
 
 [pull]
 	rebase = true
