@@ -9,6 +9,7 @@ end
 fish_add_path ~/.bun/bin
 fish_add_path ~/.cargo/bin
 fish_add_path ~/.local/bin
+fish_add_path ~/.moon/bin
 
 # 定义 dfzf 函数：交互式查找目录并切换（带预览）
 function dfzf
@@ -54,3 +55,6 @@ function devbox
     sleep 0.2
     exec nvim .
 end
+
+# moonbit
+fish_add_path "$HOME/.moon/bin"
