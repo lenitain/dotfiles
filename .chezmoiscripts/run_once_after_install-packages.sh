@@ -11,7 +11,8 @@ if command -v pacman &>/dev/null; then
     lazygit cliphist \
     htop strace gdb \
     aria2 imv \
-    hurl
+    hurl \
+    aubio mpv \
 elif command -v apt &>/dev/null; then
   sudo apt install -y neovim
 elif command -v dnf &>/dev/null; then
