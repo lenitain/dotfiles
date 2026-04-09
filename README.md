@@ -1,6 +1,6 @@
 # dotfiles
 
-Personal dotfiles managed by [chezmoi](https://chezmoi.io), targeting CachyOS with Sway (Wayland).
+Personal dotfiles managed by [chezmoi](https://chezmoi.io), targeting CachyOS with Niri (Wayland).
 
 ## Contents
 
