@@ -58,3 +58,6 @@ end
 
 # moonbit
 fish_add_path "$HOME/.moon/bin"
+
+# moonbit
+fish_add_path "$HOME/.moon/bin"
