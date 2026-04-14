@@ -8,7 +8,7 @@ if pgrep -x "wofi" > /dev/null; then
 fi
 
 # 获取选择,保留完整的 ID\t内容 格式传给 wofi
-selected=$(cliphist list | wofi --dmenu --prompt="Clipboard" --width=1100 --height=700 --hide-scroll)
+selected=$(cliphist list | wofi --dmenu --prompt="Clipboard" --hide-scroll)
 
 if [ -n "$selected" ]; then
     # 直接用选中的完整行(包含ID)进行decode
