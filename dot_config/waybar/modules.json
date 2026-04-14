@@ -57,19 +57,7 @@
   //    "exec": "waybar-module-pacman-updates --interval-seconds 5 --network-interval-seconds 300"
   //},
 
-  // wofi Application Launcher
-  "custom/appmenu": {
-    "format": "   ",
-    "on-click": "sleep 0.2;~/.config/wofi/wofi-wrapper -show drun --prompt Apps",
-    "tooltip-format": "Left: Open the application launcher\nRight: Show all keybindings"
-  },
 
-  // wofi Application Launcher
-  "custom/appmenuicon": {
-    "format": "  ",
-    "on-click": "sleep 0.2;~/.config/wofi/wofi-wrapper -show drun --prompt Apps",
-    "tooltip-format": "Left: Open the application launcher\nRight: Show all keybindings"
-  },
 
   // Idle Inhibit (阻止自动锁屏)
   "custom/idle-inhibit": {

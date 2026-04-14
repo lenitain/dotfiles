@@ -12,7 +12,6 @@
     ],
 
     "modules-left": [
-        "custom/appmenu",
         "wlr/taskbar",
         "niri/window"
     ],
