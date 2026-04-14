@@ -4,5 +4,5 @@ no_actions=false
 term=alacritty
 mode=drun
 --show
---width=1100
---height=700
+width=960
+height=540
