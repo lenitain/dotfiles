@@ -10,4 +10,6 @@ sudo pacman -S --needed --noconfirm \
   lazygit cliphist \
   htop strace gdb \
   aria2 imv mpv \
-  hurl zip
+  hurl zip \
+  kdenlive
+
