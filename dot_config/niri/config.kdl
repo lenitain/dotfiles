@@ -316,6 +316,11 @@ binds {
         open-floating true // Always float Firefox PiP windows
     }
 
+    window-rule {
+        match app-id=r#"firefox$"#
+        open-maximized-to-edges true
+    }
+
     // 对话框/文件选择器浮动（浏览器 Ctrl+S、应用偏好设置等）
     window-rule {
         match title="^(Open|Save|Choose|Select|Preferences|About|Properties|File Upload|Create New Folder)"
