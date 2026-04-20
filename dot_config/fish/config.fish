@@ -56,9 +56,3 @@ function devbox
     sleep 0.2
     exec nvim .
 end
-
-# moonbit
-fish_add_path "$HOME/.moon/bin"
-
-# moonbit
-fish_add_path "$HOME/.moon/bin"
