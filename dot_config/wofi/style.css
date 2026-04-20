@@ -9,7 +9,7 @@ window {
 
 #input {
     margin: 5px;
-    border: 2px solid #a7c080;
+    border: 2px solid #7fbbb3;
     background-color: #2d353b;
     color: #d3c6aa;
     padding: 8px;
@@ -50,7 +50,7 @@ window {
 }
 
 #entry:selected {
-    background-color: #a7c080;
+    background-color: #7fbbb3;
     color: #2d353b;
 }
 
