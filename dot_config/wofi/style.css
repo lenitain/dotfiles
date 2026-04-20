@@ -9,7 +9,6 @@ window {
 
 #input {
     margin: 5px;
-    border-radius: 8px;
     border: 2px solid #a7c080;
     background-color: #2d353b;
     color: #d3c6aa;
@@ -25,7 +24,6 @@ window {
     padding: 10px;
     background-color: #2d353b;
     border: 1px solid #4f585e;
-    border-radius: 12px;
 }
 
 #scroll {
@@ -35,7 +33,6 @@ window {
 
 #entry, #text {
     min-height: 29px;
-    height: 29px;
 }
 
 #text {
@@ -50,12 +47,10 @@ window {
 
 #entry:nth-child(even) {
     background-color: #343f44;
-    border-radius: 6px;
 }
 
 #entry:nth-child(odd) {
     background-color: #2d353b;
-    border-radius: 6px;
 }
 
 #entry:selected {
