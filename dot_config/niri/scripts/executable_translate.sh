@@ -15,4 +15,5 @@ if [ -z "$RESULT" ]; then
   RESULT="Not found: $TEXT"
 fi
 
-echo -e "原文: $TEXT\n\n翻译: $RESULT" | ~/.config/wofi/wofi-wrapper -d --prompt "翻译"
+notify-send "$TEXT_LOWER: " "$RESULT"
+echo -n "$RESULT" | wl-copy
