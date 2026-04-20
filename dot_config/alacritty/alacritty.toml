@@ -143,13 +143,24 @@ action = "ScrollToBottom"
 
 [[keyboard.bindings]]
 key = "V"
-mods = "Control|Shift"
+mods = "Control"
 action = "Paste"
 
 [[keyboard.bindings]]
 key = "C"
-mods = "Control|Shift"
+mods = "Control"
 action = "Copy"
+
+[[keyboard.bindings]]
+key = "C"
+mods = "Control|Shift"
+chars = "\u0003"
+
+[[keyboard.bindings]]
+key = "C"
+mods = "Control|Shift"
+mode = "Vi"
+action = "ClearSelection"
 
 [[keyboard.bindings]]
 key = "F"
@@ -160,12 +171,6 @@ action = "SearchForward"
 key = "B"
 mods = "Control|Shift"
 action = "SearchBackward"
-
-[[keyboard.bindings]]
-key = "C"
-mods = "Control|Shift"
-mode = "Vi"
-action = "ClearSelection"
 
 [[keyboard.bindings]]
 key = "Key0"
