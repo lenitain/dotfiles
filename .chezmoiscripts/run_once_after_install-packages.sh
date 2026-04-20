@@ -11,5 +11,4 @@ sudo pacman -S --needed --noconfirm \
   htop strace gdb \
   aria2 imv mpv \
   hurl zip \
-  kdenlive evemu \
-  opam
+  kdenlive evemu
