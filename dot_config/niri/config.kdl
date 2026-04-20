@@ -162,8 +162,8 @@ binds {
 
     // ─── Modes ───
     MOD+T                               { toggle-window-floating; }
-    MOD+F                               { fullscreen-window; }
-    MOD+SHIFT+F                         { maximize-window-to-edges; }
+    MOD+SHIFT+F                         { fullscreen-window; }
+    MOD+F                               { maximize-window-to-edges; }
     MOD+W                               { toggle-column-tabbed-display; }
 
     // ─── Clipboard History ───
