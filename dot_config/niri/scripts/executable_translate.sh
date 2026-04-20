@@ -2,7 +2,7 @@
 
 DIC_DB="$HOME/.local/share/stardict/ecdict.db"
 
-TEXT=$(wl-paste --primary | xargs | perl -pe 's/^[^a-zA-Z]*//;s/[^a-zA-Z]*$//')
+TEXT=$(wl-paste --primary | xargs | awk '{gsub(/^[^a-zA-Z]*|[^a-zA-Z]*$/, ""); print}')
 if [ -z "$TEXT" ]; then
   notify-send "Translate" "No text selected"
   exit 1
