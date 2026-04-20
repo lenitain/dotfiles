@@ -1,0 +1,11 @@
+max-visible=10
+layer=top
+font=Maple Mono NL NF CN Medium 19
+background-color=#2D353B
+text-color=#d3c6aa
+border-color=#7fbbb3
+border-radius=0
+max-icon-size=48
+default-timeout=100000000000000
+anchor=top-right
+margin=0
