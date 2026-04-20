@@ -1,5 +1,5 @@
 # Everforest Dark Medium colors
-color=000000
+color=2d353b
 inside-color=2d353b
 inside-clear-color=2d353b
 inside-caps-lock-color=2d353b
@@ -15,11 +15,11 @@ ring-wrong-color=e67e80
 key-hl-color=dbbc7f
 bs-hl-color=e67e80
 
-line-color=3d4b52
-line-clear-color=3d4b52
-line-caps-lock-color=3d4b52
-line-ver-color=3d4b52
-line-wrong-color=3d4b52
+line-color=3d484d
+line-clear-color=3d484d
+line-caps-lock-color=3d484d
+line-ver-color=3d484d
+line-wrong-color=3d484d
 
 separator-color=00000000
 
