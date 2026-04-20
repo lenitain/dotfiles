@@ -22,7 +22,7 @@ theme[selected_bg]="#3d484d"
 theme[selected_fg]="#dbbc7f"
 
 # Color of inactive/disabled text
-theme[inactive_fg]="#2d353b"
+theme[inactive_fg]="#859289"
 
 # Color of text appearing on top of graphs, i.e uptime and current network graph scaling
 theme[graph_text]="#d3c6aa"
@@ -48,17 +48,17 @@ theme[div_line]="#3d484d"
 # Temperature graph colors
 theme[temp_start]="#a7c080"
 theme[temp_mid]="#dbbc7f"
-theme[temp_end]="#f85552"
+theme[temp_end]="#e67e80"
 
 # CPU graph colors
 theme[cpu_start]="#a7c080"
 theme[cpu_mid]="#dbbc7f"
-theme[cpu_end]="#f85552"
+theme[cpu_end]="#e67e80"
 
 # Mem/Disk free meter
-theme[free_start]="#f85552"
+theme[free_start]="#a7c080"
 theme[free_mid]="#dbbc7f"
-theme[free_end]="#a7c080"
+theme[free_end]="#e67e80"
 
 # Mem/Disk cached meter
 theme[cached_start]="#7fbbb3"
@@ -66,19 +66,19 @@ theme[cached_mid]="#83c092"
 theme[cached_end]="#a7c080"
 
 # Mem/Disk available meter
-theme[available_start]="#f85552"
+theme[available_start]="#a7c080"
 theme[available_mid]="#dbbc7f"
-theme[available_end]="#a7c080"
+theme[available_end]="#e67e80"
 
 # Mem/Disk used meter
-theme[used_start]="#a7c080"
+theme[used_start]="#e67e80"
 theme[used_mid]="#dbbc7f"
-theme[used_end]="#f85552"
+theme[used_end]="#a7c080"
 
 # Download graph colors
-theme[download_start]="#a7c080"
+theme[download_start]="#7fbbb3"
 theme[download_mid]="#83c092"
-theme[download_end]="#7fbbb3"
+theme[download_end]="#a7c080"
 
 # Upload graph colors
 theme[upload_start]="#dbbc7f"
@@ -87,5 +87,5 @@ theme[upload_end]="#e67e80"
 
 # Process box color gradient for threads, mem and cpu usage
 theme[process_start]="#a7c080"
-theme[process_mid]="#e67e80"
-theme[process_end]="#f85552"
+theme[process_mid]="#dbbc7f"
+theme[process_end]="#e67e80"
