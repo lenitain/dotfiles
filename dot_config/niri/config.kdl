@@ -159,15 +159,18 @@ binds {
     MOD+EQUAL                           { set-column-width "+10%"; }
     MOD+SHIFT+MINUS                     { set-window-height "-10%"; }
     MOD+SHIFT+EQUAL                     { set-window-height "+10%"; }
+    MOD+F                               { maximize-window-to-edges; }
 
     // ─── Modes ───
     MOD+T                               { toggle-window-floating; }
     MOD+SHIFT+F                         { fullscreen-window; }
-    MOD+F                               { maximize-window-to-edges; }
     MOD+W                               { toggle-column-tabbed-display; }
 
     // ─── Clipboard History ───
     MOD+V                               hotkey-overlay-title="Clipboard History" { spawn-sh "~/.config/niri/scripts/cliphist-wofi.sh"; }
+
+    // ─── Translate ───
+    MOD+SHIFT+T                        hotkey-overlay-title="Translate" { spawn-sh "~/.config/niri/scripts/translate"; }
 
     // ─── Screenshots ───
     // 现代化截图：区域选择 + 编辑器 (grim + slurp + satty)
