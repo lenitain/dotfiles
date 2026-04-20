@@ -4,33 +4,33 @@
 }
 
 window {
-    background-color: #2f383e;
+    background-color: #2d353b;
 }
 
 #input {
     margin: 5px;
     border-radius: 8px;
     border: 2px solid #a7c080;
-    background-color: #2f383e;
+    background-color: #2d353b;
     color: #d3c6aa;
     padding: 8px;
 }
 
 #inner-box {
-    background-color: #2f383e;
+    background-color: #2d353b;
 }
 
 #outer-box {
     margin: 2px;
     padding: 10px;
-    background-color: #2f383e;
-    border: 1px solid #4b565c;
+    background-color: #2d353b;
+    border: 1px solid #4f585e;
     border-radius: 12px;
 }
 
 #scroll {
     margin: 5px;
-    background-color: #2f383e;
+    background-color: #2d353b;
 }
 
 #entry, #text {
@@ -49,21 +49,21 @@ window {
 }
 
 #entry:nth-child(even) {
-    background-color: #374145;
+    background-color: #343f44;
     border-radius: 6px;
 }
 
 #entry:nth-child(odd) {
-    background-color: #2f383e;
+    background-color: #2d353b;
     border-radius: 6px;
 }
 
 #entry:selected {
     background-color: #a7c080;
-    color: #2f383e;
+    color: #2d353b;
 }
 
 #text:selected {
     background: transparent;
-    color: #2f383e;
+    color: #2d353b;
 }
