@@ -20,4 +20,4 @@ if [ -z "$RESULT" ]; then
 fi
 
 notify-send "$TEXT" "$RESULT"
-echo -n "$RESULT" | wl-copy
+echo -n "$TEXT $RESULT" | wl-copy
