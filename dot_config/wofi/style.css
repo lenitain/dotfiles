@@ -33,9 +33,19 @@ window {
     background-color: #2f383e;
 }
 
+#entry, #text {
+    min-height: 29px;
+    height: 29px;
+}
+
 #text {
-    padding: 6px;
+    padding: 5px;
     color: #d3c6aa;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    overflow: visible;
+    text-overflow: clip;
 }
 
 #entry:nth-child(even) {

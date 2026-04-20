@@ -4,4 +4,3 @@
 pkill -x wofi 2>/dev/null
 sleep 0.02
 exec /usr/bin/wofi --style ~/.config/wofi/style.css "$@"
-

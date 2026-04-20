@@ -170,7 +170,7 @@ binds {
     MOD+V                               hotkey-overlay-title="Clipboard History" { spawn-sh "~/.config/niri/scripts/cliphist-wofi.sh"; }
 
     // ─── Translate ───
-    MOD+SHIFT+T                        hotkey-overlay-title="Translate" { spawn-sh "~/.config/niri/scripts/translate"; }
+    MOD+SHIFT+T                        hotkey-overlay-title="Translate" { spawn-sh "~/.config/niri/scripts/translate.sh"; }
 
     // ─── Screenshots ───
     // 现代化截图：区域选择 + 编辑器 (grim + slurp + satty)
