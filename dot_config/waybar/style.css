@@ -57,7 +57,7 @@ window#waybar {
     border-radius: 0px;
     font-size: 20px;
     padding: 0px 8px;
-    color: #5c6a72;
+    color: #7a8478;
     background: #2d353b;
     min-width: 20px;
 }
@@ -71,7 +71,7 @@ window#waybar {
 
 #workspaces button:hover {
     border-radius: 0px;
-    background: #475259;
+    background: #475258;
     border-width: 0px;
 }
 
