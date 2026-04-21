@@ -2,13 +2,23 @@
 
 DIC_DB="$HOME/.local/share/stardict/ecdict.db"
 
-TEXT=$(wl-paste --primary | xargs | awk '{gsub(/^[^a-zA-Z]*|[^a-zA-Z]*$/, ""); print}')
-if [ -z "$TEXT" ]; then
-  notify-send "Translate" "No text selected"
+REGION=$(slurp)
+if [ -z "$REGION" ]; then
+  notify-send "Translate" "No area selected"
   exit 1
 fi
 
-RESULT=$(sqlite3 "$DIC_DB" "SELECT 
+TMP=$(mktemp /tmp/translate_XXXXXX)
+grim -g "$REGION" "$TMP"
+TEXT=$(tesseract "$TMP" stdout 2>/dev/null | awk '{gsub(/^[^a-zA-Z]*|[^a-zA-Z]*$/, ""); print}')
+TEXT=$(echo "$TEXT" | xargs | awk '{print}')
+rm -f "$TMP"
+if [ -z "$TEXT" ]; then
+  notify-send "Translate" "No text recognized"
+  exit 1
+fi
+
+RESULT=$(sqlite3 "$DIC_DB" "SELECT
   '音标: /' || COALESCE(phonetic, '') || '/' || char(10) ||
   '中文: ' || COALESCE(translation, '') || char(10) ||
   '英文: ' || COALESCE(definition, '') || char(10) ||
