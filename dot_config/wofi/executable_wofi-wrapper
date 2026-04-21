@@ -2,5 +2,5 @@
 # wofi wrapper - 永远单实例，先杀后开
 
 pkill -x wofi 2>/dev/null
-sleep 0.02
+sleep 0.01
 exec /usr/bin/wofi --style ~/.config/wofi/style.css "$@"

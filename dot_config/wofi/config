@@ -1,7 +1,7 @@
 allow_images=true
-hide_scroll=true
+hide_scroll=false
 no_actions=false
-term=alacritty
+term=system default
 mode=drun
-width=1187
-height=667
+width=62% 
+height=62%

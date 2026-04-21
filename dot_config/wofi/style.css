@@ -32,7 +32,7 @@ window {
 }
 
 #entry, #text {
-    min-height: 29px;
+    /* min-height: 29px; */
 }
 
 #text {
