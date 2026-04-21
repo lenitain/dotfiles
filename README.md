@@ -1,34 +1,36 @@
 # dotfiles
 
-Personal dotfiles managed by [chezmoi](https://chezmoi.io), targeting CachyOS with Niri (Wayland).
+chezmoi-managed dotfiles for CachyOS with Niri (Wayland).
 
-## Contents
-
-| Category | Tools |
-|----------|-------|
-| Shell | Fish, fzf, tmux |
-| Terminal | Alacritty |
-| Editor | Neovim |
-| File Manager | yazi |
-| Status Bar | Waybar |
-| Launcher | Wofi |
-| Lock Screen | swaylock |
-| IME | fcitx5 |
-| Theme | Everforest Dark Medium |
-| Font | Maple Mono NF CN |
-
-## Usage
+## Quick Start
 
 ```bash
 chezmoi init git@github.com:lenitain/dotfiles.git
 chezmoi apply
 ```
 
+## What's Included
+
+| Component | Tools |
+|-----------|-------|
+| Shell | Fish + fzf + tmux |
+| Terminal | Alacritty |
+| Editor | Neovim (LazyVim) |
+| Compositor | Niri |
+| Launcher | Wofi |
+| Status Bar | Waybar |
+| File Manager | yazi |
+
 ## Structure
 
 ```
-.chezmoiscripts/        # One-time setup scripts (package install, bat cache, etc.)
-dot_config/             # ~/.config/*
-dot_local/share/        # ~/.local/share/* (fonts, fcitx5 themes)
-dot_gitconfig           # ~/.gitconfig
+.chezmoiscripts/        # One-time setup scripts
+dot_config/             # ~/.config/
+dot_local/share/        # ~/.local/share/ (fonts, themes)
 ```
+
+## Setup Scripts
+
+- `run_once_after_install-packages.sh` - Package installation
+- `run_once_setup-bat-cache.sh` - bat cache setup
+- `run_once_create-user-dirs.sh` - XDG user directories
