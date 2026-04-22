@@ -12,4 +12,5 @@ sudo pacman -S --needed --noconfirm \
   aria2 imv mpv \
   hurl zip \
   kdenlive evemu \
-  tesseract tesseract-data-eng
+  tesseract tesseract-data-eng \
+  meson ninja
