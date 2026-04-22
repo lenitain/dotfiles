@@ -329,7 +329,7 @@ binds {
     }
 
     // ─── Translate ───
-    MOD+SHIFT+T {
+    MOD+G {
         spawn-sh "~/.config/niri/scripts/translate.sh"
     }
 
