@@ -213,6 +213,7 @@ binds {
     layout {
         gaps 8// Gap between windows
         center-focused-column "never" // Don’t auto-center focused column
+        background-color "#2d353b"
 
         preset-column-widths {
             proportion 0.33333
