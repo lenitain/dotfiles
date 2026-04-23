@@ -1,0 +1,177 @@
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+    "logo": {
+        "type": "none"
+    },
+    "display": {
+        "separator": ": "
+    },
+    "modules": [
+        "title",
+        "separator",
+
+        {
+            "type": "separator",
+            "string": "━━ System ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "times": 1,
+            "outputColor": "34"
+        },
+        "os",
+        "host",
+        "kernel",
+        "uptime",
+        "packages",
+        "shell",
+
+        {
+            "type": "separator",
+            "string": "━━ DE / WM ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "times": 1,
+            "outputColor": "35"
+        },
+        "display",
+        "brightness",
+        "lm",
+        "de",
+        "wm",
+        "wmtheme",
+        "theme",
+        "icons",
+        "font",
+        "cursor",
+        "terminal",
+        "terminalfont",
+        "wallpaper",
+
+        {
+            "type": "separator",
+            "string": "━━ Time ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "times": 1,
+            "outputColor": "33"
+        },
+        "datetime",
+        "locale",
+
+        {
+            "type": "separator",
+            "string": "━━ Hardware ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "times": 1,
+            "outputColor": "32"
+        },
+        {
+            "type": "cpu",
+            "showPeCoreCount": true,
+            "temp": true
+        },
+        "cpucache",
+        "cpuusage",
+        {
+            "type": "gpu",
+            "driverSpecific": true,
+            "temp": true
+        },
+        "memory",
+        "physicalmemory",
+        {
+            "type": "swap",
+            "separate": true
+        },
+        "disk",
+        "btrfs",
+        "zpool",
+        {
+            "type": "physicaldisk",
+            "temp": true
+        },
+        "diskio",
+        {
+            "type": "battery",
+            "temp": true
+        },
+        "poweradapter",
+
+        {
+            "type": "separator",
+            "string": "━━ Network ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "times": 1,
+            "outputColor": "36"
+        },
+        {
+            "type": "publicip",
+            "timeout": 1000
+        },
+        {
+            "type": "localip",
+            "showIpv6": true,
+            "showMac": true,
+            "showSpeed": true,
+            "showMtu": true,
+            "showLoop": true,
+            "showFlags": true,
+            "showAllIps": true
+        },
+        "dns",
+        "wifi",
+        "netio",
+
+        {
+            "type": "separator",
+            "string": "━━ Media ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "times": 1,
+            "outputColor": "31"
+        },
+        "player",
+        "media",
+        "sound",
+
+        {
+            "type": "separator",
+            "string": "━━ Peripherals ━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "times": 1,
+            "outputColor": "35"
+        },
+        "bluetooth",
+        "bluetoothradio",
+        "camera",
+        "gamepad",
+        "mouse",
+        "keyboard",
+
+        {
+            "type": "separator",
+            "string": "━━ Graphics ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "times": 1,
+            "outputColor": "32"
+        },
+        "vulkan",
+        "opengl",
+        "opencl",
+
+        {
+            "type": "separator",
+            "string": "━━ Other ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "times": 1,
+            "outputColor": "90"
+        },
+        "users",
+        "tpm",
+        "bios",
+        "bootmgr",
+        "board",
+        "chassis",
+        "initsystem",
+        "loadavg",
+        "processes",
+        "editor",
+        "terminalsize",
+        "terminaltheme",
+        {
+            "type": "weather",
+            "timeout": 1000
+        },
+        "version",
+
+        "break",
+        "colors"
+    ]
+}
