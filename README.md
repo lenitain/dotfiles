@@ -20,13 +20,18 @@ chezmoi apply
 | Launcher | Wofi |
 | Status Bar | Waybar |
 | File Manager | yazi |
+| System Info | fastfetch, btop |
+| Input Method | fcitx5 |
+| Theme | GTK2/3/4 + Qt5/6 + everforest |
 
 ## Structure
 
 ```
-.chezmoiscripts/        # One-time setup scripts
-dot_config/             # ~/.config/
-dot_local/share/        # ~/.local/share/ (fonts, themes)
+.chezmoiscripts/           # One-time setup scripts
+dot_config/                 # ~/.config/ (alacritty, niri, neovim, waybar, etc.)
+dot_local/share/            # ~/.local/share/ (fonts, fcitx5 themes, stardict)
+dot_gitconfig               # ~/.gitconfig
+dot_gtkrc-2.0               # GTK2 settings
 ```
 
 ## Setup Scripts
