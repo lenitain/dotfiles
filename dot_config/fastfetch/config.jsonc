@@ -12,7 +12,7 @@
 
         {
             "type": "separator",
-            "string": "━━ System ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "string": "━━ System ━━━━━━━━━━━━━━━━━━",
             "times": 1,
             "outputColor": "34"
         },
@@ -22,12 +22,14 @@
         "uptime",
         "packages",
         "shell",
+        "locale",
+        "break",
 
         {
             "type": "separator",
-            "string": "━━ DE / WM ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "string": "━━ DE / WM ━━━━━━━━━━━━━━━━━",
             "times": 1,
-            "outputColor": "35"
+            "outputColor": "34"
         },
         "display",
         "brightness",
@@ -42,21 +44,22 @@
         "terminal",
         "terminalfont",
         "wallpaper",
+        "break",
 
         {
             "type": "separator",
-            "string": "━━ Time ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "string": "━━ Time ━━━━━━━━━━━━━━━━━━━━",
             "times": 1,
-            "outputColor": "33"
+            "outputColor": "34"
         },
         "datetime",
-        "locale",
+        "break",
 
         {
             "type": "separator",
-            "string": "━━ Hardware ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "string": "━━ Hardware ━━━━━━━━━━━━━━━━",
             "times": 1,
-            "outputColor": "32"
+            "outputColor": "34"
         },
         {
             "type": "cpu",
@@ -89,12 +92,13 @@
             "temp": true
         },
         "poweradapter",
+        "break",
 
         {
             "type": "separator",
-            "string": "━━ Network ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "string": "━━ Network ━━━━━━━━━━━━━━━━━",
             "times": 1,
-            "outputColor": "36"
+            "outputColor": "34"
         },
         {
             "type": "publicip",
@@ -113,22 +117,24 @@
         "dns",
         "wifi",
         "netio",
+        "break",
 
         {
             "type": "separator",
-            "string": "━━ Media ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "string": "━━ Media ━━━━━━━━━━━━━━━━━━━",
             "times": 1,
-            "outputColor": "31"
+            "outputColor": "34"
         },
         "player",
         "media",
         "sound",
+        "break",
 
         {
             "type": "separator",
-            "string": "━━ Peripherals ━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "string": "━━ Peripherals ━━━━━━━━━━━━━",
             "times": 1,
-            "outputColor": "35"
+            "outputColor": "34"
         },
         "bluetooth",
         "bluetoothradio",
@@ -136,22 +142,24 @@
         "gamepad",
         "mouse",
         "keyboard",
+        "break",
 
         {
             "type": "separator",
-            "string": "━━ Graphics ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "string": "━━ Graphics ━━━━━━━━━━━━━━━━",
             "times": 1,
-            "outputColor": "32"
+            "outputColor": "34"
         },
         "vulkan",
         "opengl",
         "opencl",
+        "break",
 
         {
             "type": "separator",
-            "string": "━━ Other ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            "string": "━━ Other ━━━━━━━━━━━━━━━━━━━",
             "times": 1,
-            "outputColor": "90"
+            "outputColor": "34"
         },
         "users",
         "tpm",
