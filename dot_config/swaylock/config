@@ -15,11 +15,11 @@ ring-wrong-color=e67e80
 key-hl-color=dbbc7f
 bs-hl-color=e67e80
 
-line-color=3d484d
-line-clear-color=3d484d
-line-caps-lock-color=3d484d
-line-ver-color=3d484d
-line-wrong-color=3d484d
+line-color=4f585e
+line-clear-color=4f585e
+line-caps-lock-color=4f585e
+line-ver-color=4f585e
+line-wrong-color=4f585e
 
 separator-color=00000000
 
