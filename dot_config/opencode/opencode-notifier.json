@@ -1,0 +1,17 @@
+{
+  "timeout": 100000,
+  "notification": true,
+  "sound": false,
+  "suppressWhenFocused": false,
+  "minDuration": 0,
+  "events": {
+    "permission": { "sound": false, "notification": true },
+    "complete": { "sound": false, "notification": true },
+    "subagent_complete": { "sound": false, "notification": true },
+    "error": { "sound": false, "notification": true },
+    "question": { "sound": false, "notification": true },
+    "interrupted": { "sound": false, "notification": true },
+    "user_cancelled": { "sound": false, "notification": true },
+    "plan_exit": { "sound": false, "notification": true }
+  }
+}
