@@ -38,7 +38,6 @@ window {
 #text {
     padding: 5px;
     color: #d3c6aa;
-    white-space: nowrap;
 }
 
 #entry:nth-child(even) {
