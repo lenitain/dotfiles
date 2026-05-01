@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-sudo pacman -S --needed --noconfirm \
+sudo pacman -Syu --needed --noconfirm \
   neovim \
   yazi \
   satty grim slurp \
