@@ -5,11 +5,11 @@
   "suppressWhenFocused": false,
   "minDuration": 0,
   "events": {
-    "permission": { "sound": false, "notification": true },
-    "complete": { "sound": false, "notification": true },
-    "error": { "sound": false, "notification": true },
-    "question": { "sound": false, "notification": true },
-    "interrupted": { "sound": false, "notification": true },
-    "plan_exit": { "sound": false, "notification": true }
+    "permission": { "sound": true, "notification": true },
+    "complete": { "sound": true, "notification": true },
+    "error": { "sound": true, "notification": true },
+    "question": { "sound": true, "notification": true },
+    "interrupted": { "sound": true, "notification": true },
+    "plan_exit": { "sound": true, "notification": true }
   }
 }
