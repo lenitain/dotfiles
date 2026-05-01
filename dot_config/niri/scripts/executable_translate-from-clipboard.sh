@@ -7,8 +7,9 @@ if [ -z "$selected" ]; then
   exit 1
 fi
 
-TEXT=$(echo "$selected" | cliphist decode)
-TEXT=$(echo "$TEXT" | awk '{gsub(/^[^a-zA-Z]*|[^a-zA-Z]*$/, ""); print}' | xargs)
+ORIG=$(echo "$selected" | cliphist decode)
+
+TEXT=$(echo "$ORIG" | awk '{gsub(/^[^a-zA-Z]*|[^a-zA-Z]*$/, ""); print}' | xargs)
 
 if [ -z "$TEXT" ]; then
   notify-send "Translate" "No English text found"
@@ -26,5 +27,5 @@ if [ -z "$RESULT" ]; then
   RESULT="Not found: $TEXT"
 fi
 
+echo -n "$ORIG" | wl-copy
 notify-send "$TEXT" "$RESULT"
-echo -n "$TEXT $RESULT" | wl-copy
