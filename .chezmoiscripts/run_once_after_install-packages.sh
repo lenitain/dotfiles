@@ -13,4 +13,4 @@ sudo pacman -Syu --needed --noconfirm \
   hurl zip \
   kdenlive evemu \
   tesseract tesseract-data-eng \
-  bpftrace
+  bpftrace zathura

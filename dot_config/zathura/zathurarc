@@ -1,0 +1,55 @@
+# Zathura config - Everforest Dark Medium palette
+
+# Recolor PDF pages to match theme
+set recolor true
+set recolor-keephue false
+set recolor-darkcolor "#D3C6AA"
+set recolor-lightcolor "#2D353B"
+
+# General UI
+set default-bg "#232A2E"
+set default-fg "#D3C6AA"
+
+# Status bar
+set statusbar-bg "#343F44"
+set statusbar-fg "#D3C6AA"
+
+# Input bar
+set inputbar-bg "#343F44"
+set inputbar-fg "#D3C6AA"
+
+# Notification
+set notification-bg "#343F44"
+set notification-fg "#D3C6AA"
+set notification-error-bg "#514045"
+set notification-error-fg "#E67E80"
+set notification-warning-bg "#4D4C43"
+set notification-warning-fg "#DBBC7F"
+
+# Highlight (search)
+set highlight-color "#A7C080"
+set highlight-active-color "#DBBC7F"
+
+# Completion dropdown
+set completion-bg "#3D484D"
+set completion-fg "#D3C6AA"
+set completion-highlight-bg "#475258"
+set completion-highlight-fg "#A7C080"
+
+# Index / TOC
+set index-bg "#2D353B"
+set index-fg "#D3C6AA"
+set index-active-bg "#343F44"
+set index-active-fg "#D3C6AA"
+
+# Loading indicator
+set render-loading-bg "#232A2E"
+set render-loading-fg "#D3C6AA"
+
+# Misc
+set window-title-home-tilde true
+set adjust-open "best-fit"
+set pages-per-row 1
+set scroll-step 50
+set zoom-min 50
+set zoom-max 300
