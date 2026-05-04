@@ -14,4 +14,5 @@ sudo pacman -Syu --needed --noconfirm \
   kdenlive evemu \
   tesseract tesseract-data-eng \
   bpftrace \
-  zathura zathura-cb zathura-pdf-mupdf zathura-ps zathura-djvu
+  zathura zathura-cb zathura-pdf-mupdf zathura-ps zathura-djvu \
+  glow
