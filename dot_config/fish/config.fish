@@ -32,7 +32,8 @@ function nfzf
 
     # 2. 检查是否选中了目录（避免按 Esc 退出时 cd 到空路径）
     if [ -n "$target_dir" ]
-        nvim "$target_dir"
+        cd "$target_dir"
+        nvim .
         echo "nvim打开目录："(pwd)
     else
         echo "未选择目录，取消操作"
