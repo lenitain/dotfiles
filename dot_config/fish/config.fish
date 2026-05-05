@@ -47,12 +47,3 @@ end
 
 # 别名：仅替换命令，无任何逻辑
 alias nwt='alacritty --working-directory "$PWD" & disown'
-
-# 创建开发环境：当前窗口 nvim + 右侧两个新窗口 (空白 + opencode)
-function devbox
-    setsid alacritty --working-directory (pwd) & disown
-    sleep 0.2
-    setsid alacritty --working-directory (pwd) -e opencode & disown
-    sleep 0.2
-    exec nvim .
-end
