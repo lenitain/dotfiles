@@ -1,0 +1,9 @@
+{
+  "lastChangelogVersion": "0.73.0",
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-v4-flash",
+  "defaultThinkingLevel": "xhigh",
+  "showHardwareCursor": true,
+  "editorPaddingX": 0,
+  "theme": "dark"
+}
