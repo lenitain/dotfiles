@@ -374,7 +374,7 @@ prefer-no-csd
 
 // ── Layout ─────────────────────────────────────────
 layout {
-    gaps 2
+    gaps 3
     center-focused-column "never"
     background-color "#343F44"
     preset-column-widths {
@@ -383,7 +383,7 @@ layout {
         proportion 0.66667
     }
     focus-ring {
-        width 2
+        width 3
         active-color   "#7fbbb3"
         inactive-color "#505050"
     }
