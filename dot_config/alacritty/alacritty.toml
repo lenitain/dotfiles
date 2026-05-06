@@ -57,10 +57,6 @@ magenta               = "#e3b4c6"
 cyan                  = "#a8d5ad"
 white                 = "#e8e2cf"
 
-[colors.selection]
-text                  = "#2d353b"
-background            = "#d3c6aa"
-
 [font]
 size                  = 16
 
