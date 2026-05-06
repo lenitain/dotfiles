@@ -374,7 +374,7 @@ prefer-no-csd
 
 // ── Layout ─────────────────────────────────────────
 layout {
-    gaps 5
+    gaps 2
     center-focused-column "never"
     background-color "#343F44"
     preset-column-widths {
