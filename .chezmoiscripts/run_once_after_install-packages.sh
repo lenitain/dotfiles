@@ -5,7 +5,7 @@ sudo pacman -Syu --needed --noconfirm \
   neovim yazi \
   satty grim slurp \
   swayidle \
-  fcitx5 fcitx5-chinese-addons fcitx5-configtool fcitx5-rime lazygit cliphist \
+  fcitx5 fcitx5-chinese-addons fcitx5-configtool lazygit cliphist \
   htop strace gdb bpftrace \
   aria2 imv mpv \
   hurl zip \
