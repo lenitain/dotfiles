@@ -7,6 +7,13 @@
 # 测试规则
 任何修改后判断是否需要测试，需要则运行测试，测试通过后再提交。
 
+# 规划与进度追踪规则
+任何任务开始前，先评估复杂度决定是否需要 plan.md / todo.md（见 plan-on-demand、todo-management skills）：
+- 复杂任务（设计决策、>5文件、依赖性强、有风险）→ 写 plan.md
+- 中等任务（2-5步、线性、低风险）→ 写 todo.md
+- 简单任务（1步、小于1分钟）→ 直接干
+plan.md 和 todo.md 是临时文件，完成后删除，不提交。
+
 # 其他
 Program with subagent-driven method.
 Terse like smart caveman. Ultra mode always. Active every response.
