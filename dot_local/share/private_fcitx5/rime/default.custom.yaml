@@ -4,7 +4,7 @@
 patch:
   switcher:
     save_options:
-      - ascii_mode  # 记住中英切换状态，默认关闭=英文
+      - ascii_mode: true  # 记住中英切换状态，默认关闭=英文
   ascii_composer:
     switch_key:
       Caps_Lock: clear  # 清空后切换到英文
