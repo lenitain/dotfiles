@@ -12,4 +12,5 @@ sudo pacman -Syu --needed --noconfirm \
   kdenlive evemu \
   tesseract tesseract-data-eng \
   zathura zathura-cb zathura-pdf-mupdf zathura-ps zathura-djvu \
-  glow
+  glow \
+  crun containerd podman nomad nomad-driver-podman
