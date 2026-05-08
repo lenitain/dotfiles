@@ -1,0 +1,17 @@
+# encoding: utf-8
+# default.custom.yaml
+
+patch:
+  switcher:
+    save_options:
+      - ascii_mode  # 记住中英切换状态，默认关闭=英文
+  ascii_composer:
+    switch_key:
+      Caps_Lock: clear  # 清空后切换到英文
+      Shift_L: clear    # 清空后切换到英文
+      Shift_R: noop
+      Control_L: noop
+      Control_R: noop
+  key_binder:
+    bindings:
+      - { when: always, accept: Control+space, toggle: ascii_mode }
