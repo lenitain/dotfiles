@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.74.0",
-  "defaultProvider": "minimax-cn",
-  "defaultModel": "MiniMax-M2.7",
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-v4-flash",
   "defaultThinkingLevel": "high",
   "showHardwareCursor": true,
   "editorPaddingX": 0,

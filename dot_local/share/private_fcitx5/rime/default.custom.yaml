@@ -4,7 +4,7 @@
 patch:
   switcher:
     save_options:
-      - ascii_mode: true  # 记住中英切换状态，默认关闭=英文
+      - ascii_mode: true
   ascii_composer:
     switch_key:
       Caps_Lock: clear  # 清空后切换到英文
@@ -15,3 +15,16 @@ patch:
   key_binder:
     bindings:
       - { when: always, accept: Control+space, toggle: ascii_mode }
+      - { when: always, accept: Caps_Lock, toggle: ascii_mode }
+      - { when: composing, accept: Control+Shift+1, select: .next }
+      - { when: composing, accept: Control+Shift+2, toggle: ascii_mode }
+  schema_list:
+    - {schema: melt_eng}  # 默认英文
+    - {schema: rime_ice}
+
+var:
+  last_build_time: 1778207328
+  previously_selected_schema: melt_eng
+  schema_access_time:
+    rime_ice: 1778199196
+    melt_eng: 1778207328
