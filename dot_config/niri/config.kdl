@@ -47,41 +47,53 @@ binds {
     // Applications
     MOD+RETURN {
         spawn-sh "alacritty"
+        description "Open terminal"
     }
     MOD+SPACE {
         spawn-sh "$HOME/.config/wofi/wofi-wrapper"
+        description "App launcher"
     }
     MOD+B {
         spawn-sh "firefox"
+        description "Browser"
     }
     MOD+ALT+L {
         spawn-sh "swaylock"
+        description "Lock screen"
     }
     MOD+E {
         spawn-sh "nautilus"
+        description "File manager"
     }
 
     // Audio
     XF86AudioRaiseVolume allow-when-locked=true {
         spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.04+"
+        description "Raise volume"
     }
     XF86AudioLowerVolume allow-when-locked=true {
         spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.04-"
+        description "Lower volume"
     }
     XF86AudioMute allow-when-locked=true {
         spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+        description "Mute audio"
     }
     XF86AudioMicMute allow-when-locked=true {
         spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
+        description "Mute mic"
     }
     XF86AudioNext allow-when-locked=true {
         spawn-sh "playerctl next"
+        description "Next track"
     }
     XF86AudioPause allow-when-locked=true {
         spawn-sh "playerctl play-pause"
+        description "Play/Pause"
     }
     XF86AudioPrev allow-when-locked=true {
         spawn-sh "playerctl previous"
+        description "Previous track"
     }
 
     // Window ops
@@ -325,16 +337,19 @@ binds {
     // Clipboard
     MOD+V {
         spawn-sh "~/.config/niri/scripts/cliphist-wofi.sh"
+        description "Clipboard history"
     }
 
     // Translate
     MOD+G {
         spawn-sh "~/.config/niri/scripts/translate.sh"
+        description "Translate"
     }
 
     // Screenshots
     CTRL+SHIFT+1 {
         spawn-sh "~/.config/niri/scripts/screenshot.sh"
+        description "Screenshot (full)"
     }
     CTRL+SHIFT+2 {
         screenshot-screen
