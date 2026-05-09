@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-sudo pacman -Syu --needed --noconfirm \
+paru -Syu --needed \
   neovim yazi \
   satty grim slurp \
   swayidle \
@@ -14,7 +14,4 @@ sudo pacman -Syu --needed --noconfirm \
   zathura zathura-cb zathura-pdf-mupdf zathura-ps zathura-djvu \
   glow \
   crun containerd podman nomad nomad-driver-podman \
-  qt6ct
-
-# AUR packages
-paru -S --needed --noconfirm gtk-engine-murrine
+  qt6ct gtk-engine-murrine

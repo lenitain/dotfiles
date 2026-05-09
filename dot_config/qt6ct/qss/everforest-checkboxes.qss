@@ -1,0 +1,33 @@
+/* Everforest checkbox/radio styling */
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid palette(mid);
+    border-radius: 3px;
+    background: palette(base);
+}
+QCheckBox::indicator:checked {
+    background: palette(highlight);
+    border: 1px solid palette(highlight);
+}
+QCheckBox::indicator:hover {
+    border: 1px solid palette(highlight);
+}
+QCheckBox::indicator:disabled {
+    background: palette(window);
+    border: 1px solid palette(midlight);
+}
+QRadioButton::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid palette(mid);
+    border-radius: 8px;
+    background: palette(base);
+}
+QRadioButton::indicator:checked {
+    background: palette(highlight);
+    border: 1px solid palette(highlight);
+}
+QRadioButton::indicator:hover {
+    border: 1px solid palette(highlight);
+}
