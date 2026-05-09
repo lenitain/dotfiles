@@ -1,0 +1,5 @@
+export BROWSER=firefox
+export TERM=alacritty
+export QT_QPA_PLATFORMTHEME="qt6ct"
+export GTK_THEME=Everforest-Dark-Medium
+. "$HOME/.cargo/env"
