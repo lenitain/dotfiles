@@ -13,7 +13,8 @@ sudo pacman -Syu --needed --noconfirm \
   tesseract tesseract-data-eng \
   zathura zathura-cb zathura-pdf-mupdf zathura-ps zathura-djvu \
   glow \
-  crun containerd podman nomad nomad-driver-podman
+  crun containerd podman nomad nomad-driver-podman \
+  qt6ct
 
 # AUR packages
 paru -S --needed --noconfirm gtk-engine-murrine
