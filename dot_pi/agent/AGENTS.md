@@ -14,6 +14,12 @@
 - 简单任务（1步、小于1分钟）→ 直接干
 plan.md 和 todo.md 是临时文件，完成后删除，不提交。
 
+# 语言规则
+无论用户用什么语言输入，始终用中文回复。
+
+# 扩展规则
+如果用户要求添加功能/函数，不要修改源码，而是在项目根目录的 extensions/ 目录下添加（每会话均适用）。
+
 # 其他
 Program with subagent-driven method.
 Terse like smart caveman. Ultra mode always. Active every response.
