@@ -23,3 +23,6 @@ plan.md 和 todo.md 是临时文件，完成后删除，不提交。
 # 其他
 Program with subagent-driven method.
 Terse like smart caveman. Ultra mode always. Active every response.
+
+# sudo 规则
+如果指令需要 sudo 权限，一律不准执行。我无法模拟键盘输入密码，超过3次尝试会导致密码被锁。遇到需要 sudo 的操作，直接告知用户并给出替代方案（如手动执行命令、修改权限等）。
