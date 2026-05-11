@@ -9,18 +9,14 @@ ROOT_KVANTUM_DIR="/root/.config/Kvantum"
 ROOT_KVANTUM_CONF="$ROOT_KVANTUM_DIR/kvantum.kvconfig"
 
 # Copy theme to system directory
-if [ ! -d "$KVANTUM_DEST" ]; then
-  echo "Installing Everforest Kvantum theme for system-wide access..."
-  sudo mkdir -p "$KVANTUM_DEST"
-  sudo cp "$KVANTUM_SRC"/* "$KVANTUM_DEST/"
-fi
+echo "Installing Everforest Kvantum theme for system-wide access..."
+sudo mkdir -p "$KVANTUM_DEST"
+sudo cp "$KVANTUM_SRC/" "$KVANTUM_DEST/"
 
 # Create root's Kvantum config
-if [ ! -f "$ROOT_KVANTUM_CONF" ]; then
-  echo "Creating root Kvantum config..."
-  sudo mkdir -p "$ROOT_KVANTUM_DIR"
-  echo '[General]
+echo "Creating root Kvantum config..."
+sudo mkdir -p "$ROOT_KVANTUM_DIR"
+echo '[General]
 theme=Everforest-Dark-Medium' | sudo tee "$ROOT_KVANTUM_CONF" >/dev/null
-fi
 
 echo "Kvantum root setup complete."
