@@ -1,0 +1,456 @@
+[%General]
+author=Custom (Everforest)
+comment=Everforest-Dark-Medium theme for Kvantum
+x11drag=true
+alt_mnemonic=true
+left_tabs=false
+attach_active_tab=false
+embedded_tabs=true
+mirror_doc_tabs=false
+group_toolbar_buttons=true
+spread_progressbar=true
+composite=true
+menu_shadow_depth=7
+menu_blur_radius=2
+spread_menuitems=true
+tooltip_shadow_depth=6
+tooltip_blur_radius=2
+scroll_width=12
+scroll_arrows=false
+scroll_min_extent=50
+transient_scrollbar=true
+slider_width=6
+slider_handle_width=18
+slider_handle_length=18
+center_toolbar_handle=true
+check_size=16
+textless_progressbar=false
+progressbar_thickness=8
+menubar_mouse_tracking=true
+toolbutton_style=0
+click_behavior=0
+translucent_windows=false
+blurring=false
+popup_blurring=true
+opaque=kaffeine,kmplayer,subtitlecomposer,kdenlive,vlc,smplayer,smplayer2,avidemux,avidemux2_qt4,avidemux3_qt4,avidemux3_qt5,kamoso,QtCreator,VirtualBox,VirtualBoxVM,trojita,dragon,digikam,lyx
+vertical_spin_indicators=false
+fill_rubberband=false
+merge_menubar_with_toolbar=true
+small_icon_size=16
+large_icon_size=32
+button_icon_size=16
+toolbar_icon_size=16
+combo_as_lineedit=true
+combo_menu=true
+combo_focus_rect=true
+groupbox_top_label=false
+inline_spin_indicators=true
+remove_extra_frames=true
+joined_inactive_tabs=true
+layout_spacing=3
+submenu_overlap=0
+tooltip_delay=-1
+animate_states=true
+no_window_pattern=false
+
+; Everforest-Dark-Medium (medium contrast)
+; bg0=#2D353B  bg1=#343F44  bg2=#3D484D  bg3=#475258  bg4=#4F585E  bg_dim=#232A2E
+; fg=#D3C6AA   green=#A7C080  blue=#7FBBB3  red=#E67E80  orange=#E69875
+; grey0=#7A8478  grey1=#859289  grey2=#9DA9A0  purple=#D699B6  aqua=#83C092
+
+[GeneralColors]
+window.color=#2D353B            ; bg0
+base.color=#232A2E            ; bg_dim
+alt.base.color=#2D353B80      ; bg0 (with alpha)
+button.color=#343F44          ; bg1
+light.color=#3D484D           ; bg2
+mid.light.color=#2D353B       ; bg0
+dark.color=#1E2326            ; bg_dim (hard)
+mid.color=#232A2E             ; bg_dim
+highlight.color=#A7C080       ; green
+inactive.highlight.color=#3D484D ; bg2
+tooltip.base.color=#232A2E    ; bg_dim
+text.color=#D3C6AA            ; fg
+window.text.color=#D3C6AA     ; fg
+button.text.color=#D3C6AA     ; fg
+disabled.text.color=#859289    ; grey1
+tooltip.text.color=#D3C6AA    ; fg
+highlight.text.color=#2D353B  ; bg0
+link.color=#7FBBB3            ; blue
+link.visited.color=#D699B6    ; purple
+progress.indicator.text.color=#D3C6AA ; fg
+
+[Hacks]
+transparent_ktitle_label=true
+transparent_dolphin_view=false
+transparent_pcmanfm_sidepane=true
+blur_translucent=true
+transparent_menutitle=false
+respect_darkness=true
+force_size_grip=true
+iconless_pushbutton=false
+iconless_menu=false
+disabled_icon_opacity=80
+lxqtmainmenu_iconsize=22
+normal_default_pushbutton=false
+single_top_toolbar=true
+tint_on_mouseover=0
+transparent_arrow_button=true
+no_selection_tint=true
+centered_forms=true
+
+[PanelButtonCommand]
+frame=true
+frame.element=button
+frame.top=3
+frame.bottom=3
+frame.left=3
+frame.right=3
+interior=true
+interior.element=button
+indicator.size=11
+text.normal.color=#D3C6AA     ; fg
+text.focus.color=#A7C080      ; green
+text.press.color=#D3C6AA      ; fg
+text.toggle.color=#D3C6AA     ; fg
+text.shadow=0
+text.margin=1
+text.iconspacing=4
+indicator.element=arrow
+text.margin.top=4
+text.margin.bottom=4
+text.margin.left=4
+text.margin.right=4
+frame.expansion=12
+
+[PanelButtonTool]
+inherits=PanelButtonCommand
+
+[Dock]
+inherits=PanelButtonCommand
+interior.element=dock
+frame.element=dock
+frame.top=1
+frame.bottom=1
+frame.left=1
+frame.right=1
+text.normal.color=#D3C6AA     ; fg
+
+[DockTitle]
+inherits=PanelButtonCommand
+frame=false
+interior=false
+text.normal.color=#D3C6AA     ; fg
+text.focus.color=#A7C080      ; green
+text.bold=true
+
+[IndicatorSpinBox]
+inherits=PanelButtonCommand
+indicator.element=arrow
+frame.top=3
+frame.bottom=3
+frame.left=3
+frame.right=3
+indicator.size=11
+text.normal.color=#D3C6AA     ; fg
+
+[RadioButton]
+inherits=PanelButtonCommand
+frame=false
+interior.element=radio
+text.normal.color=#D3C6AA     ; fg
+text.focus.color=#A7C080      ; green
+
+[CheckBox]
+inherits=PanelButtonCommand
+frame=false
+interior.element=checkbox
+text.normal.color=#D3C6AA     ; fg
+text.focus.color=#A7C080      ; green
+
+[GenericFrame]
+inherits=PanelButtonCommand
+frame=true
+interior=false
+frame.element=common
+interior.element=common
+frame.top=4
+frame.bottom=4
+frame.left=4
+frame.right=4
+
+[LineEdit]
+inherits=PanelButtonCommand
+frame.element=lineedit
+interior.element=lineedit
+text.margin.top=3
+text.margin.bottom=3
+text.margin.left=1
+text.margin.right=1
+frame.expansion=10
+
+[DropDownButton]
+inherits=PanelButtonCommand
+indicator.element=arrow-down
+
+[IndicatorArrow]
+indicator.element=arrow
+indicator.size=11
+
+[ToolboxTab]
+inherits=PanelButtonCommand
+text.normal.color=#D3C6AA     ; fg
+text.press.color=#D3C6AA      ; fg
+text.focus.color=#A7C080      ; green
+
+[Tab]
+inherits=PanelButtonCommand
+interior.element=button
+text.margin.left=6
+text.margin.right=6
+text.margin.top=4
+text.margin.bottom=4
+frame.element=button
+focusFrame=true
+indicator.element=tab
+indicator.size=12
+text.normal.color=#9DA9A0     ; grey2 (inactive tab)
+text.focus.color=#D3C6AA      ; fg (active tab)
+text.toggle.color=#D3C6AA     ; fg
+min_width=4font
+min_height=1.4font
+
+[TabFrame]
+inherits=PanelButtonCommand
+frame=true
+frame.element=tframe
+frame.top=4
+frame.bottom=4
+frame.left=4
+frame.right=4
+interior=false
+
+[TreeExpander]
+inherits=PanelButtonCommand
+frame=false
+interior=false
+indicator.size=11
+indicator.element=arrow
+
+[HeaderSection]
+inherits=PanelButtonCommand
+text.margin.top=3
+text.margin.bottom=3
+text.margin.left=3
+text.margin.right=3
+
+[SizeGrip]
+indicator.element=resize-grip
+
+[Toolbar]
+inherits=PanelButtonCommand
+indicator.element=toolbar
+indicator.size=5
+text.margin=0
+interior.element=menubar
+frame.element=menubar
+text.normal.color=#D3C6AA     ; fg
+text.focus.color=#A7C080      ; green
+frame.top=0
+frame.bottom=4
+frame.expansion=0
+
+[Slider]
+inherits=PanelButtonCommand
+frame.element=slider
+interior.element=slider
+frame.top=3
+frame.bottom=3
+frame.left=3
+frame.right=3
+
+[SliderCursor]
+inherits=PanelButtonCommand
+frame=false
+interior.element=slidercursor
+
+[Progressbar]
+inherits=PanelButtonCommand
+frame.element=progress
+frame.expandedElement=eprogress
+interior.element=progress
+text.margin=0
+text.normal.color=#D3C6AA     ; fg
+text.focus.color=#D3C6AA      ; fg
+text.press.color=#D3C6AA      ; fg
+text.toggle.color=#D3C6AA     ; fg
+text.bold=true
+frame.expansion=10
+
+[ProgressbarContents]
+inherits=PanelButtonCommand
+frame=true
+frame.element=progress-pattern
+frame.expandedElement=eprogress-pattern
+interior.element=progress-pattern
+
+[ItemView]
+inherits=PanelButtonCommand
+text.margin=true
+frame.element=itemview
+interior.element=itemview
+frame.top=2
+frame.bottom=2
+frame.left=2
+frame.right=2
+text.margin.top=0
+text.margin.bottom=0
+text.margin.left=2
+text.margin.right=2
+text.normal.color=#D3C6AA     ; fg
+text.focus.color=#A7C080      ; green
+text.press.color=#D3C6AA      ; fg
+text.toggle.color=#D3C6AA     ; fg
+frame.expansion=8
+
+[Splitter]
+indicator.size=32
+
+[Scrollbar]
+inherits=PanelButtonCommand
+indicator.element=arrow
+indicator.size=11
+
+[ScrollbarSlider]
+inherits=PanelButtonCommand
+frame.element=scrollbarslider
+interior=false
+frame.left=6
+frame.right=6
+frame.top=6
+frame.bottom=6
+indicator.element=grip
+indicator.size=13
+frame.expansion=0
+
+[ScrollbarGroove]
+inherits=PanelButtonCommand
+interior=false
+frame=false
+
+[MenuItem]
+inherits=PanelButtonCommand
+frame=true
+frame.element=menuitem
+interior.element=menuitem
+indicator.element=menuitem
+text.normal.color=#D3C6AA     ; fg
+text.focus.color=#D3C6AA      ; fg
+text.margin.top=0
+text.margin.bottom=0
+text.margin.left=3
+text.margin.right=3
+frame.top=3
+frame.bottom=3
+frame.left=3
+frame.right=3
+frame.expansion=8
+
+[MenuBar]
+inherits=PanelButtonCommand
+frame.element=menubar
+interior.element=menubar
+frame.expansion=0
+
+[MenuBarItem]
+inherits=PanelButtonCommand
+interior=false
+frame.element=menubaritem
+frame.top=3
+frame.bottom=2
+frame.left=2
+frame.right=2
+text.margin.left=1
+text.margin.right=4
+text.margin.top=2
+text.normal.color=#D3C6AA     ; fg
+text.focus.color=#A7C080      ; green
+frame.expansion=0
+
+[TitleBar]
+inherits=PanelButtonCommand
+frame=false
+interior.element=titlebar
+indicator.size=12
+indicator.element=mdi
+text.normal.color=#859289     ; grey1 (inactive title)
+text.focus.color=#D3C6AA      ; fg (active title)
+text.bold=true
+text.italic=true
+frame.expansion=0
+
+[ComboBox]
+inherits=PanelButtonCommand
+
+[Menu]
+inherits=PanelButtonCommand
+frame.top=3
+frame.bottom=3
+frame.left=3
+frame.right=3
+frame.element=menu
+interior.element=menu
+text.normal.color=#D3C6AA     ; fg
+frame.expansion=0
+
+[GroupBox]
+inherits=GenericFrame
+frame=true
+frame.element=group
+text.shadow=0
+text.margin=0
+frame.top=4
+frame.bottom=4
+frame.left=4
+frame.right=4
+text.normal.color=#D3C6AA     ; fg
+text.press.color=#D3C6AA      ; fg
+text.focus.color=#A7C080      ; green
+text.bold=true
+frame.expansion=0
+
+[TabBarFrame]
+inherits=GenericFrame
+frame=false
+interior=false
+text.shadow=0
+
+[ToolTip]
+inherits=GenericFrame
+frame.top=3
+frame.bottom=3
+frame.left=3
+frame.right=3
+interior=true
+text.shadow=0
+text.margin=0
+interior.element=tooltip
+frame.element=tooltip
+frame.expansion=0
+
+[StatusBar]
+inherits=GenericFrame
+frame=false
+interior=false
+
+[WindowTranslucent]
+interior=true
+interior.element=window
+interior.x.patternsize=128
+interior.y.patternsize=128
+
+[DialogTranslucent]
+interior=true
+interior.element=dialog
+interior.x.patternsize=128
+interior.y.patternsize=128
