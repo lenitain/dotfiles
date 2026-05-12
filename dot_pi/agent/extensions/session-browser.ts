@@ -365,8 +365,8 @@ export default function (pi: ExtensionAPI) {
       );
       if (picked) {
         const label = picked.name ? `${picked.name} (${picked.displayPath})` : picked.displayPath;
-        ctx.ui.notify(`Importing: ${label}`, "info");
-        pi.sendUserMessage(`/resume "${picked.file}"`, { deliverAs: "followUp" });
+        ctx.ui.notify(`Switching to: ${label}`, "info");
+        await ctx.switchSession(picked.file);
       }
     },
   });
