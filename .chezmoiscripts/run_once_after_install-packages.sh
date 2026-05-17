@@ -13,5 +13,5 @@ paru -Syu --needed \
   tesseract tesseract-data-eng \
   zathura zathura-cb zathura-pdf-mupdf zathura-ps zathura-djvu \
   glow \
-  crun containerd podman nomad nomad-driver-podman \
+  crun containerd kubelet kubeadm kubectl \
   qt6ct gtk-engine-murrine
