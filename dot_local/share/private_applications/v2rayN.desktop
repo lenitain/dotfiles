@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=v2rayN
+Comment=V2Ray GUI Client
+Exec=~/.local/opt/v2rayN-linux-64/v2rayN
+Icon=~/.local/opt/v2rayN-linux-64/v2rayN.png
+Terminal=false
+Type=Application
+Categories=Network;Utility;
+StartupNotify=true
