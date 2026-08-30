@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# 录屏脚本 - wl-screenrec：直接录制到磁盘，停止后自动转封装 MP4
+# slurp 框选区域、音频录制
+# 再次运行脚本可停止当前录制并自动转换
+#
+# 流程:
+#   录制写入 ~/Videos/Record_*.mkv（H.264 硬编 CQP + Opus）
+#   停止时 SIGINT 收尾，再由 ffmpeg 视频直拷、音频转 AAC、+faststart 封装为同名 .mp4
+#   转换失败则提示并保留原始 MKV；全程不覆盖已有文件、不做二次压缩
+#
+# 用法:
+#   record.sh  # 区域选择（slurp 框选）；录制中再次运行则停止
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+RECORD_DIR="$HOME/Videos"
+PIDFILE="/tmp/wl-screenrec.pid"
+mkdir -p "$RECORD_DIR"
+
+# ===== 编码设置 =====
+# H.264 VAAPI 硬编：零 CPU 占用；CQP 恒定质量，qp 越低越清晰（建议 18-25）
+# profile=main 必须保留：默认 High profile 会触发 wl-screenrec 在 AMD 上的挂死 bug（上游 issue #63）
+# 音频先用 Opus 放进 MKV（无兼容性问题），分发前再转 AAC
+VIDEO_CODEC="avc"
+AUDIO_CODEC="opus"
+GOP_SIZE="60"
+ENCODER_OPTS="rc_mode=CQP,qp=17,profile=main"
+# BITRATE 已移除：恒定质量模式下码率由质量参数决定，不再传给编码器
+
+# ===== 行为开关 =====
+AUTO_CONVERT_TO_MP4="1"                   # 1=停止后自动转 MP4；0=只保留 MKV
+STOP_TIMEOUT_SEC=15                       # 等待 wl-screenrec 收尾的最长秒数
+
+notify() { notify-send "$1" "$2" || true; }
+
+# 停止 pid 对应的录制并处理产物；rec_file 为 pidfile 里记录的录像路径
+stop_and_finalize() {
+    local pid="$1" rec_file="$2"
+    rm -f "$PIDFILE"
+    kill -INT "$pid" 2>/dev/null || true
+
+    # 有限超时地等待完全退出（收尾写文件）
+    local i=0 max_iter=$((STOP_TIMEOUT_SEC * 10))
+    while kill -0 "$pid" 2>/dev/null; do
+        if [ "$i" -ge "$max_iter" ]; then
+            kill -KILL "$pid" 2>/dev/null || true
+            notify "录屏停止异常" "未能在 ${STOP_TIMEOUT_SEC}s 内收尾，文件可能不完整：$rec_file"
+            exit 1
+        fi
+        sleep 0.1
+        i=$((i + 1))
+    done
+
+    if [ ! -s "$rec_file" ]; then
+        notify "录屏失败" "没有产出有效的录像文件：$rec_file"
+        exit 1
+    fi
+
+    if [ "$AUTO_CONVERT_TO_MP4" != "1" ]; then
+        notify "录屏已停止" "已保留中间文件：$rec_file"
+        exit 0
+    fi
+
+    local base final part
+    base="$(basename "$rec_file" .mkv)"
+    final="$RECORD_DIR/$base.mp4"
+    part="$RECORD_DIR/.$base.mp4.part"
+    if [ -e "$final" ]; then
+        notify "目标文件已存在" "未覆盖 $final；新录像保留在 $rec_file"
+        exit 2
+    fi
+    if [ -e "$part" ]; then
+        # 已有同名 .part（上次残留或并发转换），换带 PID 的临时名避免互相覆盖
+        part="$RECORD_DIR/.$base.$$.mp4.part"
+    fi
+
+    # 视频直拷不二次压缩；音频 Opus->AAC；faststart 把索引挪到片头利于流式播放
+    # .part 后缀无法让 ffmpeg 推断封装格式，需显式 -f mp4
+    if ffmpeg -hide_banner -loglevel error -y \
+            -i "$rec_file" -c:v copy -c:a aac -movflags +faststart -f mp4 "$part"; then
+        mv "$part" "$final"
+        notify "录屏已保存" "$final"
+        exit 0
+    else
+        rm -f "$part"
+        notify "自动转换失败" "已保留原始录像：$rec_file"
+        exit 1
+    fi
+}
+
+# 如果已有录制在进行，则停止它并处理产物（先删 PIDFILE 防止并发重复停止）
+if [ -f "$PIDFILE" ]; then
+    read -r OLD_PID REC_HINT < "$PIDFILE" || true
+    if [ -n "${OLD_PID:-}" ] && kill -0 "$OLD_PID" 2>/dev/null; then
+        stop_and_finalize "$OLD_PID" "${REC_HINT:-}"
+    fi
+fi
+
+# slurp 框选区域（经 wrapper：单实例，先杀后开）
+GEOM="$("$SCRIPT_DIR/slurp-wrapper")" || exit 1
+
+FILENAME="$RECORD_DIR/Record_$(date +%Y%m%d_%H%M%S).mkv"
+
+# 组装 wl-screenrec 参数（--audio 录默认音频源）
+ARGS=(--codec "$VIDEO_CODEC" --audio
+      --gop-size "$GOP_SIZE" --audio-codec "$AUDIO_CODEC"
+      --ffmpeg-encoder-options "$ENCODER_OPTS" -f "$FILENAME" -g "$GEOM")
+
+wl-screenrec "${ARGS[@]}" &
+WF_PID=$!
+printf '%s %s\n' "$WF_PID" "$FILENAME" > "$PIDFILE"
+
+notify "录屏开始" "区域录制（$VIDEO_CODEC 硬编）：$FILENAME"

@@ -1,0 +1,19 @@
+@import url("../../.palette/everforest_dark_medium.css");
+
+/* === 小组件 === */
+calendar button {
+    padding: 2px;
+}
+
+/* === gsimplecal === */
+calendar {
+    font-size: 23px;
+    padding: 13px;
+}
+
+
+/* === gsimplecal: 时区栏与日历内容左右对齐 === */
+window > box > box > box {
+    margin-left: 47px;
+    margin-right: 22px;
+}

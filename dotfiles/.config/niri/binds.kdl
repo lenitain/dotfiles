@@ -1,0 +1,395 @@
+binds {
+    // System
+    MOD+SHIFT+ESCAPE {
+        show-hotkey-overlay
+    }
+
+    // Applications
+    MOD+RETURN hotkey-overlay-title="Open terminal (plain)" {
+        spawn-sh "footclient"
+    }
+    MOD+SHIFT+RETURN hotkey-overlay-title="Open terminal (zellij)" {
+        spawn-sh "footclient -e zellij attach main -c"
+    }
+    MOD+SPACE hotkey-overlay-title="App launcher" {
+        spawn-sh "~/.config/niri/scripts/fuzzel-wrapper"
+    }
+    MOD+B hotkey-overlay-title="Browser" {
+        spawn-sh "/home/lenitain/.config/niri/scripts/qb-open"
+    }
+    MOD+ALT+L hotkey-overlay-title="Lock screen" {
+        spawn-sh "swaylock"
+    }
+    MOD+E hotkey-overlay-title="File manager (yazi)" {
+        spawn-sh "footclient -e yazi"
+    }
+    MOD+N hotkey-overlay-title="Text editor (nvim)" {
+        spawn-sh "footclient -e nvim"
+    }
+
+    // Audio
+    XF86AudioRaiseVolume allow-when-locked=true hotkey-overlay-title="Raise volume" {
+        spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.04+"
+    }
+    XF86AudioLowerVolume allow-when-locked=true hotkey-overlay-title="Lower volume" {
+        spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.04-"
+    }
+    XF86AudioMute allow-when-locked=true hotkey-overlay-title="Mute audio" {
+        spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+    }
+    XF86AudioMicMute allow-when-locked=true hotkey-overlay-title="Mute mic" {
+        spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
+    }
+    XF86AudioNext allow-when-locked=true hotkey-overlay-title="Next track" {
+        spawn-sh "playerctl next"
+    }
+    XF86AudioPause allow-when-locked=true hotkey-overlay-title="Play/Pause" {
+        spawn-sh "playerctl play-pause"
+    }
+    XF86AudioPrev allow-when-locked=true hotkey-overlay-title="Previous track" {
+        spawn-sh "playerctl previous"
+    }
+
+    // Window ops
+    MOD+Q {
+        close-window
+    }
+
+    // Mouse bindings
+    // Mod+Left 拖动 / Mod+Right 拖动 = 移动/调整窗口大小（niri 内置手势，无需绑定）
+    MOD+MOUSEMIDDLE hotkey-overlay-title="Cycle column width presets" {
+        switch-preset-column-width
+    }
+
+    // Focus direction
+    MOD+LEFT {
+        focus-column-left
+    }
+    MOD+H {
+        focus-column-left
+    }
+    MOD+RIGHT {
+        focus-column-right
+    }
+    MOD+L {
+        focus-column-right
+    }
+    MOD+UP {
+        focus-window-up
+    }
+    MOD+K {
+        focus-window-up
+    }
+    MOD+DOWN {
+        focus-window-down
+    }
+    MOD+J {
+        focus-window-down
+    }
+
+    // Move direction
+    MOD+CTRL+LEFT {
+        move-column-left
+    }
+    MOD+CTRL+H {
+        move-column-left
+    }
+    MOD+CTRL+RIGHT {
+        move-column-right
+    }
+    MOD+CTRL+L {
+        move-column-right
+    }
+    MOD+CTRL+UP {
+        move-window-up
+    }
+    MOD+CTRL+K {
+        move-window-up
+    }
+    MOD+CTRL+DOWN {
+        move-window-down
+    }
+    MOD+CTRL+J {
+        move-window-down
+    }
+
+    // Column jump
+    MOD+HOME {
+        focus-column-first
+    }
+    MOD+END {
+        focus-column-last
+    }
+    MOD+CTRL+HOME {
+        move-column-to-first
+    }
+    MOD+CTRL+END {
+        move-column-to-last
+    }
+
+    // Column merge / expel
+    // Mod+[ / Mod+] : 把聚焦窗口并入相邻列，或在列中时把它拆出来
+    MOD+BRACKETLEFT hotkey-overlay-title="Merge/expel window left" {
+        consume-or-expel-window-left
+    }
+    MOD+BRACKETRIGHT hotkey-overlay-title="Merge/expel window right" {
+        consume-or-expel-window-right
+    }
+    // Mod+, / Mod+. : 把右邻窗口吸进当前列 / 把当前列底部窗口吐出来
+    MOD+COMMA hotkey-overlay-title="Consume window into column" {
+        consume-window-into-column
+    }
+    MOD+PERIOD hotkey-overlay-title="Expel window from column" {
+        expel-window-from-column
+    }
+
+    // Monitor focus
+    MOD+SHIFT+LEFT {
+        focus-monitor-left
+    }
+    MOD+SHIFT+RIGHT {
+        focus-monitor-right
+    }
+    MOD+SHIFT+UP {
+        focus-monitor-up
+    }
+    MOD+SHIFT+DOWN {
+        focus-monitor-down
+    }
+
+    // Monitor move
+    MOD+SHIFT+CTRL+LEFT {
+        move-column-to-monitor-left
+    }
+    MOD+SHIFT+CTRL+RIGHT {
+        move-column-to-monitor-right
+    }
+    MOD+SHIFT+CTRL+UP {
+        move-column-to-monitor-up
+    }
+    MOD+SHIFT+CTRL+DOWN {
+        move-column-to-monitor-down
+    }
+
+    // Workspace scroll
+    MOD+WHEELSCROLLDOWN cooldown-ms=150 {
+        focus-workspace-down
+    }
+    MOD+WHEELSCROLLUP cooldown-ms=150 {
+        focus-workspace-up
+    }
+    MOD+CTRL+WHEELSCROLLDOWN cooldown-ms=150 {
+        move-column-to-workspace-down
+    }
+    MOD+CTRL+WHEELSCROLLUP cooldown-ms=150 {
+        move-column-to-workspace-up
+    }
+
+    MOD+WHEELSCROLLRIGHT {
+        focus-column-right
+    }
+    MOD+WHEELSCROLLLEFT {
+        focus-column-left
+    }
+    MOD+CTRL+WHEELSCROLLRIGHT {
+        move-column-right
+    }
+    MOD+CTRL+WHEELSCROLLLEFT {
+        move-column-left
+    }
+
+    MOD+SHIFT+WHEELSCROLLDOWN {
+        focus-column-right
+    }
+    MOD+SHIFT+WHEELSCROLLUP {
+        focus-column-left
+    }
+    MOD+CTRL+SHIFT+WHEELSCROLLDOWN {
+        move-column-right
+    }
+    MOD+CTRL+SHIFT+WHEELSCROLLUP {
+        move-column-left
+    }
+
+    // Workspace switch
+    MOD+1 {
+        focus-workspace 1
+    }
+    MOD+2 {
+        focus-workspace 2
+    }
+    MOD+3 {
+        focus-workspace 3
+    }
+    MOD+4 {
+        focus-workspace 4
+    }
+    MOD+5 {
+        focus-workspace 5
+    }
+    MOD+6 {
+        focus-workspace 6
+    }
+    MOD+7 {
+        focus-workspace 7
+    }
+    MOD+8 {
+        focus-workspace 8
+    }
+    MOD+9 {
+        focus-workspace 9
+    }
+
+    // Workspace move
+    MOD+CTRL+1 {
+        move-column-to-workspace 1
+    }
+    MOD+CTRL+2 {
+        move-column-to-workspace 2
+    }
+    MOD+CTRL+3 {
+        move-column-to-workspace 3
+    }
+    MOD+CTRL+4 {
+        move-column-to-workspace 4
+    }
+    MOD+CTRL+5 {
+        move-column-to-workspace 5
+    }
+    MOD+CTRL+6 {
+        move-column-to-workspace 6
+    }
+    MOD+CTRL+7 {
+        move-column-to-workspace 7
+    }
+    MOD+CTRL+8 {
+        move-column-to-workspace 8
+    }
+    MOD+CTRL+9 {
+        move-column-to-workspace 9
+    }
+
+    // Move single window (not whole column) to workspace
+    MOD+SHIFT+1 hotkey-overlay-title="Move window to workspace 1" {
+        move-window-to-workspace 1
+    }
+    MOD+SHIFT+2 hotkey-overlay-title="Move window to workspace 2" {
+        move-window-to-workspace 2
+    }
+    MOD+SHIFT+3 hotkey-overlay-title="Move window to workspace 3" {
+        move-window-to-workspace 3
+    }
+    MOD+SHIFT+4 hotkey-overlay-title="Move window to workspace 4" {
+        move-window-to-workspace 4
+    }
+    MOD+SHIFT+5 hotkey-overlay-title="Move window to workspace 5" {
+        move-window-to-workspace 5
+    }
+    MOD+SHIFT+6 hotkey-overlay-title="Move window to workspace 6" {
+        move-window-to-workspace 6
+    }
+    MOD+SHIFT+7 hotkey-overlay-title="Move window to workspace 7" {
+        move-window-to-workspace 7
+    }
+    MOD+SHIFT+8 hotkey-overlay-title="Move window to workspace 8" {
+        move-window-to-workspace 8
+    }
+    MOD+SHIFT+9 hotkey-overlay-title="Move window to workspace 9" {
+        move-window-to-workspace 9
+    }
+
+    // Layout
+    MOD+CTRL+F {
+        expand-column-to-available-width
+    }
+    MOD+C {
+        center-column
+    }
+    MOD+CTRL+C {
+        center-visible-columns
+    }
+    MOD+MINUS {
+        set-column-width "-10%"
+    }
+    MOD+EQUAL {
+        set-column-width "+10%"
+    }
+    MOD+SHIFT+MINUS {
+        set-window-height "-10%"
+    }
+    MOD+SHIFT+EQUAL {
+        set-window-height "+10%"
+    }
+
+    MOD+CTRL+R hotkey-overlay-title="Reset window height" {
+        reset-window-height
+    }
+    // Cycle preset column widths (1/3 -> 1/2 -> 2/3, defined in appearance.kdl)
+    MOD+R hotkey-overlay-title="Cycle column width presets" {
+        switch-preset-column-width
+    }
+    MOD+SHIFT+R hotkey-overlay-title="Cycle column width presets (back)" {
+        switch-preset-column-width-back
+    }
+
+    MOD+F {
+        maximize-window-to-edges
+    }
+
+    // Modes
+    MOD+T {
+        toggle-window-floating
+    }
+    MOD+SHIFT+F {
+        fullscreen-window
+    }
+    MOD+W {
+        toggle-column-tabbed-display
+    }
+
+    // Clipboard
+    MOD+V hotkey-overlay-title="Clipboard history" {
+        spawn-sh "~/.config/niri/scripts/cliphist-fuzzel"
+    }
+
+    // OCR
+    MOD+G hotkey-overlay-title="OCR" {
+        spawn-sh "~/.config/niri/scripts/ocr-select"
+    }
+
+    // Translate
+    MOD+SHIFT+G hotkey-overlay-title="Translate" {
+        spawn-sh "~/.config/niri/scripts/translate"
+    }
+
+    // Pick color (点选取色)
+    MOD+CTRL+G hotkey-overlay-title="Pick color" {
+        spawn-sh "~/.config/niri/scripts/pick-color"
+    }
+
+    // Screenshots
+    CTRL+SHIFT+1 hotkey-overlay-title="Screenshot" {
+        spawn-sh "~/.config/niri/scripts/screenshot"
+    }
+
+    // Recording
+    CTRL+SHIFT+2 hotkey-overlay-title="Record" {
+        spawn-sh "~/.config/niri/scripts/record"
+    }
+
+    // Emergency escape
+    MOD+ESCAPE allow-inhibiting=false {
+        toggle-keyboard-shortcuts-inhibit
+    }
+
+    // Exit / Power
+    CTRL+ALT+DELETE {
+        quit
+    }
+    MOD+SHIFT+P {
+        power-off-monitors
+    }
+    MOD+O repeat=false {
+        toggle-overview
+    }
+}

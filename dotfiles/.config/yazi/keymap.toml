@@ -1,0 +1,48 @@
+# 自定义键位（仅覆盖/扩展 yazi 默认键位中没有的部分）
+
+[mgr]
+prepend_keymap = [
+  # =======================
+  # 退出行为：q 退出并切换到鸭子内最后访问的路径；Q 退出但不改变 shell 目录
+  # =======================
+  { on = "q", run = "quit", desc = "退出并切换到鸭子内最后访问的目录" },
+  { on = "Q", run = "quit --no-cwd-file", desc = "退出但不改变 shell 当前目录" },
+
+  # =======================
+  # 快速目录跳转
+  # =======================
+  { on = [ "g", "h" ], run = "cd ~", desc = "跳转到主目录" },
+  { on = [ "g", "d" ], run = "cd ~/Downloads/", desc = "跳转到下载目录" },
+  { on = [ "g", "p" ], run = "cd ~/Pictures/", desc = "跳转到图片目录" },
+  { on = [ "g", "v" ], run = "cd ~/Videos/", desc = "跳转到视频目录" },
+  { on = [ "g", "m" ], run = "cd ~/Music/", desc = "跳转到音乐目录" },
+  { on = [ "g", "w" ], run = "cd ~/Documents/", desc = "跳转到文档目录" },
+  { on = [ "g", "<Space>" ], run = "cd --interactive", desc = "交互式目录跳转" },
+
+  # =======================
+  # 智能进入
+  # =======================
+  { on = "<Right>", run = "plugin smart-enter", desc = "智能进入目录或打开文件" },
+
+  # =======================
+  # 搜索跳转
+  # =======================
+  { on = "z", run = "plugin fzf", desc = "通过 fzf 跳转文件/目录" },
+
+  # =======================
+  # 排序快捷（一键切换排序方式 + 行模式）
+  # =======================
+  { on = [ ",", "m" ], run = [ "sort mtime --reverse=no", "linemode mtime" ],  desc = "按修改时间排序（正序）" },
+  { on = [ ",", "M" ], run = [ "sort mtime --reverse=yes", "linemode mtime" ], desc = "按修改时间排序（倒序）" },
+  { on = [ ",", "b" ], run = [ "sort btime --reverse=no", "linemode btime" ],  desc = "按创建时间排序（正序）" },
+  { on = [ ",", "B" ], run = [ "sort btime --reverse=yes", "linemode btime" ], desc = "按创建时间排序（倒序）" },
+  { on = [ ",", "e" ], run = "sort extension --reverse=no",                    desc = "按扩展名排序（正序）" },
+  { on = [ ",", "E" ], run = "sort extension --reverse=yes",                   desc = "按扩展名排序（倒序）" },
+  { on = [ ",", "a" ], run = "sort alphabetical --reverse=no",                 desc = "按字母顺序排序（正序）" },
+  { on = [ ",", "A" ], run = "sort alphabetical --reverse=yes",                desc = "按字母顺序排序（倒序）" },
+  { on = [ ",", "n" ], run = "sort natural --reverse=no",                      desc = "自然排序（正序）" },
+  { on = [ ",", "N" ], run = "sort natural --reverse=yes",                     desc = "自然排序（倒序）" },
+  { on = [ ",", "s" ], run = [ "sort size --reverse=no", "linemode size" ],    desc = "按大小排序（正序）" },
+  { on = [ ",", "S" ], run = [ "sort size --reverse=yes", "linemode size" ],   desc = "按大小排序（倒序）" },
+  { on = [ ",", "r" ], run = "sort random --reverse=no",                       desc = "随机排序" },
+]

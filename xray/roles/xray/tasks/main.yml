@@ -1,0 +1,192 @@
+---
+# Xray (VLESS + REALITY + Vision) deployment role.
+# Idempotent and reusable: keys auto-generate on first run and are persisted
+# on the target host so re-runs never rotate them.
+
+- name: Install required system packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ xray_system_packages }}"
+
+- name: Create xray directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ xray_config_dir }}"
+    - "{{ xray_install_dir }}"
+
+# ---------------------- Install binary ----------------------
+- name: Check installed xray version
+  ansible.builtin.command: "{{ xray_install_dir }}/xray version"
+  register: xray_installed_version
+  changed_when: false
+  failed_when: false
+
+- name: Check if geodata files are installed
+  ansible.builtin.stat:
+    path: "{{ xray_install_dir }}/geoip.dat"
+  register: xray_geoip
+
+- name: Decide whether to (re)install xray
+  ansible.builtin.set_fact:
+    xray_needs_install: "{{ xray_installed_version.rc != 0 or xray_version | replace('v', '') not in xray_installed_version.stdout or not xray_geoip.stat.exists }}"
+
+- name: Download xray archive
+  ansible.builtin.get_url:
+    url: "{{ xray_download_base }}/{{ xray_archive }}"
+    dest: "/tmp/{{ xray_archive }}"
+    mode: "0644"
+  when: xray_needs_install
+  register: xray_download
+
+- name: Extract xray binary
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ xray_archive }}"
+    dest: "{{ xray_install_dir }}"
+    remote_src: true
+    include: ["xray", "geoip.dat", "geosite.dat"]
+    owner: root
+    group: root
+    mode: "0755"
+  when: xray_needs_install
+
+# ---------------------- REALITY keys ----------------------
+# Priority: persisted keys on host > host_vars keys > auto-generate.
+- name: Check persisted REALITY keys
+  ansible.builtin.stat:
+    path: "{{ xray_config_dir }}/reality_keys.yml"
+  register: xray_keys_file
+
+- name: Load persisted REALITY keys
+  ansible.builtin.include_vars:
+    file: "{{ xray_config_dir }}/reality_keys.yml"
+  when: xray_keys_file.stat.exists
+
+- name: Generate REALITY keys (first run only)
+  when: not xray_keys_file.stat.exists
+        and (xray_private_key == "" or xray_public_key == "" or xray_uuid == "" or xray_short_id == "")
+  block:
+    - name: Generate x25519 key pair
+      ansible.builtin.command: "{{ xray_install_dir }}/xray x25519"
+      register: xray_x25519
+
+    - name: Extract private / public key
+      ansible.builtin.set_fact:
+        xray_private_key: "{{ xray_x25519.stdout | regex_replace('.*Private key: (\\S+).*', '\\1') }}"
+        xray_public_key: "{{ xray_x25519.stdout | regex_replace('.*Public key: (\\S+).*', '\\1') }}"
+
+    - name: Generate UUID
+      ansible.builtin.command: "{{ xray_install_dir }}/xray uuid"
+      register: xray_uuid_out
+
+    - name: Set UUID fact
+      ansible.builtin.set_fact:
+        xray_uuid: "{{ xray_uuid_out.stdout | trim }}"
+
+    - name: Generate short id
+      ansible.builtin.command: openssl rand -hex 4
+      register: xray_short_id_out
+
+    - name: Set short id fact
+      ansible.builtin.set_fact:
+        xray_short_id: "{{ xray_short_id_out.stdout | trim }}"
+
+# Persist whatever keys are in effect (host_vars OR freshly generated) so the
+# NEXT run reuses them and never rotates them unexpectedly. After the first
+# successful deploy you can delete the keys from host_vars entirely.
+- name: Persist REALITY keys to the VPS (first run only)
+  ansible.builtin.copy:
+    dest: "{{ xray_config_dir }}/reality_keys.yml"
+    mode: "0600"
+    content: |
+      ---
+      # Persisted by the xray ansible role. Edit only to rotate keys.
+      xray_private_key: "{{ xray_private_key }}"
+      xray_public_key: "{{ xray_public_key }}"
+      xray_uuid: "{{ xray_uuid }}"
+      xray_short_id: "{{ xray_short_id }}"
+  when: not xray_keys_file.stat.exists
+
+# ---------------------- Config + service ----------------------
+# Xray expects REALITY keys as URL-safe base64 WITHOUT padding
+# (base64.RawURLEncoding), unlike `xray x25519` output. Normalize here so the
+# template always gets the right encoding.
+- name: Normalize private key to xray format (URL-safe base64, no padding)
+  ansible.builtin.set_fact:
+    xray_private_key_xray: "{{ xray_private_key | replace('+', '-') | replace('/', '_') | regex_replace('=+$', '') }}"
+
+
+- name: Deploy xray config
+  ansible.builtin.template:
+    src: xray-config.json.j2
+    dest: "{{ xray_config_dir }}/config.json"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart xray
+
+- name: Deploy systemd unit
+  ansible.builtin.template:
+    src: xray.service.j2
+    dest: "/etc/systemd/system/xray.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart xray
+
+- name: Enable and start xray service
+  ansible.builtin.systemd:
+    name: xray
+    enabled: true
+    state: started
+    daemon_reload: true
+
+# ---------------------- Kernel tuning (BBR) ----------------------
+- name: Enable BBR queue discipline (fq)
+  ansible.posix.sysctl:
+    name: net.core.default_qdisc
+    value: fq
+    sysctl_file: /etc/sysctl.d/99-xray-bbr.conf
+    reload: true
+  when: xray_enable_bbr
+
+- name: Enable BBR congestion control
+  ansible.posix.sysctl:
+    name: net.ipv4.tcp_congestion_control
+    value: bbr
+    sysctl_file: /etc/sysctl.d/99-xray-bbr.conf
+    reload: true
+  when: xray_enable_bbr
+
+# ---------------------- Firewall ----------------------
+- name: Detect ufw
+  ansible.builtin.command: command -v ufw
+  register: xray_ufw_present
+  changed_when: false
+  failed_when: false
+
+- name: Detect firewalld
+  ansible.builtin.command: command -v firewall-cmd
+  register: xray_firewalld_present
+  changed_when: false
+  failed_when: false
+
+- name: Open xray port (ufw)
+  community.general.ufw:
+    rule: allow
+    port: "{{ xray_port }}"
+    proto: tcp
+  when: xray_manage_firewall and xray_ufw_present.rc == 0
+
+- name: Open xray port (firewalld)
+  ansible.posix.firewalld:
+    port: "{{ xray_port }}/tcp"
+    permanent: true
+    immediate: true
+    state: enabled
+  when: xray_manage_firewall and xray_firewalld_present.rc == 0

@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#MISE description="mise bootstrap: 全量 sync+升级 (pacman -Syu 哲学, 单一命令追最新)"
+# 共 13 步: 系统升级→工具升级→11 个 setup-* 任务
+
+# 单一入口: 声明式收敛 + 全量升级, 不分 setup/update。
+# 哲学 = pacman -Syu: 每次执行都同步数据库并升级到最新。
+#   - 声明式 [bootstrap.*]/[dotfiles] 由 mise bootstrap 先行收敛
+#   - 命令式部分: pacman -Syu(系统) → mise upgrade(工具) → setup-* 各 sync 任务
+#   - setup-boot 保持手动(带守卫); setup-desktop 为设置类(无版本语义)
+
+set -euo pipefail
+
+info() { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
+ok()   { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
+
+# 1) 系统 sync + 升级 (pacman -Syu) — 非交互必须 --noconfirm
+info "1/13 系统升级 (sudo pacman -Syu --noconfirm) ..."
+sudo pacman -Syu --noconfirm
+
+# 2) [tools] 升级到最新
+info "2/13 工具升级 (mise upgrade) ..."
+mise upgrade || true
+
+# 3..12 各 sync 任务 (已含"已最新则跳过"/"有新提交则重建"语义)
+info "3/13 setup-desktop (dconf/XDG) ..."          ; mise run setup-desktop
+info "4/13 setup-fonts (Maple Mono) ..."            ; mise run setup-fonts
+info "5/13 setup-dict (ECDICT) ..."                 ; mise run setup-dict
+info "6/13 setup-rime-wanxiang (万象拼音) ..."       ; mise run setup-rime-wanxiang
+info "7/13 setup-rust (rustup+rust-analyzer) ..."    ; mise run setup-rust
+info "8/13 setup-moonbit ..."                       ; mise run setup-moonbit
+info "9/13 setup-flatpak ..."                       ; mise run setup-flatpak
+info "10/13 setup-yazi ..."                          ; mise run setup-yazi
+info "11/13 setup-just-talk ..."                    ; mise run setup-just-talk
+info "12/13 setup-wl-screenrec ..."                 ; mise run setup-wl-screenrec
+info "13/13 setup-pi ..."                           ; mise run setup-pi || true
+
+ok "bootstrap 完成: 系统+工具+配置已同步到最新"

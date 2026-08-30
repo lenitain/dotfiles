@@ -1,0 +1,9 @@
+# 编辑器/系统杂项
+.DS_Store
+*.swp
+*.tmp
+*.log
+
+# xray-setup 私有密钥 (并入 xray/ 后不入库)
+xray/host_vars/*.yml
+!xray/host_vars/_template.yml

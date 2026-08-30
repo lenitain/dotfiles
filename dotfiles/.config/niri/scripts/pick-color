@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# 取色脚本 - hyprpicker 取色 + 放大镜 + 通知 + 复制到剪贴板
+#
+# 用法:
+#   pick-color.sh  # 冻结屏幕，放大镜选点，点击取色
+
+exec hyprpicker --autocopy --notify --format hex

@@ -1,0 +1,72 @@
+# 系统配置 [bootstrap.files / bootstrap.services / bootstrap.accounts]
+# 从 ansible system.yml + docker.yml 迁移而来。
+# 声明式: 内容/属主/模式/服务状态均收敛; 必要时才提权(sudo)。
+
+# ── 登录会话: greetd + niri-session ──
+[bootstrap.files."/etc/greetd/config.toml"]
+content = """
+[terminal]
+vt = 1
+
+[default_session]
+command = "tuigreet --remember --cmd niri-session"
+user = "greeter"
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+notify = ["greetd"]
+
+[bootstrap.services.greetd]
+state = "running"
+enabled = true
+
+# ── 控制台字体 (greetd 大字, 重启后生效) ──
+[bootstrap.files."/etc/vconsole.conf"]
+content = """
+# Written by systemd-localed(8) or systemd-firstboot(1), read by systemd-localed
+# and systemd-vconsole-setup(8). Use localectl(1) to update this file.
+XKBLAYOUT=cn
+FONT=latarcyrheb-sun32
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# ── 用户附加组 (input/docker, 只补缺, 保留其它成员) ──
+[bootstrap.users.lenitain]
+group = "lenitain"
+groups = ["input", "docker"]
+
+# ── logind 合盖不挂起 (重启后生效) ──
+[bootstrap.files."/etc/systemd/logind.conf.d/keep-running.conf"]
+content = """
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# ── Docker 镜像加速 + 重启 docker ──
+[bootstrap.files."/etc/docker/daemon.json"]
+content = """
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://docker.1ms.run",
+    "https://docker.xuanyuan.me",
+    "https://docker-0.unsee.tech"
+  ]
+}
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+notify = ["docker"]
+
+[bootstrap.services.docker]
+state = "running"
+enabled = true
+on_change = "restart"

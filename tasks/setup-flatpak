@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#MISE description="注册 flathub 并安装 Flatpak 应用"
+
+set -euo pipefail
+
+FLATHUB_URL="https://mirror.sjtu.edu.cn/flathub"
+
+info()  { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
+ok()    { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
+err()   { printf "\033[31m[err]\033[0m   %s\n" "$*"; }
+
+if ! command -v flatpak &>/dev/null; then
+  err "flatpak 未安装，请先运行: mise bootstrap --yes"
+  exit 1
+fi
+
+tmp_key="$(mktemp)"
+curl -fsSL -o "$tmp_key" https://dl.flathub.org/repo/flathub.gpg
+if ! flatpak remote-list --user | grep -q '^flathub'; then
+  info "注册 flathub 源 ($FLATHUB_URL) ..."
+  flatpak remote-add --user flathub "$FLATHUB_URL" --gpg-import="$tmp_key"
+else
+  info "flathub 源已存在，更新 GPG 密钥 ..."
+  flatpak remote-modify --user flathub --gpg-import="$tmp_key"
+fi
+rm -f "$tmp_key"
+
+apps=(
+  com.tencent.WeChat
+  com.qq.QQ
+)
+
+# 确保 apps 已装 (缺则装)
+for app in "${apps[@]}"; do
+  if flatpak list --app --columns=application | grep -q "^${app}$"; then
+    ok "$app 已存在"
+  else
+    info "安装 $app ..."
+    flatpak install -y --user flathub "$app" && ok "$app 已安装"
+  fi
+done
+
+# -Syu 哲学: 有更新就更新到最新 (用户级 flathub 应用)
+info "更新 flathub 应用到最新 (flatpak update) ..."
+flatpak update --user -y 2>&1 | tail -3 || true
+
+echo ""
+ok "安装完成！重启后图标会出现在 fuzzel 中"

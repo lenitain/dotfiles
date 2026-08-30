@@ -1,0 +1,16 @@
+# uv 国内镜像配置
+# 用户级配置文件：~/.config/uv/uv.toml
+
+[[index]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+[[index]]
+name = "ustc"
+url = "https://mirrors.ustc.edu.cn/pypi/simple"
+
+# PyTorch 国内镜像
+[[index]]
+name = "pytorch-mirror"
+url = "https://mirrors.tuna.tsinghua.edu.cn/pytorch-wheels/"

@@ -1,0 +1,11 @@
+// Startup commands
+spawn-sh-at-startup "/usr/lib/polkit-kde-authentication-agent-1 &"
+spawn-sh-at-startup "waybar"
+spawn-sh-at-startup "wl-paste --type text --watch cliphist store"
+spawn-sh-at-startup "swayidle -w timeout 170 'swaylock -f' timeout 177 'niri msg action power-off-monitors' before-sleep 'swaylock -f'"
+spawn-sh-at-startup "swaybg -i ~/Pictures/wallpaper/branch.svg -m fill"
+spawn-sh-at-startup "foot --server"
+// 常驻 qutebrowser IPC server（qb-server：--nowindow 关窗不退出，-R 跳过会话恢复）
+// 一次性启动，无守护/轮询：显式 `qb-open ':quit'` 或 kill 后保持终止，下次登录时重新拉起
+spawn-sh-at-startup "/home/lenitain/.config/niri/scripts/qb-server --nowindow -R >/tmp/qbserver.log 2>&1"
+prefer-no-csd

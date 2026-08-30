@@ -1,0 +1,15 @@
+# mise 全局配置 — 根入口
+# 文档: https://mise.jdx.dev/
+#
+# 分层拆分: conf.d/*.toml 按字母序自动加载并合并
+#   conf.d/tools.toml     → [tools]              版本化工具
+#   conf.d/dotfiles.toml  → [dotfiles]           dotfile 声明式部署
+#   conf.d/packages.toml  → [bootstrap.packages] 系统包
+#   conf.d/system.toml    → [bootstrap.*]        系统配置(文件/服务/账号)
+
+[settings]
+http_retries = 5
+# dotfile 部署全部用 copy (与 chezmoi 一致), 避免软链写穿
+dotfiles.root = "~/.config/mise/dotfiles"
+dotfiles.default_mode = "copy"
+

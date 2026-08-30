@@ -1,0 +1,75 @@
+#!/usr/bin/python3
+"""qutebrowser 常驻 server 启动器。
+
+以 --nowindow 启动时，关闭最后一个窗口不再退出应用：
+monkeypatch Quitter.on_last_window_closed，使常驻实例作为 IPC server 持续存活。
+
+不修改 /usr 下的任何文件；上游 qutebrowser 更新后本脚本照常工作。
+若上游重构导致补丁失效，行为回退为“关窗即退出”，此时需重新登录或手动重启本脚本。
+
+生命周期由用户显式控制（无守护/轮询）：开机由 niri spawn-sh-at-startup 拉起一次，
+`qb-open ':quit'` 或 kill 后保持终止，直到下次登录或手动启动。
+
+执行顺序复刻 qutebrowser.qutebrowser.main()：必须在任何 Qt 导入之前调用
+early_init()（earlyinit 模块的注释明确要求）。
+"""
+import sys
+
+from qutebrowser.misc import checkpyver
+checkpyver.check_python_version()
+
+from qutebrowser.qutebrowser import get_argparser
+from qutebrowser.misc import earlyinit
+
+args = get_argparser().parse_args(sys.argv[1:])
+earlyinit.early_init(args)
+
+# 必须在 quitter.init()（在 app.run() 内）之前替换类方法，
+# 这样 init() 里连接的 lastWindowClosed 信号才会走到补丁方法。
+from qutebrowser.misc import quitter
+
+_orig = quitter.Quitter.on_last_window_closed
+
+
+def _patched(self):
+    if getattr(self, '_args', None) is not None and self._args.nowindow:
+        # --nowindow 模式：关掉最后一个窗口时保持常驻（server 语义）
+        return
+    _orig(self)
+
+
+quitter.Quitter.on_last_window_closed = _patched
+
+# 修复 qutebrowser 上游 bug（mainwindow.get_window）：
+# 无窗口状态（--nowindow 常驻模式）下收到 tab 目标的打开请求时，
+# get_target_window() 返回 None 后仍对其赋值 should_raise，触发 AttributeError，
+# 被 crashsignal 当作未捕获异常终结进程。
+# 按上游注释意图（"or if no window was found, create a new one"）补上判空。
+from qutebrowser.mainwindow import mainwindow as _mainwindow
+from qutebrowser.utils import objreg as _objreg
+
+
+def _patched_get_window(*, via_ipc: bool, target: str, no_raise: bool = False):
+    if not via_ipc:
+        # 常驻模式零窗口时按需新建（上游此分支依赖启动窗口恒存在）
+        try:
+            return _objreg.get("main-window", scope="window", window=0)
+        except KeyError:
+            pass
+    window = None
+    if target not in {'window', 'private-window'}:
+        window = _mainwindow.get_target_window()
+        if window is not None:
+            window.should_raise = (
+                target not in {'tab-silent', 'tab-bg-silent'} and not no_raise)
+    is_private = target == 'private-window'
+    if window is None:
+        window = _mainwindow.MainWindow(private=is_private)
+        window.should_raise = not no_raise
+    return window
+
+
+_mainwindow.get_window = _patched_get_window
+
+from qutebrowser import app
+sys.exit(app.run(args))

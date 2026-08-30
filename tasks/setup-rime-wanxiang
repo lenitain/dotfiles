@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+#MISE description="从 GitHub 下载万象拼音 Rime 方案并部署到 fcitx5（无更新时跳过）"
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/gh.sh"
+
+REPO="amzxyz/rime-wanxiang"
+ASSET="rime-wanxiang-base.zip"
+RIME_DIR="$HOME/.local/share/fcitx5/rime"
+MARKER="$RIME_DIR/.wanxiang-version"
+
+# ── 前置检查 ──
+missing=()
+command -v curl &>/dev/null || missing+=("curl")
+command -v unzip &>/dev/null || missing+=("unzip")
+command -v rime_deployer &>/dev/null || missing+=("rime_deployer (librime)")
+if [[ ${#missing[@]} -gt 0 ]]; then
+  echo "缺少依赖: ${missing[*]}"
+  echo "  → sudo pacman -S --needed curl unzip librime"
+  exit 1
+fi
+
+# ── 版本检测（GitHub API）──
+JSON="$(gh_api "/repos/$REPO/releases/latest")" || {
+  echo "无法获取最新版本信息，请检查网络"
+  exit 1
+}
+VERSION="$(printf '%s' "$JSON" | grep -oE '"tag_name": *"[^"]+"' | head -1 | cut -d'"' -f4)"
+ASSET_URL="$(printf '%s' "$JSON" | grep -oE '"browser_download_url": *"[^"]*'"$ASSET"'"' | head -1 | cut -d'"' -f4)"
+if [[ -z "$VERSION" || -z "$ASSET_URL" ]]; then
+  echo "release 中未找到 $ASSET"
+  exit 1
+fi
+
+# ── 已是最新则跳过 ──
+if [[ -f "$MARKER" ]] && [[ "$(cat "$MARKER")" == "$VERSION" ]]; then
+  echo "万象拼音已是最新 ($VERSION)，跳过"
+  exit 0
+fi
+
+# ── 下载并解压 ──
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+gh_download "$ASSET_URL" "$TMP/$ASSET" || {
+  echo "所有镜像均下载失败，原方案未动"
+  exit 1
+}
+unzip -qo "$TMP/$ASSET" -d "$TMP/src"
+
+# ── 1. 复制方案 YAML ──
+for f in wanxiang.schema.yaml wanxiang.dict.yaml \
+         wanxiang_algebra.yaml wanxiang_symbols.yaml \
+         wanxiang_english.schema.yaml wanxiang_english.dict.yaml \
+         wanxiang_mixedcode.schema.yaml wanxiang_mixedcode.dict.yaml \
+         wanxiang_reverse.schema.yaml wanxiang_reverse.dict.yaml \
+         wanxiang_t9.schema.yaml wanxiang_t9i.schema.yaml \
+         default.yaml custom_phrase.txt; do
+  [[ -f "$TMP/src/$f" ]] && cp "$TMP/src/$f" "$RIME_DIR/"
+done
+echo "  方案 YAML 已复制"
+
+# ── 2. 复制词库 ──
+if [[ -d "$TMP/src/dicts" ]]; then
+  mkdir -p "$RIME_DIR/dicts"
+  cp "$TMP/src/dicts/"*.yaml "$RIME_DIR/dicts/"
+  echo "  词库: $(find "$RIME_DIR/dicts" -name '*.yaml' | wc -l) 个文件"
+fi
+
+# ── 3. 复制 Lua 扩展 ──
+if [[ -d "$TMP/src/lua/wanxiang" ]]; then
+  mkdir -p "$RIME_DIR/lua/wanxiang"
+  cp "$TMP/src/lua/wanxiang/"*.lua "$RIME_DIR/lua/wanxiang/"
+  echo "  Lua: $(find "$RIME_DIR/lua/wanxiang" -name '*.lua' | wc -l) 个脚本"
+fi
+if [[ -d "$TMP/src/lua/data" ]]; then
+  mkdir -p "$RIME_DIR/lua/data"
+  cp "$TMP/src/lua/data/"* "$RIME_DIR/lua/data/"
+  echo "  数据: $(find "$RIME_DIR/lua/data" -maxdepth 1 -type f | wc -l) 个文件"
+fi
+
+# ── 4. 部署构建 ──
+echo "正在构建 Rime 数据 ..."
+if ! rime_deployer --build "$RIME_DIR" /usr/share/rime-data "$RIME_DIR/build" 2>&1; then
+  echo "Rime 构建失败，原方案未动"
+  exit 1
+fi
+echo "$VERSION" > "$MARKER"
+
+# ── 重启 fcitx5 使新方案生效 ──
+if pgrep -x fcitx5 &>/dev/null; then
+  fcitx5 -r -d &>/dev/null &
+  echo "已重启 fcitx5"
+fi
+
+echo "万象拼音 $VERSION 安装完成"

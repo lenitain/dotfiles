@@ -1,0 +1,190 @@
+* {
+  font-family: "Noto Sans", "Maple Mono NL NF CN";
+}
+
+window#waybar {
+  background-color: #343f44;
+  font-size: 16px;
+  font-family: "Noto Sans", "Maple Mono NL NF CN";
+  min-height: 56px;
+  border-radius: 0;
+  margin: 0px;
+  padding: 0;
+  min-height: 56px;
+}
+
+/* Right-most: Clock */
+#clock {
+  font-size: 16px;
+  font-weight: 700;
+  background-color: #343f44;
+  color: #d3c6aa;
+  border-radius: 0 0 8px 8px;
+  padding: 0px 9px 0px 8px;
+}
+
+/* Workspace container */
+#workspaces {
+  background: #343f44;
+  font-weight: 700;
+  border-radius: 0 0 8px 8px;
+  font-size: 16px;
+  font-family: "Noto Sans", "Maple Mono NL NF CN";
+  color: #d3c6aa;
+}
+
+/* Individual workspace buttons - always visible */
+#workspaces button {
+  border-radius: 0 0 8px 8px;
+  font-size: 16px;
+  font-family: "Noto Sans", "Maple Mono NL NF CN";
+  padding: 0px 5px;
+  color: #7a8478;
+  background: #343f44;
+  /* 非激活：收窄 */
+  min-width: 16px;
+  /* 覆盖 GTK 主题(adw-gtk3-dark)给 button 注入的 1px 透明边框，
+       否则悬停时去掉边框会导致按钮整体收窄约 2px */
+  border: none;
+}
+
+#workspaces button.active {
+  border-radius: 0;
+  color: #d3c6aa;
+  background: #343f44;
+  padding: 0px 6px 2px 6px;
+  /* 激活：较宽 */
+  min-width: 24px;
+  /* 底部扩散指示条：下面宽上面窄，2px 高度 */
+  border: none;
+  border-bottom: 2px solid #a7c080;
+  border-left: 2px solid transparent;
+  border-right: 2px solid transparent;
+}
+
+#workspaces button:hover {
+  border-radius: 0 0 8px 8px;
+  background: #475258;
+}
+
+/* Tooltips */
+tooltip {
+  border-radius: 8px;
+  background-color: #3d484d;
+  color: #d3c6aa;
+  padding: 4px 8px;
+  border: none;
+  box-shadow: none;
+}
+tooltip * {
+  border-radius: 8px;
+}
+
+/* Column position indicator (每列一个纯色像素块)。
+   块元素字符 ▂▂ = 像素块（Maple 原生字形，无需字体覆写，非字形非SVG）。
+   22px 行高 = 原 Maple 22px (30px) -> bar 严格 36px 不撑。
+   文本渲染：常驻进程事件驱动，零 spawn 零栅格化，无卡顿。
+   margin-top:-14.5px：▂ 是"下 2/8 块"天然贴底，负 margin 抬到黄金分割位
+   （bar 高 30px：块中心 26->11.5px，a=11.5/b=18.5=0.622≈0.618；若 bar 实为
+    36px 则改 -15.25px）。行框上方是空的，上移不裁内容。想微调改这个值。 */
+#custom-colpos {
+  font-size: 22px;
+  font-weight: 700;
+  color: #d3c6aa;
+  border-radius: 5px;
+  padding: 0px 8px;
+  margin-top: -31px;
+}
+
+/* All system info modules */
+#pulseaudio,
+#bluetooth,
+#battery,
+#tray,
+/* #custom-updates, */
+#custom-idle-inhibit {
+  background-color: #343f44;
+  font-size: 16px;
+  font-weight: 700;
+  color: #d3c6aa;
+  border-radius: 0 0 8px 8px;
+}
+
+/* 聚焦窗口标题 */
+#window {
+  background-color: #343f44;
+  font-size: 16px;
+  font-weight: 700;
+  color: #d3c6aa;
+  border-radius: 0 0 8px 8px;
+  padding: 0px 12px 0px 12px;
+  margin-left: 8px;
+  /* 防止被中间模块推挤 */
+  min-width: 100px;
+}
+
+/* 模块间距：所有相邻模块墨迹间距 = 23px（音量→电池以 0%、图标  时锚定；
+   音量升高图标变宽( / )间距收窄）。
+   眼睛→屏幕右缘由 #custom-idle-inhibit 的 margin-right 控制（见下）。 */
+#tray {
+  padding: 2px 14px 2px 12px;
+}
+#clock {
+  padding: 0px 9px 0px 8px;
+}
+#pulseaudio {
+  padding: 2px 13px 2px 12px;
+}
+#battery {
+  padding: 2px 11px 2px 8px;
+}
+#bluetooth {
+  padding: 2px 12px 2px 11px;
+}
+/* idle：眼睛到屏幕右缘的距离用 margin-right 精确控制。
+   （box 的 padding-right 对 layout 不生效，margin 生效；margin 区域仍在
+   可点击的模块内，光标放最右也能触发 on-click。）
+   改这里的数值即可：每 +1px 眼睛就离右缘远 1px。当前 12px。 */
+#custom-idle-inhibit {
+  font-size: 16px;
+  font-family: "Noto Sans", "Maple Mono NL NF CN";
+  padding: 2px 17px 2px 11px;
+}
+
+/* Idle Inhibit active (抑制中 - 不会锁屏) */
+#custom-idle-inhibit.active {
+  font-size: 16px;
+  color: #a7c080;
+  /* 睁眼( )比闭眼( )窄 2px → 中心偏左 1px。
+       margin-right 减 1px：眼睛右移 1px 补偿中心（不位移）。
+       padding-left 加 1px：补回盒宽，抵消 margin 变化，左边模块不位移。
+       （眼睛左锚定：padL 变化不影响眼睛位置，只影响盒宽。） */
+  padding-left: 12px;
+  padding-right: 16px;
+}
+
+/* Hover effect for right-side and center modules */
+#clock:hover,
+#pulseaudio:hover,
+#battery:hover,
+#bluetooth:hover,
+#custom-idle-inhibit:hover,
+#custom-colpos:hover,
+#window:hover {
+  background: #475258;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Battery critical warning */
+#battery.critical:not(.charging) {
+  background-color: #e67e80;
+  color: #343f44;
+  animation: blink 0.5s linear infinite alternate;
+}
+
+@keyframes blink {
+  to {
+    background-color: #343f44;
+    color: #d3c6aa;
+  }
+}

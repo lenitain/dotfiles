@@ -1,0 +1,32 @@
+[tools]
+# Zig
+"aqua:zigtools/zls" = "latest"
+
+# Go
+"aqua:mvdan/gofumpt" = "latest"
+"aqua:golangci/golangci-lint" = "latest"
+# Go 工具 (go 后端, 经 [env] GOPROXY 镜像)
+"go:golang.org/x/tools/gopls" = "latest"
+"go:github.com/go-delve/delve/cmd/dlv" = "latest"
+
+# JS / TS
+nodejs = "latest"
+"npm:typescript" = "latest"
+"npm:typescript-language-server" = "latest"
+"npm:@fsouza/prettierd" = "latest"
+"npm:eslint_d" = "latest"
+
+# AI agents
+"npm:@earendil-works/pi-coding-agent" = "latest"
+
+# Python
+"npm:pyright" = "latest"
+ruff = "latest"
+"pipx:debugpy" = "latest"
+
+# Lua
+"aqua:LuaLS/lua-language-server" = "latest"
+"aqua:JohnnyMorganz/StyLua" = "latest"
+
+# Rust
+"cargo:vtracer" = "latest"

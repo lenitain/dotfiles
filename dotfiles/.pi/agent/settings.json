@@ -1,0 +1,11 @@
+{
+  "defaultProvider": "xiaomi-token-plan-cn",
+  "defaultModel": "mimo-v2.5-pro",
+  "defaultThinkingLevel": "high",
+  "packages": [
+    "npm:pi-web-access"
+  ],
+  "lastChangelogVersion": "0.85.1",
+  "theme": "everforest-dark-medium",
+  "hideThinkingBlock": true
+}

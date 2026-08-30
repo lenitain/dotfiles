@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+#MISE description="安装 Rust 工具链 (rustup + rust-analyzer)"
+
+set -euo pipefail
+
+# USTC 镜像
+export RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static
+export RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
+
+if ! command -v rustup &>/dev/null; then
+  echo "安装 rustup ..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+fi
+
+if command -v rustup &>/dev/null; then
+  echo "Rust 安装完成 ($(rustup --version | head -1))"
+else
+  echo "Rust 安装失败"
+  exit 1
+fi
+
+echo "安装 rust-analyzer 组件 ..."
+rustup component add rust-analyzer
+
+echo ""
+echo "完成！Rust 工具链 + rust-analyzer 已就绪 (由 rustup/脚本管理)"

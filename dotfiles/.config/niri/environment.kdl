@@ -1,0 +1,36 @@
+// Environment variables
+// 注意：DISPLAY 不需要手动设置。niri 检测到 xwayland-satellite 后会自动创建
+// X socket 并设置 DISPLAY（按需拉起 satellite），手动写死 ":0" 会与 niri 的
+// 自动选择产生耦合——如果 :0 被占，niri 会选 :1，手动值就指向错误的位置。
+environment {
+    ELECTRON_OZONE_PLATFORM_HINT       "auto"
+    QT_QPA_PLATFORM                    "wayland"
+    QT_WAYLAND_DISABLE_WINDOWDECORATION "1"
+    XDG_SESSION_TYPE                    "wayland"
+    XDG_CURRENT_DESKTOP                 "niri"
+    MOZ_ENABLE_WAYLAND                 "1"
+    SDL_VIDEODRIVER                    "wayland"
+    // Performance optimizations
+    __GL_SHADER_DISK_CACHE "1"
+    __GL_SHADER_DISK_CACHE_PATH "/tmp"
+    mesa_glthread "true"
+    RUST_LOG "niri=warn"
+
+    // Locale & Language
+    LANG                "zh_CN.UTF-8"
+    LC_CTYPE            "en_US.UTF-8"  // 解决输入法漏字问题，但可能导致 Steam 等 X11 应用无法使用中文输入法
+
+    // Qt/GTK Theme
+    QT_QPA_PLATFORMTHEME               "gtk3"
+    QT_QPA_PLATFORMTHEME_QT6           "gtk3"
+    QS_ICON_THEME                      "Adwaita"  // 解决 QuickShell 图标主题缺失问题
+    GSK_RENDERER                        "gl"  // 解决 NVIDIA 双显卡导致的 GTK 应用启动缓慢问题
+
+    // Input method (fcitx5)
+    GTK_IM_MODULE       "fcitx"
+    QT_IM_MODULE        "fcitx"
+    XMODIFIERS          "@im=fcitx"
+    SDL_IM_MODULE       "fcitx"
+    INPUT_METHOD        "fcitx"
+    GLFW_IM_MODULE      "ibus"
+}

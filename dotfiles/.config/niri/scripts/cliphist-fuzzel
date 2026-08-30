@@ -1,0 +1,10 @@
+#!/bin/bash
+# 使用 fuzzel 显示剪贴板历史,文本
+
+# 获取选择,保留完整的 ID\t内容 格式传给 fuzzel
+selected=$(cliphist list | ~/.config/niri/scripts/fuzzel-wrapper --dmenu --prompt="Clipboard " --with-nth=2 --match-nth=2)
+
+if [ -n "$selected" ]; then
+  # 直接用选中的完整行(包含ID)进行decode
+  echo "$selected" | cliphist decode | wl-copy
+fi

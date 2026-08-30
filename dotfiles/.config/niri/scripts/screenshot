@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# 现代化截图脚本 - grim + slurp + satty
+# slurp 框选区域，截图后进入 satty 编辑并选择保存位置
+# 保存后直接使用 satty 输出的 PNG（satty 无压缩等级选项，无额外工具链）
+#
+# 用法:
+#   screenshot.sh  # 区域选择（slurp 框选）
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+SCREENSHOT_DIR="$HOME/Pictures/Screenshots"
+mkdir -p "$SCREENSHOT_DIR"
+
+# 生成默认文件名（satty 里可再改保存位置）
+FILENAME="$SCREENSHOT_DIR/Screenshot_$(date +%Y%m%d_%H%M%S).png"
+
+# slurp 框选区域（经 wrapper：单实例，先杀后开）
+GEOM="$("$SCRIPT_DIR/slurp-wrapper")" || exit 1
+
+# 截取选区输出到 stdout 管道给 satty
+grim -g "$GEOM" - | satty --filename - --fullscreen --output-filename "$FILENAME" --early-exit --copy-command wl-copy
+
+# 定位 satty 保存的 PNG（默认路径；若用户在对话框里改了名，则取目录里最近 1 分钟内的 png）
+SAVED=""
+if [ -f "$FILENAME" ]; then
+    SAVED="$FILENAME"
+else
+    SAVED="$(find "$SCREENSHOT_DIR" -maxdepth 1 -name '*.png' -mmin -1 -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)"
+fi
+
+# satty 直接输出的 PNG 即最终文件（satty 用 image crate 默认压缩级别保存，无更高压缩选项）
+if [ -n "$SAVED" ]; then
+    notify-send "截图已保存" "$SAVED" -i "$SAVED"
+fi

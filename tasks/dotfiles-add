@@ -1,0 +1,328 @@
+#!/usr/bin/env bash
+#MISE description="添加/回写 dotfiles (有参数: add 文件/目录, 无参数: re-add 全部)"
+set -euo pipefail
+
+info() { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
+ok()   { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
+warn() { printf "\033[33m[warn]\033[0m  %s\n" "$*"; }
+err()  { printf "\033[31m[err]\033[0m   %s\n" "$*" >&2; }
+
+expand_path() {
+  local p="$1"
+  p="${p/#\~/$HOME}"
+  realpath -m "$p"
+}
+
+home_rel() {
+  local p="$1"
+  echo "~${p#"$HOME"}"
+}
+
+# ── 符号 ──
+# + 新增  ↪ 变更  - 删除  · 不变
+
+status_json=$(mise bootstrap dotfiles status --json 2>/dev/null || mise dotfiles status --json 2>/dev/null || true)
+
+find_parent_dir() {
+  local prefix="$1"
+  echo "$status_json" | jq -r --arg prefix "$prefix" '
+    [.files[]
+     | .target as $t
+     | select($prefix | startswith($t + "/"))
+     | {target: $t, len: ($t | length)}]
+     | sort_by(-.len) | first | .target // empty
+  ' 2>/dev/null || true
+}
+
+# ── 操作分类 ──
+declare -A to_remove
+added=()
+changed=()
+removed=()
+skipped=()
+merge_groups=()
+split_groups=()
+
+has_action=false
+
+if [[ $# -gt 0 ]]; then
+  # ══════════════════════════════════════
+  #  有参数: 添加指定文件/目录
+  # ══════════════════════════════════════
+
+  for arg in "$@"; do
+    abs=$(expand_path "$arg")
+    prefix=$(home_rel "$abs")
+
+    if [[ ! -e "$abs" ]]; then
+      err "$prefix 不存在"
+      continue
+    fi
+
+    if [[ -d "$abs" ]]; then
+      matches=$(echo "$status_json" | jq -r --arg p "$prefix" '
+        .files[]
+        | select(.target | startswith($p + "/"))
+        | "\(.target)\t\(.origin.config)"
+      ' 2>/dev/null || true)
+
+      self_managed=$(echo "$status_json" | jq -r --arg p "$prefix" '
+        .files[] | select(.target == $p) | .target
+      ' 2>/dev/null || true)
+
+      if [[ -z "$matches" && -n "$self_managed" ]]; then
+        self_state=$(echo "$status_json" | jq -r --arg p "$prefix" '
+          .files[] | select(.target == $p) | .state
+        ' 2>/dev/null || true)
+        if [[ "$self_state" == "ok" ]]; then
+          skipped+=("$prefix")
+        else
+          changed+=("$prefix")
+        fi
+        continue
+      fi
+
+      if [[ -n "$matches" ]]; then
+        children=""
+        while IFS=$'\t' read -r target config_file; do
+          [[ -z "$target" ]] && continue
+          child_state=$(echo "$status_json" | jq -r --arg t "$target" '
+            .files[] | select(.target == $t) | .state
+          ' 2>/dev/null || true)
+          if [[ "$child_state" == "ok" ]]; then
+            skipped+=("$target (同步中)")
+          else
+            to_remove["$config_file"]+=$'\n'"$target"
+            children+="${children:+, }${target#"$prefix"/}"
+          fi
+        done <<< "$matches"
+        if [[ -n "$children" ]]; then
+          merge_groups+=("$prefix"$'\t'"$children")
+          changed+=("$prefix/")
+        fi
+      else
+        added+=("$prefix/")
+      fi
+
+    else
+      parent=$(find_parent_dir "$prefix")
+
+      if [[ -n "$parent" ]]; then
+        parent_state=$(echo "$status_json" | jq -r --arg p "$parent" '
+          .files[] | select(.target == $p) | .state
+        ' 2>/dev/null || true)
+        if [[ "$parent_state" == "ok" ]]; then
+          src=$(echo "$status_json" | jq -r --arg p "$parent" '
+            .files[] | select(.target == $p) | .source
+          ' 2>/dev/null || true)
+          src_abs=$(expand_path "$src")
+          src_file="$src_abs/${prefix#"$parent"/}"
+          if [[ -f "$src_file" ]] && diff -q "$abs" "$src_file" &>/dev/null; then
+            skipped+=("$prefix (已被 $parent 覆盖)")
+            continue
+          fi
+        fi
+        parent_config=$(echo "$status_json" | jq -r --arg p "$parent" '
+          .files[] | select(.target == $p) | .origin.config
+        ' 2>/dev/null || true)
+        to_remove["$parent_config"]+=$'\n'"$parent"
+        children="$prefix"
+        parent_children=$(echo "$status_json" | jq -r --arg p "$parent" '
+          .files[] | select(.target | startswith($p + "/")) | .target
+        ' 2>/dev/null || true)
+        while IFS= read -r child; do
+          [[ -z "$child" ]] && continue
+          added+=("$child")
+          [[ "$child" != "$prefix" ]] && children+=", $child"
+        done <<< "$parent_children"
+        split_groups+=("$parent"$'\t'"$children")
+        continue
+      fi
+
+      self_match=$(echo "$status_json" | jq -r --arg p "$prefix" '
+        .files[] | select(.target == $p) | .target
+      ' 2>/dev/null || true)
+
+      if [[ -n "$self_match" ]]; then
+        self_state=$(echo "$status_json" | jq -r --arg p "$prefix" '
+          .files[] | select(.target == $p) | .state
+        ' 2>/dev/null || true)
+        if [[ "$self_state" == "ok" ]]; then
+          skipped+=("$prefix")
+        else
+          changed+=("$prefix")
+        fi
+      else
+        added+=("$prefix")
+      fi
+    fi
+  done
+
+else
+  # ══════════════════════════════════════
+  #  无参数: re-add 全部变更 + 删除 missing
+  # ══════════════════════════════════════
+
+  # differs
+  differs=()
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    differs+=("$line")
+  done < <(echo "$status_json" | jq -r '.files[] | select(.state == "differs") | .target' 2>/dev/null || true)
+
+  # missing
+  missing_count=0
+  missing_targets_str=""
+  while IFS=$'\t' read -r target config_file; do
+    [[ -z "$target" ]] && continue
+    missing_targets_str+="$target\t$config_file\n"
+    missing_count=$((missing_count + 1))
+  done < <(echo "$status_json" | jq -r '
+    .files[] | select(.state == "missing") | "\(.target)\t\(.origin.config)"
+  ' 2>/dev/null || true)
+
+  # 检查 differs 中哪些被父目录覆盖
+  to_split=()
+  for target in "${differs[@]}"; do
+    parent=$(echo "$status_json" | jq -r --arg t "$target" '
+      [.files[]
+       | .target as $p
+       | select($t | startswith($p + "/"))
+       | {target: $p, len: ($p | length)}]
+       | sort_by(-.len) | first | .target // empty
+    ' 2>/dev/null || true)
+    if [[ -n "$parent" ]]; then
+      to_split+=("$parent")
+    else
+      changed+=("$target")
+    fi
+  done
+  mapfile -t to_split < <(printf '%s\n' "${to_split[@]}" 2>/dev/null | sort -u)
+
+  # 拆分
+  for parent in "${to_split[@]}"; do
+    [[ -z "$parent" ]] && continue
+    parent_config=$(echo "$status_json" | jq -r --arg p "$parent" '
+      .files[] | select(.target == $p) | .origin.config
+    ' 2>/dev/null || true)
+    to_remove["$parent_config"]+=$'\n'"$parent"
+    all_children=$(echo "$status_json" | jq -r --arg p "$parent" '
+      .files[] | select(.target | startswith($p + "/")) | .target
+    ' 2>/dev/null || true)
+    children_str=""
+    while IFS= read -r child; do
+      [[ -z "$child" ]] && continue
+      children_str+="${children_str:+, }${child#"$parent"/}"
+      added+=("$child")
+    done <<< "$all_children"
+    split_groups+=("$parent"$'\t'"$children_str")
+  done
+
+  # missing → 删除
+  if [[ $missing_count -gt 0 ]]; then
+    while IFS=$'\t' read -r target config_file; do
+      [[ -z "$target" ]] && continue
+      source=$(echo "$status_json" | jq -r --arg t "$target" '
+        .files[] | select(.target == $t) | .source
+      ' 2>/dev/null || true)
+      to_remove["$config_file"]+=$'\n'"$target"
+      removed+=("$target")
+      # 删除 source 文件
+      rm -f "$(eval echo "$source")"
+    done < <(printf "%b" "$missing_targets_str")
+  fi
+fi
+
+# ══════════════════════════════════════
+#  执行
+# ══════════════════════════════════════
+
+for config_file in "${!to_remove[@]}"; do
+  [[ -f "$config_file" ]] || continue
+  targets="${to_remove[$config_file]}"
+  while IFS= read -r target; do
+    [[ -z "$target" ]] && continue
+    sed -i "\|^\"${target}\"|d" "$config_file"
+  done <<< "$targets"
+done
+
+DOTFILES_CONF="$HOME/.config/mise/conf.d/dotfiles.toml"
+
+for entry in "${added[@]}" "${changed[@]}"; do
+  mise dotfiles add -p "$DOTFILES_CONF" "$(expand_path "${entry%% *}")"
+done
+
+# ══════════════════════════════════════
+#  汇总
+# ══════════════════════════════════════
+
+if [[ ${#merge_groups[@]} -gt 0 ]]; then
+  has_action=true
+  info "合并:"
+  for group in "${merge_groups[@]}"; do
+    parent="${group%%$'\t'*}"
+    children="${group#*$'\t'}"
+    printf "  ↪ %s/ ← %s\n" "$parent" "$children"
+  done
+fi
+
+if [[ ${#split_groups[@]} -gt 0 ]]; then
+  has_action=true
+  info "拆分:"
+  for group in "${split_groups[@]}"; do
+    parent="${group%%$'\t'*}"
+    children="${group#*$'\t'}"
+    printf "  ↪ %s/ → %s\n" "$parent" "$children"
+  done
+fi
+
+plain_added=()
+for a in "${added[@]}"; do
+  is_grouped=false
+  for g in "${merge_groups[@]}" "${split_groups[@]}"; do
+    parent="${g%%$'\t'*}"
+    [[ "$a" == "$parent/" || "$a" == "$parent" ]] && is_grouped=true && break
+  done
+  $is_grouped || plain_added+=("$a")
+done
+if [[ ${#plain_added[@]} -gt 0 ]]; then
+  has_action=true
+  info "新增:"
+  printf "  + %s\n" "${plain_added[@]}"
+fi
+
+if [[ ${#changed[@]} -gt 0 ]]; then
+  has_action=true
+  plain_changed=()
+  for c in "${changed[@]}"; do
+    is_grouped=false
+    for g in "${merge_groups[@]}" "${split_groups[@]}"; do
+      parent="${g%%$'\t'*}"
+      [[ "$c" == "$parent/" || "$c" == "$parent" ]] && is_grouped=true && break
+    done
+    $is_grouped || plain_changed+=("$c")
+  done
+  if [[ ${#plain_changed[@]} -gt 0 ]]; then
+    info "变更:"
+    printf "  ↪ %s\n" "${plain_changed[@]}"
+  fi
+fi
+
+if [[ ${#removed[@]} -gt 0 ]]; then
+  has_action=true
+  info "删除:"
+  printf "  - %s\n" "${removed[@]}"
+fi
+
+if [[ ${#skipped[@]} -gt 0 ]]; then
+  warn "不变:"
+  printf "  · %s\n" "${skipped[@]}"
+fi
+
+if ! $has_action && [[ ${#skipped[@]} -eq 0 ]]; then
+  ok "· 全部已同步, 无需操作"
+elif ! $has_action; then
+  ok "· 全部已管理, 无需操作"
+else
+  ok "完成"
+fi

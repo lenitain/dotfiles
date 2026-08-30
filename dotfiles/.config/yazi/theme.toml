@@ -1,0 +1,8 @@
+[flavor]
+dark = "everforest-dark-medium"
+
+[indicator]
+parent  = { bg = "#343f44", bold = true }
+current = { bg = "#343f44", bold = true }
+preview = { bg = "#343f44", bold = true }
+padding = { open = "", close = "" }
