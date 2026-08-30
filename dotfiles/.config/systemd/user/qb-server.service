@@ -1,0 +1,48 @@
+[Unit]
+Description=qutebrowser 常驻 server（--nowindow + IPC socket）
+Documentation=file:%h/.local/bin/scripts/qb-server
+# 会话结束（niri-session 会 `systemctl --user start niri-shutdown.target`，
+# 该 target 与 graphical-session.target 冲突）时跟着一起停。
+# 停单元 = 按 KillMode 扫掉整个 cgroup，整棵树一起走。
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/scripts/qb-server --nowindow -R
+
+# 输入法变量必须在这里给：systemd service 拿的是 user manager 的环境，不含 niri
+# environment.kdl 里那份；缺了 QT_IM_MODULE，Qt 连 fcitx 插件都不会加载，
+# 表现为输入法「整块消失」（不是转换不出来，是根本没接上）。
+Environment=QT_IM_MODULE=fcitx
+Environment=GTK_IM_MODULE=fcitx
+Environment=XMODIFIERS=@im=fcitx
+Environment=INPUT_METHOD=fcitx
+Environment=SDL_IM_MODULE=fcitx
+
+# 退出后保持停止：qb-open ':quit' 之后要一直死着，直到下次手动启动或下次登录。
+Restart=no
+
+# 不要动 KillMode。默认的 control-group 正是「主进程一退，systemd 就扫掉
+# cgroup 里剩下的进程」这条保证的来源；改成 process / mixed 就退化成普通父子
+# 关系，QtWebEngine 卡住的子进程会留下来。
+KillMode=control-group
+
+# 给 qutebrowser 一点时间正常收尾（关标签、存 session），超时才 SIGKILL。
+# 注意：TimeoutStopSec 之后 systemd 发的 SIGKILL 是发给 cgroup 全体，不是只发主进程。
+TimeoutStopSec=10
+
+# qutebrowser 自己接管了 SIGTERM/SIGINT，会优雅收尾然后以 128+信号 退出
+#   （SIGTERM→143，SIGINT→130，journal 里能看到 "SIGINT/SIGTERM received, shutting down!"）
+# 对 systemd 来说这是非零退出码，会把单元记成 failed —— 可明明是我们让它停的，
+# 而且它退得很干净。所以这两个码要显式算作成功，否则每次 `systemctl --user stop`
+# 都留一个红着的 failed 单元。
+# 不要把 137(128+9, SIGKILL) 也算进来：那说明是被强杀的，failed 才正确。
+SuccessExitStatus=130 143
+
+# 日志走 journal：journalctl --user -u qb-server -f
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+# 实际由 niri 的 startup.kdl 显式 `systemctl --user start qb-server` 拉起，
+# 这样能保证顺序在 Wayland socket 就绪之后。WantedBy 留空即可，不 enable。

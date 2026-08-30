@@ -1,0 +1,5 @@
+# 一次性/后续 hooks：声明式段覆盖不到的命令
+# 挂到 dotfiles 收敛后：重建 bat 语法高亮缓存（幂等，bat 未装则跳过）
+
+[bootstrap.hooks.post-dotfiles]
+run = "command -v bat >/dev/null 2>&1 && bat cache --build || true"

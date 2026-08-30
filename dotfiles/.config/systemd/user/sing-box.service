@@ -1,0 +1,17 @@
+[Unit]
+Description=sing-box client (VLESS + REALITY + Vision)
+Documentation=https://sing-box.sagernet.org
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# -D : data dir (rule-set cache) ; -c : explicit config file (avoid loading _template.json)
+ExecStart=/usr/bin/sing-box -D %h/.local/share/sing-box -c %h/.config/sing-box/config.json run
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=10s
+LimitNOFILE=infinity
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,179 @@
+* {
+  font-family: "Noto Sans", "Maple Mono NL NF CN";
+}
+
+window#waybar {
+  background-color: #343f44;
+  font-size: 16px;
+  min-height: 56px;
+  border-radius: 0;
+  margin: 0px;
+  padding: 0;
+}
+
+/* Workspace container */
+#workspaces {
+  background: #343f44;
+  font-weight: 700;
+  border-radius: 0 0 8px 8px;
+  font-size: 16px;
+  color: #d3c6aa;
+}
+
+/* Individual workspace buttons - always visible */
+#workspaces button {
+  border-radius: 0 0 8px 8px;
+  font-size: 16px;
+  padding: 0px 5px;
+  color: #7a8478;
+  background: #343f44;
+  /* 非激活：收窄 */
+  min-width: 16px;
+  /* 覆盖 GTK 主题(adw-gtk3-dark)给 button 注入的 1px 透明边框，
+       否则悬停时去掉边框会导致按钮整体收窄约 2px */
+  border: none;
+}
+
+#workspaces button.active {
+  border-radius: 0;
+  color: #d3c6aa;
+  background: #343f44;
+  padding: 0px 6px 2px 6px;
+  /* 激活：较宽 */
+  min-width: 24px;
+  /* 底部扩散指示条：下面宽上面窄，2px 高度 */
+  border: none;
+  border-bottom: 2px solid #a7c080;
+  border-left: 2px solid transparent;
+  border-right: 2px solid transparent;
+}
+
+#workspaces button:hover {
+  border-radius: 0 0 8px 8px;
+  background: #475258;
+}
+
+/* Tooltips */
+tooltip {
+  border-radius: 8px;
+  background-color: #3d484d;
+  color: #d3c6aa;
+  padding: 4px 8px;
+  border: none;
+  box-shadow: none;
+}
+tooltip * {
+  border-radius: 8px;
+}
+
+#custom-colpos {
+  font-size: 16px;
+  font-weight: 700;
+  color: #d3c6aa;
+  background-color: #343f44;
+  border-radius: 0 0 8px 8px;
+  padding: 2px 12px;
+}
+
+/* All system info modules */
+#clock,
+#pulseaudio,
+#bluetooth,
+#battery,
+#tray,
+#custom-idle-inhibit {
+  background-color: #343f44;
+  font-size: 16px;
+  font-weight: 700;
+  color: #d3c6aa;
+  border-radius: 0 0 8px 8px;
+}
+
+/* 模块间距：由 padding 控制。眼睛→屏幕右缘由 #custom-idle-inhibit 的 padding-right 控制（见下）。
+   托盘例外：它的水平 padding 不属于任何图标，是纯死区（不可点、不 hover），
+   归零后最外侧图标的盒子直接顶到模块边缘，与右侧 #clock 的盒子相邻无缝隙。 */
+#tray {
+  padding: 2px 0;
+}
+/* 托盘图标：waybar 的每个 SNI 图标是一个独立 EventBox（CSS 节点
+   #tray > .passive/.active/.needs-attention），里面是图片节点 image。
+   - 图标间距不用 GtkBox 的 spacing（modules.json 里 "spacing": 0）：spacing
+     属于布局、不属于任何图标，点上去是空档。改由 image 自身的 padding 撑开
+     左右各 5px——两图标之间仍是 10px，视觉间距不变，但这段空白算在图标
+     盒子内，因而同样可点、同样 hover（实测：padding 加在 EventBox 上会被
+     GTK 忽略，加在 image 上才会撑大盒子）。想让图标更近/更远就改这个数值。
+   - hover 背景画在图标自己的盒子上，与可点击区域（该 EventBox 的输入窗口
+     = 整个分配区域）一一对应，圆角除外。 */
+#tray > .passive image,
+#tray > .active image,
+#tray > .needs-attention image {
+  padding: 0 5px;
+}
+
+#tray > .passive,
+#tray > .active,
+#tray > .needs-attention {
+  border-radius: 0 0 8px 8px;
+}
+
+#tray > .passive:hover,
+#tray > .active:hover,
+#tray > .needs-attention:hover {
+  background: #475258;
+}
+#clock {
+  padding: 2px 11px 2px 11px;
+}
+#pulseaudio {
+  padding: 2px 11px 2px 11px;
+}
+#battery {
+  padding: 2px 11px 2px 11px;
+}
+#bluetooth {
+  padding: 2px 11px 2px 11px;
+}
+/* idle：眼睛到屏幕右缘的距离用 margin-right 精确控制。
+   （box 的 padding-right 对 layout 不生效，margin 生效；margin 区域仍在
+   可点击的模块内，光标放最右也能触发 on-click。）
+   改这里的数值即可：每 +1px 眼睛就离右缘远 1px。当前 12px。 */
+#custom-idle-inhibit {
+  padding: 2px 17px 2px 11px;
+}
+
+/* Idle Inhibit active (抑制中 - 不会锁屏) */
+#custom-idle-inhibit.active {
+  font-size: 16px;
+  color: #a7c080;
+  /* 睁眼( )比闭眼( )窄 2px → 中心偏左 1px。
+       margin-right 减 1px：眼睛右移 1px 补偿中心（不位移）。
+       padding-left 加 1px：补回盒宽，抵消 margin 变化，左边模块不位移。
+       （眼睛左锚定：padL 变化不影响眼睛位置，只影响盒宽。） */
+  padding-left: 12px;
+  padding-right: 16px;
+}
+
+/* Hover effect for right-side and center modules */
+#clock:hover,
+#pulseaudio:hover,
+#battery:hover,
+#bluetooth:hover,
+#custom-idle-inhibit:hover,
+#custom-colpos:hover {
+  background: #475258;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Battery critical warning */
+#battery.critical:not(.charging) {
+  background-color: #e67e80;
+  color: #343f44;
+  animation: blink 0.5s linear infinite alternate;
+}
+
+@keyframes blink {
+  to {
+    background-color: #343f44;
+    color: #d3c6aa;
+  }
+}

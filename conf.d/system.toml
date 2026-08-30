@@ -1,0 +1,101 @@
+# 系统配置 [bootstrap.files / bootstrap.services / bootstrap.accounts / bootstrap.user]
+# 从 ansible system.yml + docker.yml 迁移而来。
+# 声明式: 内容/属主/模式/服务状态均收敛; 必要时才提权(sudo)。
+
+# ── 登录会话: greetd + niri-session ──
+[bootstrap.files."/etc/greetd/config.toml"]
+content = """
+[terminal]
+vt = 1
+
+[default_session]
+command = "tuigreet --remember --cmd niri-session"
+user = "greeter"
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+notify = ["greetd"]
+
+[bootstrap.services.greetd]
+state = "running"
+enabled = true
+
+# ── 控制台字体 (greetd 大字, 重启后生效) ──
+[bootstrap.files."/etc/vconsole.conf"]
+content = """
+# Written by systemd-localed(8) or systemd-firstboot(1), read by systemd-localed
+# and systemd-vconsole-setup(8). Use localectl(1) to update this file.
+XKBLAYOUT=cn
+FONT=latarcyrheb-sun32
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# ── 登录 shell: fish ──
+# 由 mise bootstrap 第 13 步 (mise bootstrap user apply) 收敛: 必要时把该路径
+# 追加进 /etc/shells 再 chsh -s。路径必须写绝对路径, 且按字符串精确比较 ——
+# /bin/fish 与 /usr/bin/fish 视为不同值, 写错会多跑一次无谓的 chsh。
+# 本机账户当前已是 /bin/fish, 故 apply 为 no-op; 新机器才会真正执行一次 chsh。
+[bootstrap.user]
+login_shell = "/bin/fish"
+
+# ── docker 组必须先于 docker 包存在（accounts 早于 packages）──
+# 全新机器上 docker 还没装 → 该组不存在 → [bootstrap.users] 里的 "docker"
+# 会让第 0 步报 "requires undeclared group 'docker'" 并中止整条 bootstrap。
+# 显式声明后由 mise 在系统组范围内创建; 已存在的组 (本机 gid 960) 保持不变。
+# 注意: 加入 docker 组等价于免密 root。
+[bootstrap.groups.docker]
+system = true
+
+# ── 用户附加组 (input/docker, 只补缺, 保留其它成员) ──
+[bootstrap.users.lenitain]
+group = "lenitain"
+groups = ["input", "docker"]
+
+# ── /etc 下不属于任何软件包的父目录 ──
+# mise 只建你显式声明的目录；[bootstrap.files] 不会替目标文件补父目录，
+# 缺父目录会报 managed file parent does not exist 并中止整条 bootstrap。
+[bootstrap.directories."/etc/systemd/logind.conf.d"]
+owner = "root"
+group = "root"
+mode = "0755"
+
+[bootstrap.directories."/etc/docker"]
+owner = "root"
+group = "root"
+mode = "0755"
+
+# ── logind 合盖不挂起 (重启后生效) ──
+[bootstrap.files."/etc/systemd/logind.conf.d/keep-running.conf"]
+content = """
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# ── Docker 镜像加速 + 重启 docker ──
+[bootstrap.files."/etc/docker/daemon.json"]
+content = """
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://docker.1ms.run",
+    "https://docker.xuanyuan.me",
+    "https://docker-0.unsee.tech"
+  ]
+}
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+notify = ["docker"]
+
+[bootstrap.services.docker]
+state = "running"
+enabled = true
+on_change = "restart"

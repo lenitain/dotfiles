@@ -1,0 +1,30 @@
+{
+  "defaultProvider": "xiaomi-token-plan-cn",
+  "defaultModel": "mimo-v2.5-pro",
+  "defaultThinkingLevel": "high",
+  "packages": [
+    "npm:pi-web-access"
+  ],
+  "lastChangelogVersion": "0.85.1",
+  "theme": "everforest-dark-medium",
+  "hideThinkingBlock": true,
+  "quietStartup": true,
+  "defaultProjectTrust": "always",
+  "collapseChangelog": true,
+  "showHardwareCursor": true,
+  "terminal": {
+    "clearOnShrink": false
+  },
+  "steeringMode": "all",
+  "followUpMode": "all",
+  "httpIdleTimeoutMs": 0,
+  "markdown": {
+    "mermaid": "streaming"
+  },
+  "showCacheMissNotices": false,
+  "treeFilterMode": "no-tools",
+  "warnings": {
+    "anthropicExtraUsage": true
+  },
+  "enableInstallTelemetry": false
+}

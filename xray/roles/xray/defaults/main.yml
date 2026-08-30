@@ -1,0 +1,49 @@
+---
+# ======================= Xray core =======================
+xray_version: "v26.7.28"
+xray_download_base: "https://github.com/XTLS/Xray-core/releases/download/{{ xray_version }}"
+xray_archive: "Xray-linux-64.zip"
+xray_install_dir: "/usr/local/bin"
+xray_config_dir: "/etc/xray"
+xray_system_packages:
+  - unzip
+
+# ================== REALITY listener =====================
+xray_listen: "0.0.0.0"
+xray_port: 443
+xray_flow: "xtls-rprx-vision"
+
+# ================== REALITY identity =====================
+# Leave empty to auto-generate on first run and persist to
+# {{ xray_config_dir }}/reality_keys.yml on the target host.
+xray_uuid: ""
+xray_private_key: ""
+xray_public_key: ""
+xray_short_id: ""
+
+# ============ REALITY client version gate ============
+# xray >= 26.3.27 refuses clients whose REALITY version field is below this.
+# sing-box reports 1.8.1, so keep 0.0.0 (no minimum) unless you only use
+# recent xray-family clients. See XTLS/Xray-core transport_security.go.
+xray_min_client_ver: "0.0.0"
+
+# ================= REALITY borrowed TLS ==================
+# dest: the real site whose TLS your VPS will impersonate.
+# It must be reachable from the VPS and serve TLS 1.3.
+# AVOID www.microsoft.com: its oversized TLS Certificate record makes the
+# xray REALITY handshake stall ("handshake did not complete successfully").
+# www.cloudflare.com / www.cloudflare.com are reliable from datacenter IPs.
+xray_dest: "www.cloudflare.com:443"
+xray_server_names:
+  - "www.cloudflare.com"
+xray_fingerprint: "chrome"
+
+# ==================== systemd service ====================
+# Runs as root for max compatibility. To harden, set to a non-root user and
+# add AmbientCapabilities=CAP_NET_BIND_SERVICE to the unit template.
+xray_service_user: "root"
+xray_service_group: "root"
+
+# ===================== system tuning =====================
+xray_enable_bbr: true
+xray_manage_firewall: true

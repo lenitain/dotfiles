@@ -1,0 +1,15 @@
+max-visible=5
+group-by=app-name
+layer=top
+font=Noto Sans CJK SC 17
+background-color=#3d484d
+text-color=#d3c6aa
+border-color=#859289
+border-radius=12
+icon-border-radius=12
+max-icon-size=67
+default-timeout=100000000000000
+width=1079
+height=899
+anchor=center
+margin=20

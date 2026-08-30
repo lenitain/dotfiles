@@ -1,0 +1,8 @@
+// Output configuration
+output "DP-1" {
+    mode   "3840x2160@59.997"
+    scale  2
+}
+ output "HDMI-A-1" {
+   scale 2
+ }

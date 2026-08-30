@@ -1,0 +1,110 @@
+/*
+* GTK Colors - Everforest Dark Medium
+* Shared by GTK3 and GTK4
+*
+* GTK3: uses @define-color and @var references
+* GTK4: uses @define-color and :root CSS custom properties
+* GTK3 silently ignores the :root block, so both coexist safely.
+*/
+
+* {
+    font-family: "Noto Sans CJK SC", "Noto Sans CJK TC", "Noto Sans CJK JP", "Noto Sans CJK KR", "Noto Sans", sans-serif;
+}
+
+@define-color accent_color #a7c080;
+@define-color accent_bg_color #a7c080;
+@define-color accent_fg_color #2d353b;
+
+@define-color destructive_bg_color #e67e80;
+@define-color destructive_fg_color #2d353b;
+
+@define-color error_bg_color #e67e80;
+@define-color error_fg_color #2d353b;
+
+@define-color window_bg_color #2d353b;
+@define-color window_fg_color #d3c6aa;
+
+@define-color view_bg_color #2d353b;
+@define-color view_fg_color #d3c6aa;
+
+@define-color headerbar_bg_color #2d353b;
+@define-color headerbar_fg_color #d3c6aa;
+@define-color headerbar_backdrop_color @window_bg_color;
+
+@define-color popover_bg_color #3d484d;
+@define-color popover_fg_color #d3c6aa;
+
+@define-color card_bg_color #3d484d;
+@define-color card_fg_color #d3c6aa;
+
+@define-color dialog_bg_color #2d353b;
+@define-color dialog_fg_color #d3c6aa;
+
+@define-color overview_bg_color #3d484d;
+@define-color overview_fg_color #d3c6aa;
+
+@define-color sidebar_bg_color #3d484d;
+@define-color sidebar_fg_color #d3c6aa;
+@define-color sidebar_backdrop_color @window_bg_color;
+@define-color sidebar_border_color @window_bg_color;
+
+@define-color secondary_sidebar_bg_color #2d353b;
+@define-color secondary_sidebar_fg_color #d3c6aa;
+
+/* Backdrop/unfocused states */
+@define-color theme_unfocused_fg_color @window_fg_color;
+@define-color theme_unfocused_text_color @view_fg_color;
+@define-color theme_unfocused_bg_color @window_bg_color;
+@define-color theme_unfocused_base_color @window_bg_color;
+@define-color theme_unfocused_selected_bg_color @accent_bg_color;
+@define-color theme_unfocused_selected_fg_color @accent_fg_color;
+
+:root {
+    --accent-color: #a7c080;
+    --accent-bg-color: #a7c080; 
+    --accent-fg-color: #2d353b;
+
+    --destructive-bg-color: #e67e80;
+    --destructive-fg-color: #2d353b;
+
+    --error-bg-color: #e67e80;
+    --error-fg-color: #2d353b;
+    --error-color: #e67e80;
+
+    --window-bg-color: #2d353b;
+    --window-fg-color: #d3c6aa;
+
+    --view-bg-color: #2d353b;
+    --view-fg-color: #d3c6aa;
+
+    --headerbar-bg-color: #2d353b;
+    --headerbar-fg-color: #d3c6aa;
+    --headerbar-backdrop-color: #2d353b;
+
+    --popover-bg-color: #3d484d;
+    --popover-fg-color: #d3c6aa;
+
+    --card-bg-color: #3d484d;
+    --card-fg-color: #d3c6aa;
+
+    --dialog-bg-color: #2d353b;
+    --dialog-fg-color: #d3c6aa;
+
+    --overview-bg-color: #3d484d;
+    --overview-fg-color: #d3c6aa;
+
+    --sidebar-bg-color: #3d484d;
+    --sidebar-fg-color: #d3c6aa;
+    --sidebar-backdrop-color: #2d353b;
+    --sidebar-border-color: #2d353b;
+
+    --warning-bg-color: #4d4c43;
+    --warning-fg-color: #d3c6aa;
+    --warning-color: #dbbc7f;
+
+    --success-color: #83c092;
+    --success-bg-color: #425047;
+    --success-fg-color: #d3c6aa;
+    
+    --shade-color: rgba(0, 0, 0, 0.36);
+}
