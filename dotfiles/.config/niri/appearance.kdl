@@ -1,0 +1,160 @@
+// Layout configuration
+layout {
+    gaps 4
+    center-focused-column "never"
+    always-center-single-column
+    empty-workspace-above-first
+    // backdrop 壁纸要从工作区透出来（原值 "#343F44"）
+    background-color "transparent"
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+    }
+    focus-ring {
+        width 1
+    }
+    border {
+        on
+        width 1
+    }
+    struts {}
+}
+
+// Window rules
+// 全局默认：所有新窗口以「最大化到边缘」打开（等价于 Mod+F 的 maximize-window-to-edges）。
+// 无 match 的规则会匹配所有窗口，且窗口规则按顺序解析、后到覆盖先到，
+// 所以这条必须放在最前面，后面的具体规则才能按需覆盖它。
+window-rule {
+    open-maximized-to-edges true
+}
+
+// 全局背景模糊参数，作用于所有 background-effect（窗口与 layer 表面）。
+// 调优顺序：先加大 offset（不增加 GPU 开销），出现拖影或断层后再增加 passes。
+blur {
+    offset 2
+    passes 1
+    noise 0.02
+    saturation 1
+}
+
+// 全局半透明 + 背景模糊：同样没有 match，因此作用于所有窗口。
+// 窗口自身不透明时模糊透不出来，所以两者写在同一条规则里。
+// 模糊默认走 xray（只模糊一次壁纸再复用），额外开销很小。
+window-rule {
+    opacity 0.93
+    background-effect {
+        blur false
+    }
+}
+
+window-rule {
+    match app-id=r#"qutebrowser$"#
+    open-maximized-to-edges true
+}
+// 必须排在通用 qutebrowser 规则之后：
+// 窗口规则按顺序解析、后到覆盖先到，显式撤销 maximized 才能让 PiP 真正浮动
+window-rule {
+    match app-id=r#"qutebrowser$"# title="^Picture-in-Picture$"
+    open-floating true
+    open-maximized-to-edges false
+    default-column-width { fixed 480; }
+    default-window-height { fixed 270; }
+    default-floating-position x=32 y=32 relative-to="bottom-right"
+}
+window-rule {
+    match title="^(Open|Save|Choose|Select|Preferences|About|Properties|File Upload|Create New Folder)"
+    open-floating true
+    // 浮窗不能同时是 maximized-to-edges（否则会被放进滚动布局并铺满屏幕），
+    // 这里显式撤销上面的全局默认
+    open-maximized-to-edges false
+}
+window-rule {
+    match title="^(打开|保存|选择|另存为|属性|上传)"
+    open-floating true
+    open-maximized-to-edges false
+}
+window-rule {
+    geometry-corner-radius 12
+    clip-to-geometry true
+}
+
+// Hotkey overlay
+hotkey-overlay {
+    skip-at-startup
+}
+
+// swaybg 的 namespace，可用 `niri msg layers` 核对；放进 backdrop 后壁纸不再随工作区缩放
+layer-rule {
+    match namespace="^wallpaper$"
+    place-within-backdrop true
+}
+
+// ---- layer-shell 表面的半透明 ----
+// 这里就是 layer-rule opacity 的本职用途：从合成器侧给外部程序加透明度，
+// 不用去改每个程序自己的配置格式。
+//
+// 注意 niri 文档的两条语义：
+//   1. opacity 叠加在「表面自身透明度」之上，半透明的表面会变得更透。
+//      下面这些程序的底色都是不透明纯色，所以这里是净效果，不会双重变淡：
+//        waybar style.css #343f44 / fuzzel 3D484Dff / mako #3d484d
+//   2. opacity 逐个作用于表面的每个 child，所以子表面和弹出菜单也会各自变透明
+//      （能透出后面的内容）。要给弹出菜单单独设值就写 popups { opacity ... }。
+//
+// 关于「提取变量」：niri 的 KDL 配置没有变量/常量机制（wiki 无此功能），
+// 所以让一个值只出现一次的唯一办法，是把要一起处理的程序用正则并进同一条规则
+// —— namespace 匹配器本身就是正则。想给某个程序单独一个值，就把它拆出去另写一条。
+//
+
+// fuzzel 是 launcher，mako 是 notifications
+// （两个 namespace 分别从 /usr/bin/fuzzel、/usr/bin/mako 的字符串里确认，运行时也核对过）
+// layer-rule {
+//     match namespace="^(launcher|notifications)$"
+//     opacity 0.93
+// }
+
+// waybar 当前保持不透明。想让它一起透明，把 waybar 并进上面那条正则；
+// 想给它单独的值，就取消下面的注释。
+// layer-rule {
+//     match namespace="^waybar$"
+//     opacity 0.93
+// }
+
+// Overview
+overview {
+    zoom 0.3125
+    backdrop-color "#232A2E"
+    // workspace-shadow {
+    //     off
+    // }
+}
+
+// 带缩略图的 Alt+Tab 切换窗口功能
+recent-windows {
+    // off
+    debounce-ms 750
+    open-delay-ms 150
+
+    highlight {
+        // active-color / urgent-color 在 colors.kdl 中定义
+        // 缩略图背景内间距
+        padding 30
+        // 缩略图的背景圆角
+        corner-radius 0
+    }
+
+    // 设置缩略图大小
+    previews {
+        max-height 480
+        max-scale 0.2
+    }
+
+    binds {
+        // scope 可以设置显示的窗口是当前工作区的、还是当前显示器的、或者显示全部窗口
+        Mod+Tab         { next-window scope="workspace"; }
+        Mod+Shift+Tab   { previous-window scope="workspace"; }
+        // grave 是波浪键，显示当前应用的所有窗口
+        Mod+grave       { next-window     filter="app-id"; }
+        Mod+Shift+grave { previous-window filter="app-id"; }
+    }
+}
+

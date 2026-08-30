@@ -1,0 +1,13 @@
+// Niri configuration for CachyOS
+// For documentation and full reference, see: https://github.com/YaLTeR/niri/wiki
+
+// Include configuration files
+include "binds.kdl"
+include "appearance.kdl"
+include "colors.kdl"
+include "environment.kdl"
+include "input.kdl"
+include "output.kdl"
+include "startup.kdl"
+include "switch-events.kdl"
+include "animations.kdl"

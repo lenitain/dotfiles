@@ -1,0 +1,294 @@
+#!/usr/bin/env bash
+# 录屏脚本 - gpu-screen-recorder：直接录制到磁盘，停止后自动转封装 MP4
+#
+# 子命令:
+#   record start   区域选择并开始录制
+#   record stop    停止当前录制（向录制进程发 SIGINT，等待其正常收尾）
+#
+# 单例语义:
+#   全局同一时刻只允许一个录制。已在录制时 `record start` 不做任何事，
+#   只提示"已在录制中"（绝不误停正在进行的录制）。
+#
+#   实现上不保存 PID：`stop` 每次现场扫描 /proc 按 exe 认定录制进程，
+#   输出路径也从该进程的 cmdline 反查。因此不存在状态文件陈旧、
+#   跨用户覆盖、PID 被复用后误杀等问题。
+#   并发保护由 flock 独占锁提供（两个 start 同时跑也只有一个能进入）。
+#
+# 流程:
+#   录制写入 ~/Videos/Record_*.mkv（H.264 硬编 CQP + Opus）
+#   停止时 SIGINT 收尾，再由 ffmpeg 视频直拷、音频转 AAC、+faststart 封装为同名 .mp4
+#   转换失败则提示并保留原始 MKV；全程不覆盖已有文件、不做二次压缩
+#
+# 为什么用 gpu-screen-recorder（而不是 wl-screenrec）:
+#   wl-screenrec 硬编只有 VAAPI 一条路（实测其二进制内置编码器名仅 h264_vaapi 一系），
+#   在 NVIDIA 机器上无法硬编。gpu-screen-recorder 把 NVENC / VAAPI / Vulkan 各厂商
+#   路径编译进同一个二进制并运行时 dlopen 加载，故同一份脚本可跨 AMD/Intel/NVIDIA。
+#   它同时内建了本脚本原先需要自己实现的东西：
+#     - 统一编码参数（-k h264 / -q）取代厂商私有的 rc_mode=CQP,qp=N 语法
+#     - 按显示器自动选择 GPU，取代手工猜 /dev/dri/renderD128
+#     - -fallback-cpu-encoding 取代自己写的降级链
+#      -a default_output 取代对 pulse/pipewire 后端的假设
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+RECORD_DIR="$HOME/Videos"
+mkdir -p "$RECORD_DIR"
+
+# 单例闸门：flock 独占锁保证任意时刻只有一个 start 能进入临界区
+# （即使两个 start 并发也不会都通过）。锁文件不存任何状态，见下方 find_recorder。
+LOCKFILE="${XDG_RUNTIME_DIR:-/tmp}/record.lock"
+
+# ===== 录制设置 =====
+# -k h264       统一编码器档位；底层由 gsr 选 NVENC/VAAPI/Vulkan/libx264，无需厂商参数
+# -q <档位>      medium | high | very_high | ultra
+#                ultra ≈ 130 KB/s，very_high ≈ 95 KB/s（本机 1920x1080 实测）
+#                数值越小档位越低，文件越小、质量越低
+# -bm qp        恒定质量模式（对应原先的 rc_mode=CQP）
+# -cr limited   有限色彩范围，兼容性最好（full 会让部分播放器发灰）
+VIDEO_CODEC="h264"
+QUALITY_PRESET="ultra"
+BITRATE_MODE="qp"
+COLOR_RANGE="limited"
+
+# 音频源：桌面输出。列可用设备: gpu-screen-recorder --list-audio-devices
+# 不传 -a 会录不到音频，故必须显式指定。
+AUDIO_SOURCE="default_output"
+AUDIO_CODEC="opus"
+
+# 硬编不可用时自动退化到 CPU 编码，避免"换了机器就完全不工作"
+FALLBACK_CPU="yes"
+
+# 是否录制鼠标光标
+CAPTURE_CURSOR="no"
+
+# 区域选择器输出格式：必须与 gsr 的 -w 区域语法一致（WxH+X+Y）
+# slurp-wrapper 是裸透传（exec slurp "$@"），所以这里可直接加 -f。
+# 注意：slurp 给出的是合成器暴露的坐标（本机为逻辑坐标 1536x864），
+#       而 gsr 按该坐标录制后输出物理分辨率（1920x1080）。两者按显示缩放比对应。
+SLURP_FMT="%wx%h+%x+%y"
+
+# ===== 行为开关 =====
+AUTO_CONVERT_TO_MP4="1"                   # 1=停止后自动转 MP4；0=只保留 MKV
+STOP_TIMEOUT_SEC=20                       # 等待录制进程收尾的最长秒数
+
+# 注意：下面两个函数以及录制器启动处都带 `9>&-`。
+# 那把单例锁占用 fd 9，而子进程默认会继承它 —— 只要有一个后台子进程攥着，
+# 锁在脚本退出后依然处于持有状态，后续的 start/stop 会被自己的闸门挡住。
+# （实测被 gsr 与 wl-copy 各泄漏过一次，故对这些调用点显式关闭。）
+notify() { notify-send "$1" "$2" 9>&- || true; }
+
+# 复制路径到剪贴板。
+# wl-copy 会 fork 一个后台进程持有剪贴板所有权，并继承调用者的 stdout/stderr。
+# 若不把两者全部重定向，该进程会一直攥着管道，导致 "record stop | 任何命令"、
+# 命令替换 $(record stop)、以及任何自动化调用永久挂起（实测 exit=124 超时）。
+copy_path() { printf '%s' "$1" | wl-copy >/dev/null 2>&1 9>&- || notify "复制失败" "无法写入剪贴板"; }
+
+# 前置检查：录制器是否可用（比"起录后才发现失败"体验好）
+require_recorder() {
+    if ! command -v gpu-screen-recorder >/dev/null 2>&1; then
+        notify "录屏不可用" "未找到 gpu-screen-recorder，请先安装"
+        echo "错误: 未找到 gpu-screen-recorder" >&2
+        exit 127
+    fi
+}
+
+# ===== 单例：不记录 PID，每次现查 =====
+# 设计要点：进程身份由内核保证，而不是由我们存一个可能过期/被复用的数字。
+#   - 用 /proc/<pid>/exe 认定，而不是 pgrep -x：
+#     内核把 comm 截断到 15 字符（"gpu-screen-reco"），所以 pgrep -x 用完整名永远匹配不到。
+#   - 单例约束下"找到任意 gsr"就是"找到我们的录制"，无需再区分是哪一个实例。
+#   - 输出路径从进程自己的 cmdline 反查，因此不落任何状态文件，
+#     也就不存在陈旧状态、跨用户覆盖、PID 复用误杀这些问题。
+RECORDER_BIN="${RECORDER_BIN:-/usr/bin/gpu-screen-recorder}"
+
+find_recorder() {
+    local d
+    # 用 bash 内建的 [[ -ef ]] 比较 inode（同一文件即视为同一程序）。
+    # 不要用 readlink：每次迭代都会 fork 一个外部进程，实测 352 个进程时
+    # 单次扫描要 1.1 秒；-ef 是内建判断，同样条件只要 5 毫秒（约 200 倍）。
+    #
+    # 仅在 -ef 不可用（例如本机没装该程序，无 inode 可比）时，
+    # 才回退到逐路径比较。两条路径都不会被进程的假名字骗到。
+    if [ -e "$RECORDER_BIN" ]; then
+        for d in /proc/[0-9]*; do
+            if [ -e "$d/exe" ] && [[ "$d/exe" -ef "$RECORDER_BIN" ]]; then
+                printf '%s\n' "${d#/proc/}"
+                return 0
+            fi
+        done
+    else
+        for d in /proc/[0-9]*; do
+            if [ "$(readlink -f "$d/exe" 2>/dev/null)" = "$RECORDER_BIN" ]; then
+                printf '%s\n' "${d#/proc/}"
+                return 0
+            fi
+        done
+    fi
+    return 1
+}
+
+# 从进程的 cmdline 取 -o 的输出路径（录制器启动后命令行就固定了）
+recorder_output_path() {
+    tr '\0' '\n' < "/proc/$1/cmdline" 2>/dev/null | awk '/^-o$/{getline; print; exit}'
+}
+
+do_start() {
+    require_recorder
+
+    # 单例闸门：flock 独占锁。即使两个 start 并发也只有一个能进入临界区。
+    # 用 -w 3（最多等 3 秒）而不是 -n：并发时让后来者短暂等待而不是直接失败。
+    exec 9>"$LOCKFILE"
+    if ! flock -w 3 9; then
+        notify "录屏提示" "另一处录制操作未结束，本次忽略"
+        echo "另一处录制操作未结束，本次忽略" >&2
+        exit 0
+    fi
+
+    # 严格单例：已在录制则拒绝，绝不误停正在进行的录制
+    local existing
+    if existing="$(find_recorder)"; then
+        notify "录屏提示" "已在录制中（PID ${existing}）；如需重录请先 record stop"
+        exit 0
+    fi
+
+    # 区域框选（经 wrapper：单实例，先杀后开）
+    GEOM="$("$SCRIPT_DIR/slurp-wrapper" -f "$SLURP_FMT")" || exit 1
+    if [ -z "${GEOM:-}" ]; then
+        # 用户按 Esc 取消框选
+        exit 0
+    fi
+
+    FILENAME="$RECORD_DIR/Record_$(date +%Y%m%d_%H%M%S).mkv"
+
+    # 组装参数。区域直接作为 -w 的值传入；-region 已被上游标记为 deprecated。
+    ARGS=(-w "$GEOM"
+          -k "$VIDEO_CODEC"
+          -q "$QUALITY_PRESET"
+          -bm "$BITRATE_MODE"
+          -cr "$COLOR_RANGE"
+          -ac "$AUDIO_CODEC"
+          -a "$AUDIO_SOURCE"
+          -cursor "$CAPTURE_CURSOR"
+          -fallback-cpu-encoding "$FALLBACK_CPU"
+          -o "$FILENAME")
+
+    # 录制器的 stderr 落日志：启动即失败时（编码器不可用/区域非法/音频设备缺失）
+    # 否则用户只会看到一句"启动失败"，无从排查。
+    #
+    # 9>&- 至关重要：必须让子进程关闭继承来的锁 fd。
+    # 否则 gsr 会一直攥着 flock，锁在 start 返回后永不释放，
+    # 之后的 record stop 会被自己的闸门挡在门外（实测踩过）。
+    local logfile="${XDG_RUNTIME_DIR:-/tmp}/record.log"
+    gpu-screen-recorder "${ARGS[@]}" >"$logfile" 2>&1 9>&- &
+    WF_PID=$!
+
+    # 启动很快失败时明确报错，而不是留下一个"看起来在录"的假象
+    sleep 1
+    if ! kill -0 "$WF_PID" 2>/dev/null; then
+        wait "$WF_PID" 2>/dev/null || true
+        local reason
+        reason="$(grep -iE 'error|fail|not supported|missing' "$logfile" 2>/dev/null | head -2 | tr '\n' ' ')"
+        notify "录屏失败" "${reason:-录制进程启动即退出（详见 $logfile）}"
+        echo "录屏失败: ${reason:-启动即退出}" >&2
+        echo "完整日志: $logfile" >&2
+        exit 1
+    fi
+
+    notify "录屏开始" "区域录制（$VIDEO_CODEC/$QUALITY_PRESET 硬编）：$FILENAME"
+}
+
+do_stop() {
+    require_recorder
+
+    # 单例闸门（与 start 共用同一把锁）。start 的临界区很短（约 1 秒），
+    # 所以这里短暂等待即可，避免"恰好撞上 start 就静默不干活"。
+    exec 9>"$LOCKFILE"
+    if ! flock -w 3 9; then
+        notify "录屏提示" "另一处录制操作未结束，本次忽略"
+        echo "另一处录制操作未结束，本次忽略" >&2
+        exit 0
+    fi
+
+    # 现场查进程：不依赖任何状态文件，因此没有陈旧状态/PID 复用问题。
+    # 单例约束下"唯一的 gsr 进程"就是本次录制。
+    local PID
+    if ! PID="$(find_recorder)"; then
+        notify "录屏提示" "没有正在进行的录制"
+        exit 0
+    fi
+
+    # 输出路径取自进程自己的 cmdline —— 这是最可信的来源，
+    # 因为它就是录制器真正写文件用的那个路径。
+    local REC_FILE
+    REC_FILE="$(recorder_output_path "$PID")"
+    if [ -z "$REC_FILE" ]; then
+        notify "录屏停止异常" "无法从进程 ${PID} 的 cmdline 读取输出路径"
+        exit 1
+    fi
+
+    # 发 SIGINT 让 gpu-screen-recorder 正常收尾写文件
+    kill -INT "$PID" 2>/dev/null || true
+
+    # 等待进程退出
+    local i=0 max_iter=$((STOP_TIMEOUT_SEC * 10))
+    while kill -0 "$PID" 2>/dev/null; do
+        if [ "$i" -ge "$max_iter" ]; then
+            kill -KILL "$PID" 2>/dev/null || true
+            notify "录屏停止异常" "未能在 ${STOP_TIMEOUT_SEC}s 内收尾，文件可能不完整：${REC_FILE}"
+            exit 1
+        fi
+        sleep 0.1
+        i=$((i + 1))
+    done
+
+    if [ ! -s "${REC_FILE:-}" ]; then
+        notify "录屏失败" "没有产出有效的录像文件：${REC_FILE:-}"
+        exit 1
+    fi
+
+    if [ "$AUTO_CONVERT_TO_MP4" != "1" ]; then
+        notify "录屏已停止" "已保留中间文件：$REC_FILE"
+        exit 0
+    fi
+
+    local base final part
+    base="$(basename "$REC_FILE" .mkv)"
+    final="$RECORD_DIR/$base.mp4"
+    part="$RECORD_DIR/.$base.mp4.part"
+    if [ -e "$final" ]; then
+        notify "目标文件已存在" "未覆盖 $final；新录像保留在 $REC_FILE"
+        exit 2
+    fi
+    if [ -e "$part" ]; then
+        part="$RECORD_DIR/.$base.$$.mp4.part"
+    fi
+
+    # 视频直拷不二次压缩；音频 Opus->AAC；faststart 把索引挪到片头利于流式播放
+    if ffmpeg -hide_banner -loglevel error -y \
+            -i "$REC_FILE" -c:v copy -c:a aac -movflags +faststart -f mp4 "$part"; then
+        mv "$part" "$final"
+        copy_path "$final"
+        notify "录屏已保存" "$final"
+        exit 0
+    else
+        rm -f "$part"
+        copy_path "$REC_FILE"
+        notify "自动转换失败" "已保留原始录像：$REC_FILE"
+        exit 1
+    fi
+}
+
+case "${1:-}" in
+    start)
+        do_start
+        ;;
+    stop)
+        do_stop
+        ;;
+    *)
+        echo "用法: record {start|stop}" >&2
+        exit 1
+        ;;
+esac

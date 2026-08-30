@@ -1,0 +1,54 @@
+# 下载镜像 — 一处放全。文件名按主题(镜像), 不是按表: 里面两种机制各占一段。
+#   [env]      注入 shell 和子进程 (pip / npm / go / rustup), 归各生态工具自己读
+#   [settings] 只改 mise 自己 HTTP 客户端的请求目标
+[env]
+# Go 模块 (go: 后端装 gopls / dlv 等)
+GOPROXY = "https://goproxy.cn,direct"
+# Rust 工具链 (rustup)
+RUSTUP_DIST_SERVER = "https://mirrors.ustc.edu.cn/rust-static"
+RUSTUP_UPDATE_ROOT = "https://mirrors.ustc.edu.cn/rust-static/rustup"
+# Node.js — 注意: mise 的 core:node 后端不读这个变量(实测设了它照样打 nodejs.org),
+# 它管的是子进程里 node-gyp 原生模块构建的 header 下载; mise 自己的 node 下载见 [settings] node.mirror_url
+NODEJS_ORG_MIRROR = "https://npmmirror.com/mirrors/node"
+# npm (内嵌 aube, 读 NPM_CONFIG_* 与 ~/.npmrc)
+NPM_CONFIG_REGISTRY = "https://registry.npmmirror.com"
+# pip / pipx / pypi 后端 (uv 走 UV_DEFAULT_INDEX)
+PIP_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
+UV_DEFAULT_INDEX = "https://pypi.tuna.tsinghua.edu.cn/simple"
+
+[settings]
+# node 二进制下载 (默认 https://nodejs.org/dist)
+# 两个坑, 都实测过:
+#   1. 不能写 https://npmmirror.com/mirrors/node —— mise 对它有特判, 会拼出
+#      https://cdn.npmmirror.com/binaries/v26.7.0/node-v26.7.0.tar.gz (缺 /node/ 和 -linux-x64) → 404
+#   2. 末尾斜杠必须留: mise 按 URL join 拼版本目录, 没斜杠会把最后一段 node 替换掉(→ 404),
+#      有斜杠才追加 → .../binaries/node/v26.7.0/node-v26.7.0-linux-x64.tar.gz
+# 实测: 走 cdn.npmmirror.com 3.6MB/s, 直连 nodejs.org 5.8MB/s; 镜像当前并不更快,
+# 留着是为了 nodejs.org 抽风时可用; 想回直连就注掉这一行。SHASUMS256.txt + .sig 镜像里都有, 校验不受影响。
+node.mirror_url = "https://cdn.npmmirror.com/binaries/node/"
+# pypi 后端的版本查询 (默认 https://pypi.org/pypi/{}/json)
+pypi.registry_url = "https://pypi.tuna.tsinghua.edu.cn/pypi/{}/json"
+
+# url_replacements 按 URL 路由, 不按后端: 凡经 mise HTTP 客户端访问 github.com 的后端
+# (aqua / ubi / github / self-update) 都自动走镜像, 因此不必知道某工具用的是哪个后端。
+# 例: ruff = aqua:astral-sh/ruff 的真实请求
+#   https://github.com/astral-sh/ruff/releases/download/<ver>/ruff-x86_64-unknown-linux-gnu.tar.gz
+# 只匹配 https://github.com/, 故 https://api.github.com (版本查询 / attestation) 不受影响。
+# 校验不受影响: 下载后仍按 sha256 + GitHub attestations 验证, 镜像返回错文件会直接失败。
+# 实测 (ruff 9.9MB tarball): gh-proxy ~3s 稳定, 直连 7-16s 抖动。
+# 同一个镜像在 ~/.gitconfig 里另有一份 url.insteadOf(管 git clone/fetch, mise 本管不到 git),
+# 换镜像时两处要同改; 两者作用域不相交, 也不会重复加前缀。
+# 临时绕过: MISE_URL_REPLACEMENTS='{}' mise install <tool>
+[settings.url_replacements]
+"https://github.com/" = "https://gh-proxy.com/https://github.com/"
+
+# 以下的镜像已确认不需要配(取证记录, 免得日后重查):
+#   go 运行时  默认 dl.google.com 实测 4.3MB/s, 比 golang.google.cn 还快(后者只是 302 回它)。
+#              阿里云 /golang 虽托管 tarball, 但缺 .sha256, 而 mise 要下 <tarball>.sha256 校验
+#              → 改过去会直接装不上(实测报错)。
+#   zig        默认 zig.use_community_mirrors=true 已在生效: 读 ziglang.org/download/community-mirrors.txt,
+#              实测 zigmirror.com 2.75MB/s vs ziglang.org 0.8MB/s, 不必手工接管。
+#   任务脚本   你已经有自己的层, 且已经覆好, 不需 mise 插手:
+#              lib/gh.sh 显式加 gh-proxy.com 前缀(失败依次回退 gh-proxy.org / ghfast.top),
+#              裸 git clone 则由 ~/.gitconfig 的 url.insteadOf 改写。
+#              两者都用前缀式 gh-proxy, 与上面的规则同源不冲突。

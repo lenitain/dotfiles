@@ -1,0 +1,7 @@
+#!/bin/bash
+# slurp wrapper - 单实例框选，先杀后开（新截取替换旧截取）
+# 与 fuzzel-wrapper.sh 同一模式：任何新的框选请求都会顶掉正在进行的旧框选
+
+pkill -x slurp 2>/dev/null
+sleep 0.01
+exec /usr/bin/slurp "$@"

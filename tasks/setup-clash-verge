@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+#MISE description="下载并安装 Clash Verge Rev 到 ~/.local（deb 解包，无更新时跳过）"
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/gh.sh"
+
+REPO="clash-verge-rev/clash-verge-rev"
+BIN_DIR="$HOME/.local/bin"
+LIB_DIR="$HOME/.local/lib/Clash Verge"   # tauri 按 <exe>/../lib/<productName> 找资源, 与 /usr 布局同构
+APPS_DIR="$HOME/.local/share/applications"
+ICONS_DIR="$HOME/.local/share/icons/hicolor"
+MARKER="$HOME/.local/state/clash-verge/version"
+
+# 上游 Linux 只有 deb/rpm（无 AppImage/tarball），取本机架构的 deb 解包安装
+case "$(uname -m)" in
+  x86_64)  DEB_ARCH="amd64" ;;
+  aarch64) DEB_ARCH="arm64" ;;
+  armv7l)  DEB_ARCH="armhf" ;;
+  *) err "不支持的架构: $(uname -m)（上游仅提供 amd64 / arm64 / armhf）"; exit 1 ;;
+esac
+
+# ── 前置检查（真缺依赖 → 硬失败）──
+missing=()
+command -v curl &>/dev/null || missing+=("curl")
+command -v bsdtar &>/dev/null || missing+=("bsdtar (libarchive)")
+if [[ ${#missing[@]} -gt 0 ]]; then
+  err "缺少依赖: ${missing[*]}"
+  err "  → sudo pacman -S --needed curl libarchive"
+  exit 1
+fi
+
+# ── 版本检测（GitHub API; 探测失败属更新失败 → 软处理, 保留现有安装）──
+if ! JSON="$(gh_api "/repos/$REPO/releases/latest")"; then
+  warn "无法获取最新版本信息 (网络/镜像不可用)，保留现有安装继续"
+  exit 0
+fi
+VERSION="$(printf '%s' "$JSON" | grep -oE '"tag_name": *"[^"]+"' | head -1 | cut -d'"' -f4)"
+if [[ -z "$VERSION" ]]; then
+  warn "release 中未找到版本号，保留现有安装继续"
+  exit 0
+fi
+
+# ── 已是最新则跳过 ──
+if [[ "$(cat "$MARKER" 2>/dev/null)" == "$VERSION" ]] \
+   && [[ -x "$BIN_DIR/clash-verge" && -f "$LIB_DIR/resources/Country.mmdb" ]]; then
+  info "Clash Verge 已是最新 ($VERSION)，跳过"
+  exit 0
+fi
+
+# ── 下载并解包（失败 → 软处理, 原安装未动）──
+DEB="Clash.Verge_${VERSION#v}_${DEB_ARCH}.deb"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+if ! gh_download "https://github.com/$REPO/releases/download/$VERSION/$DEB" "$TMP/$DEB"; then
+  warn "所有镜像均下载失败，原安装未动，跳过本次更新"
+  exit 0
+fi
+bsdtar -xf "$TMP/$DEB" -C "$TMP"          # ar 容器 → control.tar.* / data.tar.*
+DATA="$(find "$TMP" -maxdepth 1 -name 'data.tar.*' -print -quit)"
+if [[ -z "$DATA" ]]; then
+  warn "deb 内未找到 data.tar.*，放弃安装（原安装未动）"
+  exit 0
+fi
+mkdir -p "$TMP/root"
+bsdtar -xf "$DATA" -C "$TMP/root"         # 兼容 gz / xz / zst
+
+PAYLOAD="$TMP/root/usr"
+if [[ ! -x "$PAYLOAD/bin/clash-verge" || ! -d "$PAYLOAD/lib/Clash Verge/resources" ]]; then
+  warn "deb 内容与预期不符（缺 clash-verge 或 resources），放弃安装（原安装未动）"
+  exit 0
+fi
+
+# ── 安装: 主程序 + 两个内核 + 提权服务工具 ──
+# 应用按 current_exe 的同级目录找内核与服务工具, 故全部落在 ~/.local/bin
+mkdir -p "$BIN_DIR"
+for f in clash-verge verge-mihomo verge-mihomo-alpha \
+         clash-verge-service clash-verge-service-install clash-verge-service-uninstall; do
+  install -Dm755 "$PAYLOAD/bin/$f" "$BIN_DIR/$f"
+done
+rm -rf "$LIB_DIR/resources"
+mkdir -p "$LIB_DIR"
+cp -a "$PAYLOAD/lib/Clash Verge/resources" "$LIB_DIR/resources"
+
+# ── 桌面入口（文件名去空格, 与 desktop 里的 Icon=/StartupWMClass= 一致）──
+install -Dm644 "$PAYLOAD/share/applications/Clash Verge.desktop" "$APPS_DIR/clash-verge.desktop"
+for png in "$PAYLOAD/share/icons/hicolor"/*/apps/clash-verge.png; do
+  [[ -f "$png" ]] || continue
+  size="$(basename "$(dirname "$(dirname "$png")")")"
+  install -Dm644 "$png" "$ICONS_DIR/$size/apps/clash-verge.png"
+done
+if command -v update-desktop-database &>/dev/null; then
+  update-desktop-database "$APPS_DIR" >/dev/null 2>&1 || true
+fi
+
+mkdir -p "$(dirname "$MARKER")"
+echo "$VERSION" > "$MARKER"
+CORE="$("$BIN_DIR/verge-mihomo" -v 2>/dev/null | awk 'NR==1 {print $3}')"
+ok "已安装 Clash Verge $VERSION (内核 ${CORE:-未知})，命令: clash-verge"

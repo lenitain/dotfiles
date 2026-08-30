@@ -1,0 +1,9 @@
+// Startup commands
+spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"
+spawn-at-startup "waybar"
+spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
+spawn-at-startup "swayidle" "-w" "timeout" "170" "niri msg action power-off-monitors" "before-sleep" "swaylock -f"
+spawn-at-startup "foot" "--server"
+spawn-at-startup "systemctl" "--user" "start" "qb-server"
+spawn-at-startup "swaybg" "-i" "/usr/share/wallpapers/Mountain/contents/images/5120x2880.png"
+prefer-no-csd
