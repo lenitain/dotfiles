@@ -1,0 +1,6 @@
+// Startup commands
+spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+spawn-at-startup "~/.config/waybar/scripts/idle-inhibit.sh" "on"
+spawn-at-startup "foot" "--server"
+spawn-sh-at-startup "swaybg -i \"$HOME/.local/share/wallpapers/starry-night-sky.png\""
+prefer-no-csd

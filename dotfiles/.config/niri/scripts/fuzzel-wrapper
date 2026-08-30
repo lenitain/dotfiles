@@ -1,0 +1,18 @@
+#!/bin/bash
+# fuzzel wrapper - 永远单实例，先杀后开
+#
+# 旧实例要等它真的退出，而不是固定 sleep：原来每次按都白等 10ms，这里 pidof 拿
+# 一次 pid，kill 之后用 bash 内建的 kill -0 盯到进程消失，通常 1-2ms。
+# 循环有上限：旧进程万一卡住也不会把按键拖住。
+
+pids=$(pidof fuzzel 2>/dev/null) || pids=''
+if [ -n "$pids" ]; then
+    kill $pids 2>/dev/null
+    for pid in $pids; do
+        for _ in {1..200}; do
+            kill -0 "$pid" 2>/dev/null || break
+        done
+    done
+fi
+
+exec /usr/bin/fuzzel "$@"

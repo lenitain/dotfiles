@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#MISE description="安装并更新 yazi 插件 (simple-status / smart-enter)"
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
+
+if ! command -v ya &>/dev/null; then
+  err "缺少 ya，请先运行: mise bootstrap --yes"
+  exit 1
+fi
+
+# init.lua / keymap.toml 直接依赖这两个插件, 少一个 yazi 启动就报错
+PLUGINS=(
+  "Ape/simple-status"
+  "yazi-rs/plugins:smart-enter"
+)
+
+YAZI_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/yazi"
+PACKAGE_TOML="$YAZI_DIR/package.toml"
+PLUGINS_DIR="$YAZI_DIR/plugins"
+
+# package.toml 不入库 (见 .gitignore), 由本任务登记 + 锁定版本
+is_registered() {
+  grep -qF "use = \"$1\"" "$PACKAGE_TOML" 2>/dev/null
+}
+
+# yazi 的插件目录名: owner/repo → repo.yazi, owner/repo:child → child.yazi
+plugin_dir() {
+  local name="${1##*/}"
+  echo "$PLUGINS_DIR/${name##*:}.yazi"
+}
+
+ensure_plugin() {
+  local use="$1"
+  if is_registered "$use"; then
+    info "插件已登记: $use"
+    return 0
+  fi
+
+  # 未登记但目录已存在时, ya pkg add 拿空 hash 比对磁盘内容, 必然误报
+  # "modified the contents" 中止; 且它在抛错前先把 package.toml 写空, 重跑仍失败。
+  # 目录内容来自上游, 先删掉让 add 重新部署 (走本地 clone 缓存)。
+  rm -rf "$(plugin_dir "$use")"
+
+  info "登记并安装 yazi 插件: $use"
+  if ya pkg add "$use"; then
+    return 0
+  fi
+  err "ya pkg add $use 失败"
+  return 1
+}
+
+# 1) 登记插件 (package.toml 不入库, 新机器上不存在, 由这里补齐)
+#    ya pkg add 登记的同时就把插件拉下来部署了, 锁到当前上游最新
+for use in "${PLUGINS[@]}"; do
+  ensure_plugin "$use"
+done
+
+# 2) 追最新 (pacman -Syu 哲学): 升到上游最新提交, 重新部署 (目录被删也会重拉),
+#    并把新的 rev/hash 写回 package.toml
+info "更新 yazi 插件到最新 (ya pkg upgrade) ..."
+if ya pkg upgrade; then
+  ok "yazi 插件已安装并更新"
+else
+  warn "ya pkg upgrade 失败 (网络/上游不可达), 保留当前版本继续"
+fi

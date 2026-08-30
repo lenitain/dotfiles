@@ -1,0 +1,306 @@
+#!/bin/bash
+# 用 QEMU + KVM 启动虚拟机。
+#
+# 磁盘（.qcow2）是虚拟机的持久状态，ISO 只是首次安装用的引导介质：
+# UEFI 下只要挂载光驱，固件就优先引导光驱（-boot order 改不动），而硬盘
+# 必须靠 OVMF 变量里的 Boot#### 项才能被引导。所以正常启动不挂 ISO，
+# OVMF 变量也必须跟磁盘放在一起保留。
+#
+#   首次安装：run-vm --install --iso fedora.iso --new fedora44
+#   之后启动：run-vm fedora44.qcow2
+#
+# 虚拟机文件都在当前目录。
+set -euo pipefail
+
+MEM=8G
+CPUS=6
+DISK_SIZE=32G
+UEFI=1
+INSTALL=0
+FULLSCREEN=0
+DRY_RUN=0
+NO_REBOOT=0
+GL=0
+UI=gtk
+GPU_KIND=virtio
+RES=""
+ISO=""
+DISK=""
+NEW=""
+TARGET=""
+
+OVMF_CODE=/usr/share/edk2/x64/OVMF_CODE.4m.fd
+OVMF_VARS=/usr/share/edk2/x64/OVMF_VARS.4m.fd
+
+usage() {
+	cat <<'EOF'
+用法: run-vm [选项] [磁盘.qcow2 | 安装.iso]
+
+  磁盘（.qcow2）是虚拟机的持久状态，ISO 只在首次安装时挂载。
+  磁盘和它的固件变量文件始终放在一起（<名字>.qcow2 / <名字>.OVMF_VARS.fd），
+  ISO 可以放在任意路径。
+
+  --install        安装模式：挂载 ISO 并从光驱引导
+  --iso FILE       安装用的 ISO（任意路径；安装模式下默认按同名在各目录查找）
+  --new NAME       新建磁盘 NAME.qcow2 并进入安装模式
+  --bios           用传统 BIOS 启动（唯一支持「硬盘优先、光驱兜底」的模式）
+  --disk-size SIZE 新建磁盘的大小，默认 32G
+  --mem SIZE       内存，默认 8G
+  --cpus N         核心数，默认 6
+  --res WxH        分辨率，默认取已连接显示器的最大模式
+  --gpu virtio|vga 显卡：virtio（默认，窗口多大就多大）或 vga（固定 --res）
+  --display BACKEND 显示后端：gtk（默认）、sdl、vnc、dbus、none
+  --gl             用 OpenGL（virgl）：virtio-vga-gl + -display ...,gl=on
+  --fullscreen     全屏
+  --no-reboot      guest 重启时退出 QEMU（默认允许正常重启）
+  --dry-run        只打印将要执行的命令
+  -h, --help       显示帮助
+
+  不带参数时列出当前目录的 *.qcow2 供选择，固件变量文件就在磁盘旁边。
+EOF
+}
+
+require_value() {
+	[[ -n ${2:-} ]] || { echo "选项 $1 缺少参数" >&2; exit 1; }
+}
+
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		--install)     INSTALL=1; shift ;;
+		--iso)         require_value "$@"; ISO="$2"; shift 2 ;;
+		--new)         require_value "$@"; NEW="$2"; shift 2 ;;
+		--bios)        UEFI=0; shift ;;
+		--disk-size)   require_value "$@"; DISK_SIZE="$2"; shift 2 ;;
+		--mem)         require_value "$@"; MEM="$2"; shift 2 ;;
+		--cpus)        require_value "$@"; CPUS="$2"; shift 2 ;;
+		--res)         require_value "$@"; RES="$2"; shift 2 ;;
+		--gpu)         require_value "$@"; GPU_KIND="$2"; shift 2 ;;
+		--display)     require_value "$@"; UI="$2"; shift 2 ;;
+		--gl)          GL=1; shift ;;
+		--fullscreen)  FULLSCREEN=1; shift ;;
+		--no-reboot)   NO_REBOOT=1; shift ;;
+		--dry-run)     DRY_RUN=1; shift ;;
+		-h|--help)     usage; exit 0 ;;
+		-*)            echo "未知选项: $1" >&2; usage; exit 1 ;;
+		*)             TARGET="$1"; shift ;;
+	esac
+done
+
+# 定位磁盘：--new 新建、.iso 参数按同名磁盘进入安装模式、其余按已有磁盘处理
+if [[ -n $NEW ]]; then
+	DISK="${NEW%.qcow2}.qcow2"
+	INSTALL=1
+elif [[ -n $TARGET ]]; then
+	case "$TARGET" in
+		# ISO 可以来自任意路径，但磁盘固定落在当前目录，跟固件变量文件作伴
+		*.iso) ISO="$TARGET"; INSTALL=1; DISK="${TARGET##*/}"; DISK="${DISK%.iso}.qcow2" ;;
+		*)    DISK="$TARGET" ;;
+	esac
+else
+	mapfile -t disks < <(ls -1 *.qcow2 2>/dev/null)
+	if [[ ${#disks[@]} -eq 0 ]]; then
+		echo "当前目录没有虚拟机磁盘，用 --new NAME 新建一个" >&2
+		exit 1
+	fi
+	echo "请选择要启动的虚拟机:"
+	for i in "${!disks[@]}"; do
+		printf '  %d) %s\n' "$((i + 1))" "${disks[$i]}"
+	done
+	read -rp "序号 [1]: " sel
+	sel=${sel:-1}
+	if [[ ! $sel =~ ^[0-9]+$ ]] || (( sel < 1 || sel > ${#disks[@]} )); then
+		echo "无效的序号: $sel" >&2
+		exit 1
+	fi
+	DISK="${disks[$((sel - 1))]}"
+fi
+
+# 找同名 ISO：磁盘旁边 → 当前目录 → ~/Downloads
+find_iso() {
+	local name="$1" dir
+	for dir in "$(dirname "$DISK")" "$PWD" "$HOME/Downloads"; do
+		if [[ -f "$dir/$name" ]]; then
+			printf '%s\n' "$dir/$name"
+			return 0
+		fi
+	done
+	return 1
+}
+
+# ISO：只有安装模式（或显式 --iso）才挂载
+if [[ $INSTALL -eq 1 && -z $ISO ]]; then
+	iso_name="${DISK##*/}"
+	ISO=$(find_iso "${iso_name%.qcow2}.iso") || ISO=""
+fi
+if [[ -n $ISO ]]; then
+	if [[ ! -f $ISO ]]; then
+		echo "找不到 ISO: $ISO" >&2
+		exit 1
+	fi
+	ISO=$(readlink -f "$ISO")
+fi
+if [[ $INSTALL -eq 1 && -z $ISO ]]; then
+	echo "安装模式需要 ISO，用 --iso FILE 指定" >&2
+	candidates=$(ls -1 "$(dirname "$DISK")"/*.iso "$PWD"/*.iso "$HOME/Downloads"/*.iso 2>/dev/null | sort -u)
+	if [[ -n $candidates ]]; then
+		echo "可用的 ISO：" >&2
+		while IFS= read -r f; do printf '  %s\n' "$f" >&2; done <<< "$candidates"
+	fi
+	exit 1
+fi
+
+# 磁盘：安装模式允许新建，普通模式必须是已有的
+used=0
+if [[ -f $DISK ]]; then
+	used=$(qemu-img info --output=json "$DISK" 2>/dev/null | jq -r '."actual-size" // 0' 2>/dev/null || echo 0)
+else
+	if [[ $INSTALL -eq 1 ]]; then
+		echo "创建虚拟硬盘: $DISK ($DISK_SIZE)" >&2
+		qemu-img create -f qcow2 "$DISK" "$DISK_SIZE" >/dev/null
+	else
+		echo "找不到磁盘: $DISK（用 --new NAME 新建）" >&2
+		exit 1
+	fi
+fi
+DISK=$(readlink -f "$DISK")
+BASE="${DISK%.qcow2}"
+NAME="${BASE##*/}"
+VARS="${BASE}.OVMF_VARS.fd"
+
+# 磁盘内容体检：空盘没东西可引导，已有内容在安装模式下会被覆盖
+# （新建的 qcow2 只有头部，占用不足 1MiB，同样算空盘）
+if [[ ${used:-0} -lt 1048576 ]]; then
+	if [[ $INSTALL -eq 0 ]]; then
+		echo "警告: $DISK 还是空盘，没有可引导的系统" >&2
+		echo "      装系统请用: run-vm --install --iso <镜像.iso> --new $NAME" >&2
+	fi
+elif [[ $INSTALL -eq 1 ]]; then
+	echo "警告: 安装模式会覆盖 $DISK 上已有的内容" >&2
+fi
+
+# 前置检查
+[[ -e /dev/kvm ]] || { echo "错误: /dev/kvm 不存在，请确认 BIOS 已开启虚拟化。" >&2; exit 1; }
+[[ -r /dev/kvm && -w /dev/kvm ]] || {
+	echo "错误: 当前用户无权访问 /dev/kvm，执行: sudo usermod -aG kvm $USER" >&2
+	exit 1
+}
+
+# 宿主显示器的最大模式：已连接输出里像素最多的一条
+host_max_res() {
+	local path mode w h best="" best_px=0
+	for path in /sys/class/drm/card*-*; do
+		[[ -r $path/status && -r $path/modes ]] || continue
+		[[ $(<"$path/status") == connected ]] || continue
+		read -r mode < "$path/modes" || continue
+		[[ $mode =~ ^([0-9]+)x([0-9]+)$ ]] || continue
+		w=${BASH_REMATCH[1]}
+		h=${BASH_REMATCH[2]}
+		(( w * h > best_px )) || continue
+		best_px=$(( w * h ))
+		best=$mode
+	done
+	printf '%s' "$best"
+}
+
+# 显卡与分辨率：virtio-vga 的 EDID 只上报一条 preferred mode，guest 就只认它；
+# 但 gtk/sdl 会把窗口逻辑尺寸通过 ui_info 写回去，所以窗口态下分辨率跟窗口走。
+# std-VGA 没有 ui_info，EDID 说什么就是什么（代价是没 3D）。
+[[ -n $RES ]] || RES=$(host_max_res)
+RW=""
+RH=""
+if [[ -n $RES ]]; then
+	[[ $RES =~ ^([0-9]+)x([0-9]+)$ ]] || { echo "分辨率格式应为 WxH: $RES" >&2; exit 1; }
+	RW=${BASH_REMATCH[1]}
+	RH=${BASH_REMATCH[2]}
+fi
+case "$GPU_KIND" in
+	virtio) GPU=virtio-vga ;;
+	vga)    GPU=VGA,edid=on ;;
+	*)      echo "未知显卡: $GPU_KIND（virtio 或 vga）" >&2; exit 1 ;;
+esac
+if [[ -n $RW ]]; then
+	GPU+=",xres=$RW,yres=$RH"
+	# framebuffer 需要 w*h*4 字节，留 8MiB 余量给 guest 的其它模式
+	vgamem=$(( (RW * RH * 4) / 1048576 + 8 ))
+	[[ $GPU_KIND == vga ]] && (( vgamem > 16 )) && GPU+=",vgamem_mb=$vgamem"
+fi
+if [[ $GL -eq 1 ]]; then
+	[[ $GPU_KIND == vga ]] && { echo "--gl 需要 virtio 显卡" >&2; exit 1; }
+	GPU="${GPU/virtio-vga/virtio-vga-gl}"
+	[[ $UI == *,gl=* ]] || UI+=",gl=on"
+fi
+
+args=(
+	-name "$NAME"
+	-machine q35
+	-accel kvm
+	-cpu host
+	-smp "$CPUS"
+	-m "$MEM"
+	-rtc base=localtime
+	-drive "file=$DISK,if=virtio,format=qcow2,cache=writeback"
+	-nic user,model=virtio-net-pci
+	-device virtio-rng-pci
+	-device qemu-xhci,id=usbctl
+	-device usb-tablet,bus=usbctl.0
+	-device "$GPU"
+	-display "$UI"
+)
+
+# 引导顺序：安装时光驱优先，平时硬盘优先
+if [[ $INSTALL -eq 1 ]]; then
+	args+=( -boot order=dc )
+else
+	args+=( -boot order=c )
+fi
+
+if [[ -n $ISO ]]; then
+	args+=(
+		-drive "file=$ISO,media=cdrom,readonly=on,if=none,id=cd0"
+		-device ide-cd,drive=cd0
+	)
+fi
+
+# UEFI 需要一块可写的变量存储副本，里面存着引导项，必须跟磁盘放在一起
+if [[ $UEFI -eq 1 ]]; then
+	if [[ -f $OVMF_CODE && -f $OVMF_VARS ]]; then
+		[[ -f $VARS ]] || cp "$OVMF_VARS" "$VARS"
+		args+=(
+			-drive "if=pflash,format=raw,readonly=on,file=$OVMF_CODE"
+			-drive "if=pflash,format=raw,file=$VARS"
+		)
+	else
+		echo "警告: 找不到 OVMF 固件，改用 BIOS 模式" >&2
+		args+=( -bios seabios )
+	fi
+else
+	args+=( -bios seabios )
+fi
+
+# 音频：宿主机有 PulseAudio/PipeWire 时启用
+if [[ -S /run/user/$(id -u)/pulse/native ]]; then
+	args+=( -audiodev pa,id=snd0 -device intel-hda -device hda-duplex,id=snd1,audiodev=snd0 )
+else
+	args+=( -audiodev none,id=snd0 )
+fi
+
+[[ $FULLSCREEN -eq 1 ]] && args+=( -full-screen )
+[[ $NO_REBOOT -eq 1 ]] && args+=( -no-reboot )
+
+if [[ $DRY_RUN -eq 1 ]]; then
+	printf '%q ' qemu-system-x86_64 "${args[@]}"
+	echo
+	exit 0
+fi
+
+echo "启动: $NAME"
+printf '  磁盘 %s\n' "$DISK"
+printf '  显示 %s (%s)\n' "${RES:-1280x800 QEMU 默认}" "$UI"
+if [[ $UEFI -eq 1 ]]; then printf '  固件 %s\n' "$VARS"; fi
+if [[ -n $ISO ]]; then printf '  ISO  %s\n' "$ISO"; fi
+if [[ $INSTALL -eq 1 ]]; then
+	echo "  从 ISO 引导安装；装完请在 guest 里执行 poweroff，再不带 --iso 重新启动" >&2
+elif [[ -n $ISO && $UEFI -eq 1 ]]; then
+	echo "  注意: UEFI 下挂载的光驱会抢占引导权，要从硬盘启动请改用 --bios" >&2
+fi
+exec qemu-system-x86_64 "${args[@]}"

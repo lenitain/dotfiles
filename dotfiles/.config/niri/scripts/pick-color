@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# 放大镜取色器（shmooz）：滚轮缩放，按 i 进取色模式，左键复制 #rrggbb，右键退出。
+#
+# 取色模式得用户自己按 i：wtype 走 zwp_virtual_keyboard，字符排在自定义 keycode 上，
+# 而 shmooz 拿裸 evdev 码比对快捷键（KEY_I=23），送过去的键不是 i，还会误触 Esc 退出。
+#
+# 不额外发通知：shmooz 的取色浮窗自己就实时显示 hex、复制后标 COPIED，剪贴板
+# 也由它写好（wl-copy 让内容活过它退出）。监听剪贴板只会看到同一次取色的两笔
+# 写入（原生 selection + wl-copy），要提示就得再去重，不如直接不提示。
+
+command -v shmooz >/dev/null 2>&1 || {
+    echo "shmooz 未安装" >&2
+    exit 1
+}
+
+# 写成 200% 会被 shmooz 直接拒绝退出。
+exec shmooz --invert-scroll --zoom-in 10%

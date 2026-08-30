@@ -1,0 +1,10 @@
+# mise 全局配置；领域配置在 conf.d/*.toml（按字母序合并）。
+
+[settings]
+auto_install = false
+http_retries = 5
+# 必须是字符串 "0s"；整数 0 会报 invalid type
+minimum_release_age = "0s"
+dotfiles.root = "~/.config/mise/dotfiles"
+# 只接受绝对路径或 ~/ 开头
+write_targets.dotfiles = "~/.config/mise/conf.d/dotfiles.toml"

@@ -1,0 +1,17 @@
+[Unit]
+Description=sing-box service (user)
+Documentation=https://sing-box.sagernet.org
+# 按需单元：生命周期全交给 proxy-on / proxy-off（只 start/stop、从不 enable），
+# 所以没有 [Install] —— 不用代理时不该常驻，别给它补 WantedBy=。
+#
+# 也不写 network 排序依赖：用户级作用域没有 network-online.target /
+# nss-lookup.target（那几个 target 只存在于 system 级），写了是死引用；
+# mixed 入站起来即监听 127.0.0.1:7890，调用方 proxy-on 自己 wait_port 等就绪。
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/sing-box run -c %h/.config/sing-box/config.json
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+LimitNOFILE=1048576

@@ -1,0 +1,26 @@
+{
+    "layer": "top",
+
+    // 没有 modules-center，所以关掉中栏本身。默认 fixed-center=true 时 waybar 会给
+    // 中栏留一个固定的中心位（gtk_box_set_center_widget），左右两组各只能分到一半
+    // 宽度。关掉之后左栏（工作区 + 当前窗口标题）可以一路顶到右簇左沿。
+    "no-center": true,
+
+    "include": [
+        "~/.config/waybar/modules.json"
+    ],
+
+    "modules-left": [
+        "niri/workspaces#numbers",
+        "niri/workspaces#taskbar",
+        "niri/window"
+    ],
+
+    "modules-right": [
+        "tray",
+        "custom/idle-inhibit",
+        "battery",
+        "pulseaudio",
+        "clock"
+    ]
+}

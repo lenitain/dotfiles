@@ -1,0 +1,37 @@
+# hooks：声明式段覆盖不到的命令。
+
+[bootstrap.hooks.post-dotfiles]
+run = "command -v bat >/dev/null 2>&1 && bat cache --build || true"
+
+[bootstrap.hooks.final]
+run = """
+  set -euo pipefail
+  if ! command -v flatpak >/dev/null 2>&1; then
+    exit 0
+  fi
+  . "{{ config_root }}/.config/mise/tasks/lib/log.sh"
+  info "更新 flathub 用户应用 (hook: final) ..."
+  if flatpak update --user -y 2>&1 | tail -3; then
+    ok "flathub 应用已更新"
+  else
+    warn "flatpak update 失败 (网络/远端不可达), 保留当前版本"
+  fi
+"""
+
+# -Syu 必须在装包前，否则是 partial upgrade；失败即中止，不要在危险态下继续。
+[bootstrap.hooks.pre-packages]
+run = [
+  "sudo pacman -Syu --noconfirm",
+  "command -v flatpak >/dev/null 2>&1 || sudo pacman -S --needed --noconfirm flatpak",
+  """
+    set -euo pipefail
+    tmp_key="$(mktemp)"
+    trap 'rm -f "$tmp_key"' EXIT
+    curl -fsSL -o "$tmp_key" https://mirror.sjtu.edu.cn/flathub/flathub.gpg
+    if ! flatpak remote-list --user | grep -q '^flathub'; then
+      flatpak remote-add --user flathub https://mirror.sjtu.edu.cn/flathub --gpg-import="$tmp_key"
+    else
+      flatpak remote-modify --user flathub --gpg-import="$tmp_key"
+    fi
+  """,
+]

@@ -1,0 +1,11 @@
+---
+# 主机清单模板: 复制成 inventory.yml 再填真实 IP。
+#   cp inventory.template.yml inventory.yml
+# inventory.yml 含真实主机地址, 不入库 (见根 .gitignore);
+# ansible.cfg 里 inventory = inventory.yml, 直接用本地这份。
+
+all:
+  hosts:
+    YOUR_VPS_IP:
+      ansible_user: root
+      ansible_ssh_private_key_file: ~/.ssh/id_ed25519

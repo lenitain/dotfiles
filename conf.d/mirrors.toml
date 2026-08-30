@@ -1,0 +1,26 @@
+# 镜像。mise 只管自己 HTTP 客户端；裸 git 走 ~/.gitconfig 的 url.insteadOf。
+
+[env]
+GOPROXY = "https://goproxy.cn,direct"
+RUSTUP_DIST_SERVER = "https://mirrors.ustc.edu.cn/rust-static"
+RUSTUP_UPDATE_ROOT = "https://mirrors.ustc.edu.cn/rust-static/rustup"
+NODEJS_ORG_MIRROR = "https://npmmirror.com/mirrors/node"
+NPM_CONFIG_REGISTRY = "https://registry.npmmirror.com"
+PIP_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
+UV_DEFAULT_INDEX = "https://pypi.tuna.tsinghua.edu.cn/simple"
+MISE_GO_DOWNLOAD_MIRROR = "https://mirrors.aliyun.com/golang"
+# aliyun /golang 不发 .sha256，不跳过校验会装不上
+MISE_GO_SKIP_CHECKSUM = "1"
+MISE_HTTP_TIMEOUT = "5m"
+MISE_HTTP_DOWNLOAD_TIMEOUT = "10m"
+
+[settings]
+# 末尾斜杠必须留；不要用 npmmirror 的 /mirrors/node（会被特判成 404）
+node.mirror_url = "https://mirrors.aliyun.com/nodejs-release/"
+# 只管定版本，不管下载；配错不报错，会静默把 latest 钉在老版本
+pypi.registry_url = "https://mirrors.aliyun.com/pypi/web/json/{}"
+
+[settings.url_replacements]
+"https://github.com/" = "https://gh-proxy.org/https://github.com/"
+"https://raw.githubusercontent.com/" = "https://gh-proxy.org/https://raw.githubusercontent.com/"
+"https://index.crates.io/" = "https://mirrors.ustc.edu.cn/crates.io-index/"

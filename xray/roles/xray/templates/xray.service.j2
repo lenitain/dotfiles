@@ -1,0 +1,18 @@
+[Unit]
+Description=Xray Service (VLESS + REALITY + Vision)
+Documentation=https://xtls.github.io
+After=network.target nss-lookup.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ xray_service_user }}
+Group={{ xray_service_group }}
+ExecStart={{ xray_install_dir }}/xray run -c {{ xray_config_dir }}/config.json
+Restart=on-failure
+RestartPreventExitStatus=23
+LimitNPROC=10000
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target

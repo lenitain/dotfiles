@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+#MISE description="桌面性能调优 (BBR/Wi-Fi 省电/电源档位): 立即应用并体检"
+
+# 目标场景: 编程、等编译、等下载。三件事:
+#   1) TCP 拥塞控制 → BBR      (Wi-Fi、高 RTT 链路吞吐优于 cubic)
+#   2) Wi-Fi 省电   → off      (rtw88 等省电下掉吞吐、加延迟)
+#   3) 电源档位     → 插电 performance / 电池 balanced
+#
+# 配置文件与 systemd 单元由 mise bootstrap 收敛 (见 conf.d/system.toml),
+# 本任务只负责"立即生效 + 体检"。幂等, 可重复运行。
+#
+# 提权: 需要 root 的动作统一走 sudo (桌面走 polkit 弹窗); 已是 root 就直接执行。
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
+
+as_root() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  else
+    sudo "$@"
+  fi
+}
+
+sysctl_dropin=/etc/sysctl.d/99-net-tuning.conf
+power_profile_script=/usr/local/bin/power-profile
+wifi_script=/usr/local/bin/wifi-powersave-off
+
+# ── 1. TCP 拥塞控制 → BBR ─────────────────────────────────────────
+if [ -r /proc/sys/net/ipv4/tcp_available_congestion_control ]; then
+  current_cc="$(cat /proc/sys/net/ipv4/tcp_congestion_control)"
+  if grep -qw bbr /proc/sys/net/ipv4/tcp_available_congestion_control; then
+    info "应用 BBR (当前 $current_cc) ..."
+    as_root sysctl -w net.core.default_qdisc=fq >/dev/null
+    as_root sysctl -w net.ipv4.tcp_congestion_control=bbr >/dev/null
+    ok "拥塞控制 $(cat /proc/sys/net/ipv4/tcp_congestion_control) / 队列 $(cat /proc/sys/net/core/default_qdisc)"
+  else
+    warn "内核不支持 BBR, 保持 $current_cc"
+  fi
+else
+  warn "读不到 tcp_available_congestion_control, 跳过 TCP 部分"
+fi
+
+# ── 2. 电源档位 (插电 performance / 电池 balanced) ───────────────
+if [ -x "$power_profile_script" ]; then
+  info "按供电状态切电源档 ..."
+  # 改 governor 需要 root, ppd 部分不需要; 统一提权跑一次。
+  if ! as_root "$power_profile_script"; then
+    warn "电源档位切换失败"
+  fi
+  profile="$(powerprofilesctl get 2>/dev/null || echo 未知)"
+  governor="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo 未知)"
+  platform="$(cat /sys/firmware/acpi/platform_profile 2>/dev/null || echo 无)"
+  ok "电源档位 $profile / platform_profile $platform / governor $governor"
+else
+  warn "缺少 $power_profile_script, 跳过 (先跑: sudo mise bootstrap)"
+fi
+
+# ── 3. Wi-Fi 省电 → off ──────────────────────────────────────────
+if [ -x "$wifi_script" ]; then
+  info "关闭 Wi-Fi 省电 ..."
+  if as_root systemctl restart wifi-powersave-off.service >/dev/null 2>&1; then
+    ok "wifi-powersave-off.service 已重启"
+  else
+    warn "wifi-powersave-off.service 重启失败 (单元没装?)"
+  fi
+  for dir in /sys/class/net/*/wireless; do
+    [ -d "$dir" ] || continue
+    iface="$(basename "$(dirname "$dir")")"
+    state="$(iw dev "$iface" get power_save 2>/dev/null | awk '/Power save/{print $3}')"
+    if [ -n "$state" ]; then
+      ok "$iface power_save=$state"
+    fi
+  done
+else
+  warn "缺少 $wifi_script, 跳过 (先跑: sudo mise bootstrap)"
+fi
+
+# ── 4. 体检 ─────────────────────────────────────────────────────
+[ -f "$sysctl_dropin" ] || warn "缺少 $sysctl_dropin, 开机不会自动应用 (先跑: sudo mise bootstrap)"
+info "提示: 内核参数 amd_pstate=active 能进一步放开睿频, 需改引导配置并重编 initramfs, 本任务不自动动 /boot"
+ok "调优已应用"

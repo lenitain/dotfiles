@@ -1,0 +1,99 @@
+{
+  // 工作区编号（#numbers）：每个工作区一枚胶囊，只放序号。
+  // {index} 是 niri 在该 output 内从 1 起的连续序号（工作区 id 会因增删留空洞，
+  // 序号不会），空工作区淡化但仍可点。
+  "niri/workspaces#numbers": {
+    "format": "{index}"
+  },
+
+  // 当前工作区的 taskbar（#taskbar）：current-only 只留下聚焦工作区那一格，
+  // show-label 关掉编号后，这格里只有该工作区各窗口的 app 图标：左键聚焦窗口，
+  // 中键关窗，悬停显示标题；图标顺序跟 niri 的滚动布局（列→行）。
+  // 空工作区时整格收起（style.css 里把 padding/margin 归零）。
+  // icon-size 26：这一格没有额外内距，26 在 29px 胶囊里上下各留 1.5px；
+  // 比 tray 的 23 图标略大，因为这里图标本身就是胶囊内的主体。
+  "niri/workspaces#taskbar": {
+    "current-only": true,
+    "workspace-taskbar": {
+      "enable": true,
+      "show-label": false,
+      "icon-size": 26
+    }
+  },
+
+  // 当前聚焦窗口的标题（原生 niri/window，无脚本）。
+  // 不设 max-length：标签按整串标题申请自然宽度，左栏能占多宽就显示多宽，
+  // 只有被右簇挤到时才由 ellipsize 截断（niri/window 构造时默认打开，
+  // 配合 no-center 一路顶到右簇左沿）。
+  // 没有窗口时模块自动隐藏（show-empty 默认 false）。
+  "niri/window": {
+    "format": "{title}"
+  },
+
+  // Idle Inhibit（desktop 图标；挂在 modules-right 的 tray 与 battery 之间）
+  "custom/idle-inhibit": {
+    "return-type": "json",
+    "exec": "~/.config/waybar/scripts/idle-inhibit.sh",
+    "signal": 8,
+    "on-click": "~/.config/waybar/scripts/idle-inhibit.sh toggle"
+  },
+
+  // System tray
+  // icon-size 23 与 18px 字号配套：图标 23 + 上下各 3px padding = 29px，
+  // 与文字胶囊同高。cursor 让整组图标显示手型。
+  "tray": {
+    "icon-size": 23,
+    "cursor": true
+  },
+
+  // Clock（单行、英文：数字月-日 星期 时:分，例如 "10-24 Sat 15:55"）
+  // 内置 clock 用 chrono 在进程内格式化，默认每分钟对齐刷新。
+  // locale C 保证 %a 为英文；format 是 chrono 串，整串包在花括号里。
+  // tooltip 补年份与 ISO 周数。
+  "clock": {
+    "format": "{:%m-%d %a %H:%M}",
+    "locale": "C",
+    "tooltip-format": "{:%Y-%m-%d · Week %V}",
+    "on-click": "~/.config/waybar/scripts/popup-wrapper gsimplecal"
+  },
+
+  // Battery
+  // warning/critical 状态；critical 由 style.css 的 #battery.critical 染色。
+  "battery": {
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    // 放电：MD 电池电量图标（5 档与插头同宽 11px → 插电/放电右边缘恒定）。
+    "format": "{capacity}% {icon}",
+    "format-icons": ["󰁺", "󰁼", "󰁾", "󰂀", "󰂂"],
+    // 插电 / 充电 / 满电 / not-charging：绿色插头（span 只包图标，数字不变色）。
+    // not-charging 必须单独覆盖，否则回落到 format 显示电池图标 → 闪烁。
+    "format-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-full": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-not-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-plugged": "{capacity}% <span color='#a7c080'>󰂄</span>",
+
+    // tooltip 补全：时间/功率 + 循环/健康度。放电/充电有剩余时间与实时功率，
+    // 其余状态落到通用 tooltip-format，避免报 "0.0 W"。
+    "tooltip-format-discharging": "{timeTo} · {power:.1f} W\n{cycles} cycles · health {health}%",
+    "tooltip-format-charging": "{timeTo} · {power:.1f} W\n{cycles} cycles · health {health}%",
+    "tooltip-format": "{cycles} cycles · health {health}%"
+  },
+
+  // Pulseaudio（FA 大图标，数字在左）
+  "pulseaudio": {
+    "format": "{volume}% {icon}",
+    "format-muted": "<span color='#e67e80'>{icon}</span>",
+    // 静音时只留图标；音量 0（未静音）仍显示数字，只换图标。
+    "states": {
+      "mute": 0
+    },
+    "format-mute": "{volume}% ",
+    "format-icons": {
+      "default": "",
+      "default-muted": ""
+    },
+    "on-click": "~/.config/waybar/scripts/popup-wrapper pavucontrol"
+  }
+}

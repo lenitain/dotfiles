@@ -1,0 +1,40 @@
+# mako — Everforest Dark Medium（色值对应 ~/.palette/everforest.md）
+
+# ---------- 交互 ----------
+# 左键：关掉这一条 / 右键：关掉这一组
+on-button-left=dismiss
+on-button-right=dismiss-group
+
+# ---------- 行为 ----------
+font=Noto Sans CJK SC 16
+max-visible=5
+group-by=app-name
+default-timeout=5000
+
+# ---------- 定向超时 ----------
+# Fcitx5 的「Wayland 诊断」通知自带 60s 超时（上游 waylandmodule.cpp 里硬编码
+# showTip(..., 60000)）。mako 的 default-timeout 只在通知没指定超时时才生效
+# （dbus/xdg.c: expire_timeout < 0 才回落到 default-timeout），所以那条诊断会
+# 在屏幕上挂满一分钟。这里按 app-name 定向忽略它自带的超时，改用上面的 5s。
+[app-name=Fcitx]
+ignore-timeout=1
+
+# ---------- 布局 ----------
+width=420
+height=160
+padding=14
+margin=12
+border-size=2
+border-radius=12
+max-icon-size=56
+icon-border-radius=8
+
+# ---------- 定位 ----------
+layer=overlay
+anchor=top-right
+
+# ---------- 配色 ----------
+background-color=#3D484D
+text-color=#D3C6AA
+border-color=#859289
+progress-color=over #7FBBB3

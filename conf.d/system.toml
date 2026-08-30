@@ -1,0 +1,266 @@
+# 系统收敛（文件/服务/账号/登录 shell）。阶段顺序见 `mise bootstrap --help`。
+
+# 不钉 --cmd：tuigreet 列出会话供选择。greetd 无 reload，改动下次开机生效。
+[bootstrap.files."/etc/greetd/config.toml"]
+content = """
+[terminal]
+vt = 1
+
+[default_session]
+command = "tuigreet --remember --remember-user-session"
+user = "greeter"
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+[bootstrap.services.greetd]
+state = "running"
+enabled = true
+
+[bootstrap.files."/etc/vconsole.conf"]
+content = """
+# Written by systemd-localed(8) or systemd-firstboot(1), read by systemd-localed
+# and systemd-vconsole-setup(8). Use localectl(1) to update this file.
+XKBLAYOUT=cn
+FONT=latarcyrheb-sun32
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# 必须绝对路径，按字符串精确比较（/bin/bash ≠ /usr/bin/bash）。
+[bootstrap.user]
+login_shell = "/bin/bash"
+
+# 组必须先于包存在，否则 accounts 阶段中止。加入 docker 组等价免密 root。
+[bootstrap.groups.docker]
+system = true
+
+[bootstrap.users.lenitain]
+group = "lenitain"
+groups = ["input", "docker"]
+
+# mise 不自动补父目录，缺了会中止 bootstrap。
+[bootstrap.directories."/etc/systemd/logind.conf.d"]
+owner = "root"
+group = "root"
+mode = "0755"
+
+[bootstrap.directories."/etc/docker"]
+owner = "root"
+group = "root"
+mode = "0755"
+
+# 合盖不挂起（重启生效）。
+[bootstrap.files."/etc/systemd/logind.conf.d/keep-running.conf"]
+content = """
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+[bootstrap.files."/etc/docker/daemon.json"]
+content = """
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://docker.1ms.run",
+    "https://docker.xuanyuan.me",
+    "https://docker-0.unsee.tech"
+  ]
+}
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# socket 激活：socket 常驻、daemon 不随开机启动。这一对缺一不可；stopped 是硬声明。
+[bootstrap.services."docker.socket"]
+state = "running"
+enabled = true
+
+[bootstrap.services.docker]
+state = "stopped"
+enabled = false
+
+# ── 桌面性能调优 ───────────────────────────────────────────────────
+# 场景: 编程 / 等编译 / 等下载。三件事:
+#   1) TCP 拥塞控制 → BBR   (Wi-Fi、高 RTT 链路吞吐优于 cubic)
+#   2) Wi-Fi 省电   → off   (rtw88 等在省电下掉吞吐、加延迟)
+#   3) 电源档位     → 插电 performance / 电池 balanced
+# 文件与单元由 bootstrap 收敛; 立即生效 + 体检: mise run setup-tuning。
+
+# 内核没编 BBR 时这一行会在启动时报一条 sysctl 错误, 拥塞控制保持默认, 无副作用。
+[bootstrap.files."/etc/sysctl.d/99-net-tuning.conf"]
+content = """
+# 由 mise 收敛 (conf.d/system.toml) —— TCP 拥塞控制
+# BBR 在高 RTT / 有丢包的链路 (Wi-Fi、跨境) 上吞吐与延迟都优于 cubic。
+net.ipv4.tcp_congestion_control = bbr
+# BBR 依赖 fq 队列, 两者配套才生效
+net.core.default_qdisc = fq
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# 关 Wi-Fi 省电: 逐个无线接口关掉, 无无线网卡或没有 iw 时静默退出。
+[bootstrap.files."/usr/local/bin/wifi-powersave-off"]
+content = """
+#!/usr/bin/env bash
+# 关闭 Wi-Fi 省电 —— rtw88 / iwlwifi 在省电下吞吐掉、延迟升。
+# 调用方: wifi-powersave-off.service (开机) 与 udev (无线网卡出现时)。
+set -euo pipefail
+
+command -v iw >/dev/null 2>&1 || exit 0
+
+for dir in /sys/class/net/*/wireless; do
+  [ -d "$dir" ] || continue
+  iface="$(basename "$(dirname "$dir")")"
+  if iw dev "$iface" set power_save off >/dev/null 2>&1; then
+    echo "wifi-powersave: $iface -> off"
+  else
+    echo "wifi-powersave: $iface -> 设置失败" >&2
+  fi
+done
+"""
+owner = "root"
+group = "root"
+mode = "0755"
+
+# After=NetworkManager: 无线接口由 NM 建, 太早跑会一个接口都没有。
+[bootstrap.files."/etc/systemd/system/wifi-powersave-off.service"]
+content = """
+[Unit]
+Description=关闭 Wi-Fi 省电 (iw)
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/wifi-powersave-off
+
+[Install]
+WantedBy=multi-user.target
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+[bootstrap.services."wifi-powersave-off"]
+state = "running"
+enabled = true
+
+# 电源档位跟着供电走: 插电 performance (编译/下载更快), 电池 balanced (续航)。
+# 两层都做: ppd 改平台档位, 再直接写 cpufreq governor —— 本机 ppd 只驱动
+# platform_profile, 不碰 governor, 只切档位放开不了睿频。
+[bootstrap.files."/usr/local/bin/power-profile"]
+content = """
+#!/usr/bin/env bash
+# 按供电状态切性能档 —— 插电 performance, 电池 balanced。
+# 调用方: power-profile.service (开机) 与 udev (供电状态变化时)。
+set -euo pipefail
+
+command -v powerprofilesctl >/dev/null 2>&1 || exit 0
+
+on_ac=0
+for ps in /sys/class/power_supply/*; do
+  [ -r "$ps/type" ] || continue
+  [ "$(cat "$ps/type")" = "Mains" ] || continue
+  if [ "$(cat "$ps/online" 2>/dev/null || echo 0)" = "1" ]; then
+    on_ac=1
+    break
+  fi
+done
+
+if [ "$on_ac" -eq 1 ]; then
+  target=performance
+  governor=performance
+else
+  target=balanced
+  governor=schedutil
+fi
+
+current="$(powerprofilesctl get 2>/dev/null || echo unknown)"
+if [ "$current" != "$target" ]; then
+  powerprofilesctl set "$target" || true
+fi
+
+# acpi-cpufreq 下 ppd 管不到 governor, 直接写 (需 root)。
+if command -v cpupower >/dev/null 2>&1; then
+  current_gov="$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo unknown)"
+  if [ "$current_gov" != "$governor" ]; then
+    if ! cpupower frequency-set -g "$governor" >/dev/null 2>&1; then
+      echo "power-profile: governor 改写失败 (需要 root?)" >&2
+      exit 1
+    fi
+  fi
+fi
+"""
+owner = "root"
+group = "root"
+mode = "0755"
+
+[bootstrap.files."/etc/systemd/system/power-profile.service"]
+content = """
+[Unit]
+Description=按供电状态切换电源性能档
+After=power-profiles-daemon.service
+Wants=power-profiles-daemon.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/power-profile
+
+[Install]
+WantedBy=multi-user.target
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+[bootstrap.services."power-profile"]
+state = "running"
+enabled = true
+
+# 供电状态一变就重跑上面的脚本。udev RUN 以 root 执行, 与 SYSTEMD_WANTS 相比
+# 不受单元 RemainAfterExit 的影响, 每次事件都会重新判定档位。
+[bootstrap.files."/etc/udev/rules.d/99-power-profile.rules"]
+content = """
+# 供电状态变化 → 重判电源档位 (插电 performance / 电池 balanced)
+ACTION=="change|add", SUBSYSTEM=="power_supply", RUN+="/usr/local/bin/power-profile"
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# 无线网卡热插拔后省电会回到默认, 重新关一次。
+[bootstrap.files."/etc/udev/rules.d/99-wifi-powersave.rules"]
+content = """
+# 无线网卡出现 → 关闭 Wi-Fi 省电
+ACTION=="add", SUBSYSTEM=="net", KERNEL=="wlan*", RUN+="/usr/local/bin/wifi-powersave-off"
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# power-profiles-daemon 默认没开, 档位切换就没载体。
+[bootstrap.services."power-profiles-daemon"]
+state = "running"
+enabled = true
+
+# WebHID 配置器需要能 open /dev/hidraw*。规则不回溯已插设备，需重插生效。
+[bootstrap.files."/etc/udev/rules.d/70-hidraw-access.rules"]
+content = """
+# WebHID configurators (vial.rocks / VIA) open /dev/hidraw* directly.
+# Default 0600 root:root blocks the browser: device is listed but connect hangs.
+KERNEL=="hidraw*", GROUP="input", MODE="0660"
+"""
+owner = "root"
+group = "root"
+mode = "0644"

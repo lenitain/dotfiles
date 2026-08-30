@@ -1,0 +1,65 @@
+# nvim 插件锁文件
+dotfiles/.config/nvim/lazy-lock.json
+
+# 编辑器/系统杂项
+.DS_Store
+*.swp
+*.tmp
+*.log
+*.png
+*.jpg
+*.jpeg
+__pycache__/
+.ruff_cache/
+
+# 生成的壁纸矢量图 (由 build_all.py 产出, 不入库)
+dotfiles/.local/share/wallpapers/*.svg
+
+# xray-setup 私有密钥 (并入 xray/ 后不入库)
+xray/host_vars/*.yml
+!xray/host_vars/_template.yml
+
+# VPS 主机清单 (含真实 IP, 不入库; 从 inventory.template.yml 复制)
+xray/inventory.yml
+
+# pig: 运行时产物一律不入库, 只放行需要版本管理的配置
+#     新增要跟踪的文件时, 在下面加一条 !dotfiles/.pig/agent/<文件>
+dotfiles/.pig/**
+!dotfiles/.pig/agent/
+!dotfiles/.pig/agent/AGENTS.md
+!dotfiles/.pig/agent/models.json
+!dotfiles/.pig/agent/settings.json
+!dotfiles/.pig/agent/themes/
+!dotfiles/.pig/agent/themes/**
+!dotfiles/.pig/agent/web-search.json
+
+# bash conf.d 中的 API 密钥（按 *KEY.sh 命名约定自动忽略）
+dotfiles/.config/bash/conf.d/*KEY.sh
+
+# yazi 插件目录与依赖锁文件 (package.toml 由 setup-yazi 生成/更新, 不入库)
+dotfiles/.config/yazi/plugins/*
+!dotfiles/.config/yazi/plugins/finder.yazi/
+dotfiles/.config/yazi/package.toml
+
+# psd 自动生成的配置快照
+dotfiles/.config/psd/.psd.conf
+
+# qutebrowser 运行时文件 (浏览器自己读写, 不入库)
+#   qsettings/  Qt 文件对话框状态
+#   bookmarks/  书签库, quickmarks  快标
+dotfiles/.config/qutebrowser/qsettings/
+dotfiles/.config/qutebrowser/bookmarks/
+dotfiles/.config/qutebrowser/quickmarks
+
+# 二进制脚本
+dotfiles/.local/bin/scripts/qb-open
+
+# 硬件相关显示配置
+dotfiles/.config/niri/output.kdl
+
+# go env -w 写入的环境变量文件 (镜像等由 mise [env] 注入, 不入库)
+dotfiles/.config/go/env
+
+# jujutsu per repo info
+dotfiles/.config/jj/repos
+dotfiles/.config/jj/workspaces

@@ -1,0 +1,82 @@
+#!/usr/bin/luajit
+-- 把聚焦列贴到屏幕边缘（= 按 Mod+F）。
+--
+-- 直接走 niri 的 IPC socket（$NIRI_SOCKET），协议是「一行 JSON 请求，一行 JSON 回复」，
+-- 所以一次按键只有一个 luajit 进程 + 一次 connect，不起 bash/jq/niri msg 子进程。
+--
+-- maximize-window-to-edges 是 toggle，IPC 里又没有 is_maximized 字段；贴边时边框
+-- 被吃掉，window_offset_in_tile 从 0.8 变成 0 —— 用这个布尔值挡住重复触发，
+-- 所以连按 Mod+F 只会保持在贴边状态，不会缩回去。
+
+local ffi = require("ffi")
+
+ffi.cdef [[
+int socket(int, int, int);
+int connect(int, const void *, unsigned int);
+long write(int, const char *, unsigned long);
+long read(int, char *, unsigned long);
+int close(int);
+
+struct sockaddr_un {
+    unsigned short sun_family;
+    char sun_path[108];
+};
+]]
+
+local AF_UNIX, SOCK_STREAM = 1, 1
+
+local function die(msg)
+    io.stderr:write("column-fill: ", msg, "\n")
+    os.exit(1)
+end
+
+local path = os.getenv("NIRI_SOCKET")
+if not path then die("NIRI_SOCKET 未设置，不在 niri 会话里？") end
+if #path >= 108 then die("NIRI_SOCKET 路径太长") end
+
+local fd = ffi.C.socket(AF_UNIX, SOCK_STREAM, 0)
+if fd < 0 then die("socket() 失败") end
+
+local addr = ffi.new("struct sockaddr_un")
+addr.sun_family = AF_UNIX
+ffi.copy(addr.sun_path, path) -- 结构体是零初始化的，结尾自带 \0
+local len = ffi.offsetof("struct sockaddr_un", "sun_path") + #path + 1
+if ffi.C.connect(fd, ffi.cast("const void *", addr), len) ~= 0 then
+    ffi.C.close(fd)
+    die("connect " .. path .. " 失败")
+end
+
+local buf = ffi.new("char[4096]")
+
+-- 发一行 JSON 请求，读回一行 JSON 回复
+local function request(json)
+    local req = json .. "\n"
+    if ffi.C.write(fd, req, #req) ~= #req then die("write 失败") end
+
+    local chunks = {}
+    while true do
+        local n = ffi.C.read(fd, buf, ffi.sizeof(buf))
+        if n <= 0 then break end
+        local chunk = ffi.string(buf, n)
+        local nl = chunk:find("\n", 1, true)
+        if nl then
+            chunks[#chunks + 1] = chunk:sub(1, nl - 1)
+            return table.concat(chunks)
+        end
+        chunks[#chunks + 1] = chunk
+    end
+    die("读取回复失败")
+end
+
+local reply = request('"FocusedWindow"')
+if reply:find('"FocusedWindow":null', 1, true) then os.exit(0) end
+
+local floating = reply:match('"is_floating":(%a+)')
+local offset = tonumber(reply:match('"window_offset_in_tile":%[([^,]+),') or "")
+if not floating or not offset then die("解析 focused-window 回复失败") end
+
+-- 浮动窗口没有列宽这回事；offset 为 0 说明已经贴边
+if floating == "true" or offset == 0 then os.exit(0) end
+
+request('{"Action":{"MaximizeWindowToEdges":{"id":null}}}')
+os.exit(0)
