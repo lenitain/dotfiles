@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#MISE description="把 wl-screenrec 同步到上游并构建到 ~/.local/bin（幂等，无变化则跳过）"
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/source-build.sh"
+
+REPO_URL="https://github.com/russelltg/wl-screenrec.git"
+INSTALL_DIR="$HOME/.cloned/wl-screenrec"
+TARGET="$HOME/.local/bin/wl-screenrec"
+STATE="$HOME/.local/state/cloned/wl-screenrec.sha"
+
+# ── 前置检查：构建依赖 ──
+missing=()
+command -v git &>/dev/null || missing+=("git")
+command -v cargo &>/dev/null || missing+=("cargo (rust)")
+pkg-config --exists libavcodec libavformat libavutil libavfilter libavdevice libswscale libswresample 2>/dev/null || missing+=("系统 FFmpeg 开发库 (ffmpeg)")
+if [[ ${#missing[@]} -gt 0 ]]; then
+  echo "缺少构建依赖: ${missing[*]}"
+  echo "  → sudo pacman -S --needed git ffmpeg && rustup toolchain install stable"
+  exit 1
+fi
+
+# ── 同步到上游并判定是否重建 ──
+rc=0
+sync_source "$REPO_URL" "$INSTALL_DIR" "$TARGET" "$STATE" || rc=$?
+if [ "$rc" -eq 2 ]; then
+  exit 1
+fi
+if [ "$rc" -eq 0 ]; then
+  cd "$INSTALL_DIR"
+  echo "构建 (cargo build --release)，查找系统 FFmpeg $(pkg-config --modversion libavcodec) 头文件和 .so 路径，生成动态链接指令（NEEDED 写入 ELF）..."
+  cargo build --release
+  mkdir -p "$HOME/.local/bin" "$(dirname "$STATE")"
+  cp target/release/wl-screenrec "$TARGET"
+  chmod +x "$TARGET"
+  git -C "$INSTALL_DIR" rev-parse HEAD > "$STATE"
+  echo "已安装: $TARGET"
+fi

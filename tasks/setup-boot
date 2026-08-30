@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+#MISE description="systemd-boot / sdboot-manage 设置 (root; 带守卫; 手动执行, 不入 setup-all)"
+
+# 从旧 ansible boot.yml 迁移。原则同前:
+#   - 只做【新建/收敛】(安装/配置/生成条目), 全程幂等安全
+#   - 【不卸载】任何现有引导器, 只检测并中止提示
+#   - 涉及 /boot 引导, 必须手动确认后运行:  sudo mise run setup-boot
+# 旧引导栈(Limine/GRUB/UKI)清理命令见文件尾部注释。
+
+set -euo pipefail
+
+info() { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
+ok()   { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
+err()  { printf "\033[31m[err]\033[0m   %s\n" "$*"; }
+
+# ── 守卫: 必须 root ──
+if [ "$(id -u)" -ne 0 ]; then
+  err "需要 root 权限, 请用:  sudo mise run setup-boot"
+  exit 1
+fi
+
+sdboot_conf_dir=/etc/sdboot-manage.conf.d
+sdboot_conf="$sdboot_conf_dir/root.conf"
+redirect_hook_packages=(limine-mkinitcpio-hook kernel-install)
+
+# ───────────────── 1. 预检 (任一失败即中止) ─────────────────
+[ -d /sys/firmware/efi ] || { err "预检失败: 非 UEFI"; exit 1; }
+boot_fs="$(findmnt -no FSTYPE /boot 2>/dev/null || true)"
+[ "$boot_fs" = "vfat" ] || { err "预检失败: /boot 非 vfat (实际:$boot_fs)"; exit 1; }
+[ -x /usr/bin/bootctl ] || { err "预检失败: bootctl 缺失"; exit 1; }
+kernel="$(uname -r)"
+[ -f "/usr/lib/modules/$kernel/vmlinuz" ] || { err "预检失败: 当前内核 vmlinuz 缺失"; exit 1; }
+mid="$(cat /etc/machine-id 2>/dev/null || true)"
+[ -n "$mid" ] && [ "$mid" != "uninitialized" ] || { err "预检失败: machine-id 无效"; exit 1; }
+
+# ───────────── 2. 检测接管内核安装的旧钩子 (仅中止提示) ─────────────
+installed_hooks=()
+for p in "${redirect_hook_packages[@]}"; do
+  pacman -Q "$p" &>/dev/null && installed_hooks+=("$p")
+done
+if [ "${#installed_hooks[@]}" -gt 0 ]; then
+  err "检测到内核安装被接管: ${installed_hooks[*]}"
+  err "它们会把 vmlinuz/initramfs 装入非标准布局, 破坏 systemd-boot 条目。"
+  err "请先手动卸载后重跑:  sudo pacman -Rns ${installed_hooks[*]}"
+  exit 1
+fi
+
+# ───────────────── 3. /boot 可写 (ro 时 remount) ─────────────────
+if findmnt -no OPTIONS /boot 2>/dev/null | grep -qw 'ro'; then
+  info "/boot 为 ro, remount rw ..."
+  mount -o remount,rw /boot
+fi
+
+# ───────────────── 4. 安装 systemd-boot-manager ─────────────────
+pacman -S --needed --noconfirm systemd-boot-manager >/dev/null 2>&1 || {
+  err "systemd-boot-manager 安装失败"; exit 1; }
+[ -x /usr/bin/sdboot-manage ] || { err "sdboot-manage 不可用"; exit 1; }
+
+# ───────────────── 5. 自愈: 经典布局 (vmlinuz-* / initramfs-*.img) ─────────────────
+# 枚举每个已装内核 (dir|pkgbase)
+kernels=()
+for d in /usr/lib/modules/*/; do
+  d="${d%/}"; [ -d "$d" ] || continue
+  if [ -f "$d/pkgbase" ]; then pb="$(cat "$d/pkgbase")"; else pb="$(basename "$d")"; fi
+  kernels+=("$d|$pb")
+done
+
+need_mkinitcpio=0
+for entry in "${kernels[@]}"; do
+  mdir="${entry%%|*}"; pb="${entry#*|}"
+  # mkinitcpio preset
+  if [ ! -f "/etc/mkinitcpio.d/$pb.preset" ]; then
+    if [ -f /usr/share/mkinitcpio/hook.preset ]; then
+      sed "s|%PKGBASE%|$pb|g" /usr/share/mkinitcpio/hook.preset > "/etc/mkinitcpio.d/$pb.preset"
+    else
+      printf '# mkinitcpio preset for %s\nALL_kver="/boot/vmlinuz-%s"\nPRESETS=("default")\ndefault_image="/boot/initramfs-%s.img"\n' "$pb" "$pb" "$pb" > "/etc/mkinitcpio.d/$pb.preset"
+    fi
+    info "生成 mkinitcpio preset: $pb"
+  fi
+  # 经典布局 vmlinuz
+  if [ -f "$mdir/vmlinuz" ] && [ ! -e "/boot/vmlinuz-$pb" ]; then
+    install -m644 "$mdir/vmlinuz" "/boot/vmlinuz-$pb"
+    info "复制 vmlinuz: $pb"
+  fi
+  # initramfs 检查
+  if [ ! -f "/boot/initramfs-$pb.img" ]; then
+    need_mkinitcpio=1
+  fi
+done
+if [ "$need_mkinitcpio" -eq 1 ]; then
+  info "重建 initramfs (mkinitcpio -P) ..."
+  mkinitcpio -P
+fi
+
+# ───────────────── 6. LINUX_OPTIONS → drop-in ─────────────────
+# 读 /proc/cmdline, 去 initrd/root/rootflags/rw/ro/systemd.machine_id
+cmdline="$(cat /proc/cmdline)"
+linux_options=""
+for tok in $cmdline; do
+  case "$tok" in
+    initrd=*|root=*|rootflags=*|rw|ro|systemd.machine_id=*|rd.*=*) continue ;;
+  esac
+  linux_options="${linux_options:+$linux_options }$tok"
+done
+mkdir -p "$sdboot_conf_dir"
+printf 'LINUX_OPTIONS="%s"\n' "$linux_options" > "$sdboot_conf"
+info "写入 $sdboot_conf: LINUX_OPTIONS=$linux_options"
+
+# ───────────────── 7. 安装/更新 systemd-boot ─────────────────
+if ! bootctl is-installed >/dev/null 2>&1; then
+  info "安装 systemd-boot (sdboot-manage setup) ..."
+  sdboot-manage setup
+fi
+sdboot-manage gen
+info "生成 systemd-boot 条目"
+
+# console-mode 2 (固件首个图形模式, 大字)
+if ! grep -q '^console-mode 2' /boot/loader/loader.conf 2>/dev/null; then
+  grep -q '^console-mode' /boot/loader/loader.conf 2>/dev/null \
+    && sed -i 's/^console-mode.*/console-mode 2/' /boot/loader/loader.conf \
+    || printf 'console-mode 2\n' >> /boot/loader/loader.conf
+fi
+
+# ───────────────── 8. 校验 ─────────────────
+if ! ls /boot/loader/entries/*.conf >/dev/null 2>&1; then
+  err "未生成任何 systemd-boot 条目"; exit 1
+fi
+ok "systemd-boot / sdboot-manage 设置完成。内核升级由 mkinitcpio + sdboot 钩子自动处理。"
+if [ -d "/boot/$mid" ]; then
+  info "提示: 检测到旧 kernel-install 布局目录 /boot/$mid (不影响 systemd-boot)。验证启动成功后手动删除: sudo rm -rf /boot/$mid"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# 手动清理旧引导栈(验证 systemd-boot 启动成功后执行, 本脚本不自动做)
+#   kernel-install/UKI:  sudo cp -a /boot/EFI/Linux /root/boot-backup
+#                        sudo rm -rf /boot/EFI/Linux
+#                        sudo rm -f /etc/kernel/install.conf /etc/kernel/uki.conf /etc/kernel/uki.osrel /etc/kernel/cmdline
+#                        sudo rm -rf /etc/kernel/install.d
+#   其它引导器: 按官方步骤卸载, 确保 UEFI 启动项指向 systemd-boot (bootctl install)
+# ═══════════════════════════════════════════════════════════════

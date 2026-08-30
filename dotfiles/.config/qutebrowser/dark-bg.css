@@ -1,0 +1,10 @@
+/*
+ * 和 threshold.background 配合：
+ * bg0 (#2D353B) 亮度 ≈ 51，低于 threshold 55 → darkmode 不反转它
+ * 所以直接写 bg0 即可，不会被改成纯黑
+ *
+ * 由 config.py 的 content.user_stylesheets 加载
+ */
+html, body {
+    background-color: #2D353B !important;
+}

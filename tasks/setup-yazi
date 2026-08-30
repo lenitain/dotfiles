@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#MISE description="安装 yazi 插件/配色 (从 package.toml)"
+
+set -euo pipefail
+
+info()  { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
+ok()    { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
+err()   { printf "\033[31m[err]\033[0m   %s\n" "$*"; }
+
+if ! command -v ya &>/dev/null; then
+  err "缺少 ya，请先运行: mise bootstrap --yes"
+  exit 1
+fi
+
+info "安装 yazi 插件/配色 ..."
+ya pkg install
+ok "yazi 插件已安装"

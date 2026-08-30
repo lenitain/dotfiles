@@ -1,0 +1,10 @@
+// Startup commands
+spawn-sh-at-startup "/usr/lib/polkit-kde-authentication-agent-1 &"
+spawn-sh-at-startup "waybar"
+spawn-sh-at-startup "wl-paste --type text --watch cliphist store"
+spawn-sh-at-startup "swayidle -w timeout 170 'swaylock -f' timeout 177 'niri msg action power-off-monitors' before-sleep 'swaylock -f'"
+spawn-sh-at-startup "swaybg -i ~/Pictures/wallpaper/branch.svg -m fill"
+spawn-sh-at-startup "foot --server"
+spawn-sh-at-startup "qb-server --nowindow -R >/tmp/qbserver.log 2>&1"
+spawn-sh-at-startup "dsh web --no-open"
+prefer-no-csd

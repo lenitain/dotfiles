@@ -1,0 +1,19 @@
+# Your patch layer for this dsh profile, applied after every bundle layer:
+# a top-level YAML array of loader patch entries (id-targeted config
+# overrides, disables, and insert lists; `!!js` expressions allowed).
+
+# ── Everforest Dark Medium palette ──────────────────────────────────────────
+#
+# A third-party palette over the ui-theme design tokens. The package lives in
+# ./plugins/dsh-client-ui-theme-everforest and is linked into ./node_modules;
+# its browser half (`./client`) stacks one `ctx.theme.overrideTokens` layer, so
+# it composes over whichever built-in theme is active and survives Appearance
+# and OS colour-scheme switches by design.
+#
+# The row is inserted at the end of the tree: it reads `theme` through its
+# client `inject`, and Cordis resolves an injected service whenever it is
+# provided, so position does not decide whether it runs — listing it last keeps
+# the roster readable and the dependency direction obvious.
+- insert:
+    - id: ui-theme-everforest
+      name: dsh-client-ui-theme-everforest

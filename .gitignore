@@ -1,0 +1,33 @@
+# nvim 插件锁文件
+dotfiles/.config/nvim/lazy-lock.json
+
+# 编辑器/系统杂项
+.DS_Store
+*.swp
+*.tmp
+*.log
+__pycache__/
+
+# xray-setup 私有密钥 (并入 xray/ 后不入库)
+xray/host_vars/*.yml
+!xray/host_vars/_template.yml
+
+# pi npm auth & sessions (含 API 密钥和会话数据)
+dotfiles/.pi/agent/auth.json
+dotfiles/.pi/agent/models-store.json
+dotfiles/.pi/agent/sessions/
+dotfiles/.pi/agent/npm/
+dotfiles/.pi/agent/web-search-cache/
+
+# fish shell 变量文件 (自动生成)
+dotfiles/.config/fish/fish_variables
+dotfiles/.config/fish/conf.d/DEEPSEEK_API_KEY.fish
+
+# yazi 插件目录
+dotfiles/.config/yazi/plugins/
+
+# psd 自动生成的配置快照
+dotfiles/.config/psd/.psd.conf
+
+# Qt 文件对话框状态 (qutebrowser 运行时自动生成)
+dotfiles/.config/qutebrowser/qsettings/

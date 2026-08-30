@@ -1,0 +1,22 @@
+ui-onboarding:
+  welcomeNoticeVersion: 2026-08-13.1
+agent-default-model:
+  provider: deepseek-official
+  model: deepseek-flash
+  reasoningEffort: max
+locale:
+  preference: zh
+permission:
+  defaultPreset: danger-full-access
+ui-theme:
+  fontSize: 17
+  preference: system
+subagent-model-selection:
+  enabled: true
+  allowedModels:
+    - provider: deepseek-official
+      model: deepseek-flash
+ui-chat:
+  transcriptView: compact
+agent-presets:
+  default: standard

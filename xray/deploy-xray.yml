@@ -1,0 +1,36 @@
+---
+# Deploy Xray (VLESS + REALITY + Vision) to your proxy VPS.
+#
+#   cd ansible
+#   ansible-playbook deploy-xray.yml
+#
+# Idempotent: safe to re-run. REALITY keys are generated once on the first run
+# and persisted at /etc/xray/reality_keys.yml on the target host.
+- name: Deploy Xray (VLESS + REALITY + Vision)
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: xray
+
+  post_tasks:
+    - name: Show client connection parameters
+      ansible.builtin.debug:
+        msg: |
+          ================================================================
+          Xray (VLESS + REALITY + Vision) deployed successfully.
+          ----------------------------------------------------------------
+          server      : {{ inventory_hostname }}
+          port        : {{ xray_port }}
+          uuid        : {{ xray_uuid }}
+          flow        : {{ xray_flow }}
+          server_name : {{ xray_server_names | first }}
+          dest        : {{ xray_dest }}
+          public_key  : {{ xray_public_key | replace('+', '-') | replace('/', '_') | regex_replace('=+$', '') }}
+                       (URL-safe base64 without padding - sing-box format)
+          short_id    : {{ xray_short_id }}
+          fingerprint : {{ xray_fingerprint }}
+          ----------------------------------------------------------------
+          Client config lives at ../sing-box/config.json (already in sync
+          if you used the same host_vars values).
+          ================================================================

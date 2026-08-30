@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+#MISE description="用户层: dconf 桌面设置 + XDG 用户目录 + bat 缓存 (无 root)"
+
+set -euo pipefail
+
+info() { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
+ok()   { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
+
+# ── 守卫: 必须以普通用户运行, 防止误写 root 域 ──
+if [ "$(id -u)" -eq 0 ]; then
+  echo "错误: 本任务必须作为普通用户运行(请勿 sudo)" >&2
+  exit 1
+fi
+if [ "$HOME" = "/root" ]; then
+  echo "错误: HOME=/root, 疑似越权" >&2
+  exit 1
+fi
+
+# ── 1. dconf 桌面设置 (GVariant 文本格式, 幂等) ──
+# 格式: "路径|GVariant值"
+dconf_settings=(
+  "/org/gnome/desktop/interface/color-scheme|'prefer-dark'"
+  "/org/gnome/desktop/interface/gtk-theme|'adw-gtk3-dark'"
+  "/org/gnome/desktop/interface/icon-theme|'Adwaita'"
+  "/org/gnome/desktop/interface/font-name|'Noto Sans CJK SC 13'"
+  "/org/gnome/desktop/interface/monospace-font-name|'Noto Sans Mono CJK SC 13'"
+  "/org/gnome/desktop/interface/cursor-theme|'breeze-dark'"
+  "/org/gnome/desktop/interface/cursor-size|24"
+  "/org/gnome/desktop/interface/font-antialiasing|'rgba'"
+  "/org/gnome/desktop/interface/font-hinting|'slight'"
+  "/org/gnome/desktop/interface/enable-animations|false"
+  "/org/gnome/desktop/default-applications/terminal/exec|'foot'"
+  "/org/gnome/desktop/default-applications/terminal/exec-arg|'-e'"
+  "/org/gnome/desktop/peripherals/touchpad/tap-to-click|true"
+  "/org/gnome/desktop/peripherals/touchpad/two-finger-scrolling-enabled|true"
+  "/org/gnome/desktop/peripherals/touchpad/natural-scroll|true"
+  "/org/gnome/desktop/peripherals/mouse/natural-scroll|false"
+  "/org/gtk/gtk4/settings/file-chooser/show-hidden|true"
+  "/org/gtk/gtk4/settings/file-chooser/sort-directories-first|true"
+)
+if command -v dconf >/dev/null 2>&1; then
+  for pair in "${dconf_settings[@]}"; do
+    key="${pair%%|*}"; val="${pair#*|}"
+    dconf write "$key" "$val"
+  done
+  info "dconf 桌面设置已应用 (${#dconf_settings[@]} 项)"
+else
+  info "跳过 dconf: 未安装 dconf 命令"
+fi
+
+# ── 2. XDG 用户目录: 建英文, 删中文 ──
+xdg_en=(Desktop Downloads Templates Public Documents Music Pictures Videos Projects)
+xdg_cn=(桌面 下载 模板 公共 文档 音乐 图片 视频 项目)
+for d in "${xdg_en[@]}"; do
+  mkdir -p "$HOME/$d"
+done
+for d in "${xdg_cn[@]}"; do
+  [ -e "$HOME/$d" ] || continue
+  rm -rf -- "$HOME/$d"
+done
+info "XDG 用户目录已对齐"
+
+# bat 缓存已移至 [bootstrap.hooks.post-dotfiles] (conf.d/hooks.toml)
+
+ok "setup-desktop 完成"

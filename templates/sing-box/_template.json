@@ -1,0 +1,43 @@
+{
+  "_说明": "sing-box 客户端配置模板(空凭据)。真实值由 scripts/gen-keys.py 输出后填入;运行 sing-box 时用 -c 指定真实配置文件(如 ~/.config/sing-box/config.real.json)。",
+  "log": { "level": "info", "timestamp": true },
+  "dns": {
+    "servers": [
+      { "type": "tcp", "tag": "remote", "server": "8.8.8.8", "server_port": 53, "detour": "proxy" }
+    ]
+  },
+  "inbounds": [
+    { "type": "socks", "tag": "socks-in", "listen": "127.0.0.1", "listen_port": 1080 },
+    { "type": "http", "tag": "http-in", "listen": "127.0.0.1", "listen_port": 1081 }
+  ],
+  "outbounds": [
+    {
+      "type": "vless",
+      "tag": "proxy",
+      "server": "<VPS_IP>",
+      "server_port": 8443,
+      "uuid": "<UUID>",
+      "flow": "xtls-rprx-vision",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.cloudflare.com",
+        "utls": { "enabled": true, "fingerprint": "chrome" },
+        "reality": {
+          "enabled": true,
+          "public_key": "<PUBLIC_KEY_URLSAFE>",
+          "short_id": "<SHORT_ID>"
+        }
+      }
+    },
+    { "type": "direct", "tag": "direct" }
+  ],
+  "route": {
+    "rules": [
+      { "protocol": "dns", "action": "hijack-dns" },
+      { "ip_is_private": true, "outbound": "direct" }
+    ],
+    "final": "proxy",
+    "auto_detect_interface": true,
+    "default_domain_resolver": { "server": "remote" }
+  }
+}

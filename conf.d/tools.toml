@@ -1,0 +1,50 @@
+[tools]
+# Zig
+zig = "latest"
+"aqua:zigtools/zls" = "latest"
+
+# Go
+go = "latest"
+"aqua:mvdan/gofumpt" = "latest"
+"aqua:golangci/golangci-lint" = "latest"
+# Go 工具 (go 后端, 经 [env] GOPROXY 镜像)
+"go:golang.org/x/tools/gopls" = "latest"
+"go:github.com/go-delve/delve/cmd/dlv" = "latest"
+
+# JS / TS
+nodejs = "latest"
+"npm:typescript" = "latest"
+"npm:typescript-language-server" = "latest"
+"npm:@fsouza/prettierd" = "latest"
+"npm:eslint_d" = "latest"
+"npm:svgo" = "latest"
+
+# AI agents
+"npm:@earendil-works/pi-coding-agent" = "latest"
+
+# Python
+"npm:pyright" = "latest"
+ruff = "latest"
+"pipx:debugpy" = "latest"
+
+# Lua
+"aqua:LuaLS/lua-language-server" = "latest"
+"aqua:JohnnyMorganz/StyLua" = "latest"
+
+# Rust
+# 1.0.0-alpha 起上游把仓库拆成 workspace：`vtracer` 只剩库（无 bin），CLI 在 `vtracer-cli`
+# 见文件末尾：该包只发布 alpha，需要单独放行 prerelease
+
+# ── 预发布工具：单独放行 prerelease ───────────────────────────────
+# 全局 prereleases 已关闭（原因见 config.toml）。上游只发布预发布版的工具必须在这里
+# 逐个打开 prerelease，否则会报 "no versions found ... matching date filter"。
+#
+# ⚠️ 这些子表必须放在文件末尾：TOML 子表会终止上面的 [tools] 表，
+#    写在中间会把后面所有工具键吞进该子表里（静默丢失）。
+[tools."npm:@deepseek-ai/dsh"]
+version = "latest"
+prerelease = true
+
+[tools."cargo:vtracer-cli"]
+version = "latest"
+prerelease = true

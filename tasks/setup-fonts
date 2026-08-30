@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+#MISE description="下载并安装 Maple Mono NL NF CN 字体到 ~/.local/share/fonts（无更新时跳过）"
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/gh.sh"
+
+REPO="subframe7536/maple-font"
+FONT_DIR="$HOME/.local/share/fonts"
+MARKER="$FONT_DIR/.maplemono-version"
+ASSET="MapleMonoNL-NF-CN-unhinted.zip"
+
+# ── 前置检查 ──
+missing=()
+command -v curl &>/dev/null || missing+=("curl")
+command -v unzip &>/dev/null || missing+=("unzip")
+command -v fc-cache &>/dev/null || missing+=("fc-cache (fontconfig)")
+if [[ ${#missing[@]} -gt 0 ]]; then
+  echo "缺少依赖: ${missing[*]}"
+  echo "  → sudo pacman -S --needed curl unzip fontconfig"
+  exit 1
+fi
+
+# ── 版本检测（GitHub API）──
+JSON="$(gh_api "/repos/$REPO/releases/latest")" || {
+  echo "无法获取最新版本信息，请检查网络"
+  exit 1
+}
+VERSION="$(printf '%s' "$JSON" | grep -oE '"tag_name": *"[^"]+"' | head -1 | cut -d'"' -f4)"
+if [[ -z "$VERSION" ]]; then
+  echo "release 中未找到版本号"
+  exit 1
+fi
+
+# ── 已是最新则跳过 ──
+if [[ -f "$MARKER" ]] && [[ "$(cat "$MARKER")" == "$VERSION" ]] \
+   && compgen -G "$FONT_DIR/MapleMonoNL-NF-CN-*.ttf" >/dev/null; then
+  echo "字体已是最新 ($VERSION)，跳过"
+  exit 0
+fi
+
+# ── 下载并解压 ──
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+gh_download "https://github.com/$REPO/releases/download/$VERSION/$ASSET" "$TMP/fonts.zip" || {
+  echo "所有镜像均下载失败，原字体未动"
+  exit 1
+}
+unzip -qo "$TMP/fonts.zip" -d "$TMP/fonts"
+
+mapfile -t found < <(find "$TMP/fonts" -name 'MapleMonoNL-NF-CN-*.ttf' -print)
+if [[ ${#found[@]} -eq 0 ]]; then
+  echo "zip 内未找到 MapleMonoNL-NF-CN-*.ttf，放弃安装（原字体未动）"
+  exit 1
+fi
+
+# ── 安装（先清旧版，防残留）──
+mkdir -p "$FONT_DIR"
+rm -f "$FONT_DIR"/MapleMonoNL-NF-CN-*.ttf
+cp "${found[@]}" "$FONT_DIR/"
+echo "$VERSION" > "$MARKER"
+fc-cache -f "$FONT_DIR" >/dev/null
+echo "已安装 Maple Mono NL NF CN $VERSION ($(find "$FONT_DIR" -maxdepth 1 -name 'MapleMonoNL-NF-CN-*.ttf' | wc -l) 个文件)"

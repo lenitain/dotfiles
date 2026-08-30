@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+#MISE description="安装 Pi coding agent + 核心扩展"
+
+set -euo pipefail
+
+info()  { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
+ok()    { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
+
+if ! command -v pi &>/dev/null; then
+  echo "pi 未安装，请先运行: mise install"
+  exit 1
+fi
+
+info "安装扩展 ..."
+
+extensions=(
+  "npm:pi-web-access"
+)
+
+for ext in "${extensions[@]}"; do
+  info "  安装 $ext ..."
+  pi install "$ext" 2>/dev/null && ok "  $ext" || info "  $ext (已存在或跳过)"
+done
+
+echo ""
+ok "Pi + 扩展已安装"
+info "更新扩展 ..."
+pi update --extensions
+ok "扩展已更新"

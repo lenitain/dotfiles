@@ -1,0 +1,6 @@
+#!/bin/bash
+# fuzzel wrapper - 永远单实例，先杀后开
+
+pkill -x fuzzel 2>/dev/null
+sleep 0.01
+exec /usr/bin/fuzzel "$@"

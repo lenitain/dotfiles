@@ -1,0 +1,18 @@
+# mise 全局配置 — 根入口
+# 文档: https://mise.jdx.dev/
+#
+# 分层拆分: conf.d/*.toml 按字母序自动加载并合并
+#   conf.d/tools.toml     → [tools]              版本化工具
+#   conf.d/dotfiles.toml  → [dotfiles]           dotfile 声明式部署
+#   conf.d/packages.toml  → [bootstrap.packages] 系统包
+#   conf.d/system.toml    → [bootstrap.*]        系统配置(文件/服务/账号)
+
+[settings]
+http_retries = 5
+# 预发布不全局放行，改为按工具单独开启（dsh 见 conf.d/tools.toml）。
+# 全局 prereleases = true 会让所有工具的 "latest" 都含预发布：npm:typescript 会解析到
+# 7.1.0-dev.*，而预发布版不会刷新 installs/<tool>/latest 软链，于是 `mise upgrade` 反复
+# 报告同一个升级、实际活跃版本却不变。
+dotfiles.root = "~/.config/mise/dotfiles"
+dotfiles.default_mode = "symlink"
+

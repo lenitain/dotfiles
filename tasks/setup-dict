@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+#MISE description="下载并安装 ECDICT 全量词典库到 ~/.local/share/stardict（无更新时跳过）"
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/gh.sh"
+
+REPO="skywind3000/ECDICT"
+DIC_DIR="$HOME/.local/share/stardict"
+MARKER="$DIC_DIR/.ecdict-version"
+
+# ── 前置检查 ──
+missing=()
+command -v curl &>/dev/null || missing+=("curl")
+command -v unzip &>/dev/null || missing+=("unzip")
+command -v sqlite3 &>/dev/null || missing+=("sqlite3")
+if [[ ${#missing[@]} -gt 0 ]]; then
+  echo "缺少依赖: ${missing[*]}"
+  echo "  → sudo pacman -S --needed curl unzip sqlite"
+  exit 1
+fi
+
+# ── 版本与产物检测（GitHub API）──
+JSON="$(gh_api "/repos/$REPO/releases/latest")" || {
+  echo "无法获取最新版本信息，请检查网络"
+  exit 1
+}
+VERSION="$(printf '%s' "$JSON" | grep -oE '"tag_name": *"[^"]+"' | head -1 | cut -d'"' -f4)"
+ASSET_URL="$(printf '%s' "$JSON" | grep -oE '"browser_download_url": *"[^"]*sqlite[^"]*"' | head -1 | cut -d'"' -f4)"
+if [[ -z "$VERSION" || -z "$ASSET_URL" ]]; then
+  echo "release 中未找到 sqlite 产物"
+  exit 1
+fi
+
+# ── 下载 / 安装（仅版本变化时执行）──
+if [[ -f "$MARKER" ]] && [[ "$(cat "$MARKER")" == "$VERSION" ]] \
+   && [[ -f "$DIC_DIR/ecdict.db" ]]; then
+  echo "词典库已是最新 ($VERSION)，跳过下载"
+else
+  TMP="$(mktemp -d)"
+  trap 'rm -rf "$TMP"' EXIT
+  gh_download "$ASSET_URL" "$TMP/dict.zip" || {
+    echo "所有镜像均下载失败，原词典库未动"
+    exit 1
+  }
+  unzip -qo "$TMP/dict.zip" -d "$TMP/dict"
+
+  found="$(find "$TMP/dict" -name 'stardict.db' -print -quit)"
+  if [[ -z "$found" ]]; then
+    echo "zip 内未找到 stardict.db，放弃安装（原词典库未动）"
+    exit 1
+  fi
+
+  # 安装（保持源库原样，表名 stardict 由 translate.sh 匹配）
+  mkdir -p "$DIC_DIR"
+  rm -f "$DIC_DIR/ecdict.db"
+  cp "$found" "$DIC_DIR/ecdict.db"
+  echo "$VERSION" > "$MARKER"
+  echo "已安装 ECDICT 全量版 $VERSION ($(du -h "$DIC_DIR/ecdict.db" | cut -f1))"
+fi
+
+# ── 索引检查（独立于下载，每次运行都执行；确保 word 的 NOCASE 索引存在）──
+if [[ -f "$DIC_DIR/ecdict.db" ]]; then
+  has_index="$(sqlite3 "$DIC_DIR/ecdict.db" "
+    SELECT COUNT(*) FROM (
+      SELECT m.name FROM sqlite_master m
+      JOIN pragma_index_xinfo(m.name) x
+      WHERE m.type='index' AND m.tbl_name='stardict'
+        AND x.seqno=0 AND x.cid>=0 AND x.name='word' AND lower(x.coll)='nocase'
+      GROUP BY m.name
+    );
+  ")"
+  if [[ "$has_index" == "0" ]]; then
+    echo "缺少 word 索引，创建中 ..."
+    sqlite3 "$DIC_DIR/ecdict.db" "CREATE INDEX IF NOT EXISTS idx_ecdict_word_nocase ON stardict(word COLLATE NOCASE);"
+  else
+    echo "word 索引已存在，跳过"
+  fi
+fi

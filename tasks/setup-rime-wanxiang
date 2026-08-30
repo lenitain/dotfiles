@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+#MISE description="从 GitHub 下载万象拼音 Rime 方案并部署到 fcitx5（无更新时跳过）"
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/gh.sh"
+
+REPO="amzxyz/rime-wanxiang"
+ASSET="rime-wanxiang-base.zip"
+RIME_DIR="$HOME/.local/share/fcitx5/rime"
+MARKER="$RIME_DIR/.wanxiang-version"
+
+# ── 前置检查 ──
+missing=()
+command -v curl &>/dev/null || missing+=("curl")
+command -v unzip &>/dev/null || missing+=("unzip")
+command -v rime_deployer &>/dev/null || missing+=("rime_deployer (librime)")
+if [[ ${#missing[@]} -gt 0 ]]; then
+  echo "缺少依赖: ${missing[*]}"
+  echo "  → sudo pacman -S --needed curl unzip librime"
+  exit 1
+fi
+
+# ── 版本检测（GitHub API）──
+JSON="$(gh_api "/repos/$REPO/releases/latest")" || {
+  echo "无法获取最新版本信息，请检查网络"
+  exit 1
+}
+VERSION="$(printf '%s' "$JSON" | grep -oE '"tag_name": *"[^"]+"' | head -1 | cut -d'"' -f4)"
+ASSET_URL="$(printf '%s' "$JSON" | grep -oE '"browser_download_url": *"[^"]*'"$ASSET"'"' | head -1 | cut -d'"' -f4)"
+if [[ -z "$VERSION" || -z "$ASSET_URL" ]]; then
+  echo "release 中未找到 $ASSET"
+  exit 1
+fi
+
+# ── 已是最新则跳过 ──
+if [[ -f "$MARKER" ]] && [[ "$(cat "$MARKER")" == "$VERSION" ]]; then
+  echo "万象拼音已是最新 ($VERSION)，跳过"
+  exit 0
+fi
+
+# ── 下载并解压 ──
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+gh_download "$ASSET_URL" "$TMP/$ASSET" || {
+  echo "所有镜像均下载失败，原方案未动"
+  exit 1
+}
+unzip -qo "$TMP/$ASSET" -d "$TMP/src"
+
+# ── 1. 复制方案 YAML ──
+mkdir -p "$RIME_DIR"
+for f in wanxiang.schema.yaml wanxiang.dict.yaml \
+         wanxiang_algebra.yaml wanxiang_symbols.yaml \
+         wanxiang_english.schema.yaml wanxiang_english.dict.yaml \
+         wanxiang_mixedcode.schema.yaml wanxiang_mixedcode.dict.yaml \
+         wanxiang_reverse.schema.yaml wanxiang_reverse.dict.yaml \
+         wanxiang_t9.schema.yaml wanxiang_t9i.schema.yaml \
+         default.yaml custom_phrase.txt; do
+  [[ -f "$TMP/src/$f" ]] && cp "$TMP/src/$f" "$RIME_DIR/"
+done
+echo "  方案 YAML 已复制"
+
+# ── 2. 复制词库 ──
+if [[ -d "$TMP/src/dicts" ]]; then
+  mkdir -p "$RIME_DIR/dicts"
+  cp "$TMP/src/dicts/"*.yaml "$RIME_DIR/dicts/"
+  echo "  词库: $(find "$RIME_DIR/dicts" -name '*.yaml' | wc -l) 个文件"
+fi
+
+# ── 3. 复制 Lua 扩展 ──
+if [[ -d "$TMP/src/lua/wanxiang" ]]; then
+  mkdir -p "$RIME_DIR/lua/wanxiang"
+  cp "$TMP/src/lua/wanxiang/"*.lua "$RIME_DIR/lua/wanxiang/"
+  echo "  Lua: $(find "$RIME_DIR/lua/wanxiang" -name '*.lua' | wc -l) 个脚本"
+fi
+if [[ -d "$TMP/src/lua/data" ]]; then
+  mkdir -p "$RIME_DIR/lua/data"
+  cp "$TMP/src/lua/data/"* "$RIME_DIR/lua/data/"
+  echo "  数据: $(find "$RIME_DIR/lua/data" -maxdepth 1 -type f | wc -l) 个文件"
+fi
+
+# ── 4. 部署构建 ──
+echo "正在构建 Rime 数据 ..."
+if ! rime_deployer --build "$RIME_DIR" /usr/share/rime-data "$RIME_DIR/build" 2>&1; then
+  echo "Rime 构建失败，原方案未动"
+  exit 1
+fi
+echo "$VERSION" > "$MARKER"
+
+# ── 5. 注册 rime 到 fcitx5 profile (新机器首装时 profile 里只有 keyboard) ──
+# fcitx5 退出时用内存态覆写 profile, 必须先停 fcitx5 再改文件, 否则改动会被冲掉
+PROFILE="$HOME/.config/fcitx5/profile"
+rime_missing() { [[ ! -f "$PROFILE" ]] || ! grep -q '^Name=rime$' "$PROFILE"; }
+
+was_running=false
+pgrep -x fcitx5 &>/dev/null && was_running=true
+if $was_running && rime_missing; then
+  fcitx5-remote -e &>/dev/null || true
+  for _ in {1..25}; do pgrep -x fcitx5 &>/dev/null || break; sleep 0.2; done
+fi
+
+if rime_missing; then
+  if pgrep -x fcitx5 &>/dev/null; then
+    echo "  警告: fcitx5 未及时退出, 跳过 profile 注册"
+    echo "        请用 fcitx5-configtool 手动添加 Rime 输入法"
+  else
+    mkdir -p "$(dirname "$PROFILE")"
+    if [[ -s "$PROFILE" ]] && grep -q '^\[Groups/0\]' "$PROFILE"; then
+      # 追加到现有组的末尾 (编号取当前最大 Items 索引 +1)
+      next=$(grep -oE '^\[Groups/0/Items/[0-9]+\]' "$PROFILE" | grep -oE '[0-9]+' | sort -n | tail -1)
+      next=$(( ${next:-0} + 1 ))
+      tmp="$PROFILE.tmp.$$"
+      awk -v idx="$next" '
+        /^\[GroupOrder\]/ && !inserted {
+          printf "[Groups/0/Items/%d]\n# Name\nName=rime\n# Layout\n# Layout=\n\n", idx
+          inserted = 1
+        }
+        { print }
+        END { if (!inserted) printf "[Groups/0/Items/%d]\n# Name\nName=rime\n# Layout\n# Layout=\n", idx }
+      ' "$PROFILE" > "$tmp" && mv "$tmp" "$PROFILE"
+      echo "  profile 已注册 rime 输入法"
+    else
+      # 无 profile 或结构异常: 直接写最小可用 profile (keyboard-us + rime)
+      cat > "$PROFILE" <<'EOF'
+[Groups/0]
+# Group Name
+Name=默认
+# Layout
+Default Layout=us
+# Default Input Method
+DefaultIM=keyboard-us
+
+[Groups/0/Items/0]
+# Name
+Name=keyboard-us
+# Layout
+# Layout=
+
+[Groups/0/Items/1]
+# Name
+Name=rime
+# Layout
+# Layout=
+
+[GroupOrder]
+0=默认
+EOF
+      echo "  profile 已创建并注册 rime 输入法"
+    fi
+  fi
+fi
+
+# ── 6. 重启 fcitx5 (此前在运行才拉起; 若已注册成功则新进程读新 profile) ──
+if $was_running; then
+  fcitx5 -r -d &>/dev/null &
+  echo "已重启 fcitx5"
+fi
+
+echo "万象拼音 $VERSION 安装完成"
