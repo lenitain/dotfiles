@@ -1,0 +1,121 @@
+{
+  // Workspaces
+  "niri/workspaces": {
+    "on-click": "activate"
+  },
+
+  // Idle Inhibit (阻止自动锁屏)
+  "custom/idle-inhibit": {
+    "return-type": "json",
+    "exec": "~/.config/waybar/scripts/idle-inhibit.sh",
+    "align": 1,
+    "signal": 8,
+    "on-click": "~/.config/waybar/scripts/idle-inhibit.sh toggle"
+  },
+
+  // 列指示器（colpos.py 事件驱动常驻进程）：左侧簇，眼睛右边
+  // （工作区已居中，见 config 的 modules-center）。
+  // padding 就是它自己的左右留白：左侧与眼睛的间距 = 它的 padL + 眼睛的 padR。
+  // 这里不能要 expand：expand 是给 center 盒子撑满用的，放在左簇会吃掉剩余空间、
+  // 把中心模块顶偏。max-length 保留：它是启用 GTK label ellipsize 的唯一开关
+  // （waybar 没有布尔选项），999999 不会被任何文本触及，实际截断点 100% 由 GTK
+  // 布局决定（碰撞点省略）——列很多而宽度不够时靠它省略，而不是把中心挤走。
+  // tooltip 只显示「当前列 / 总列数」。
+  // niri overview 打开时会把窗口焦点清成 None，此时锚点换成「聚焦（高亮）工作区的活动
+  // 窗口」，所以 overview 里高亮/切到哪个工作区、按 ←/→ 换到哪一列，列指示器就跟到哪里，
+  // 而不是整块消失；高亮到没有平铺窗口的工作区才回落成空文本（细节见 colpos.py 的
+  // overview_window / Anchor 注释）。
+  // exec 不带任何参数：脚本自己连 niri event-stream 取状态，启动和断线重连都不额外查询
+  // （连上时的首帧就是 niri 重放的完整状态），细节见 colpos.py 顶部的 State 段。
+  "custom/colpos": {
+    "return-type": "json",
+    "exec": "~/.config/waybar/scripts/colpos.py",
+    "hide-empty-text": true,
+    "tooltip": true,
+    "max-length": 999999
+  },
+
+  // System tray
+  // spacing 必须是 0：图标间距改由 style.css 给 image 加 padding 提供，
+  // 这样间距属于图标自己（可点、可 hover），整条 tray 没有点不中的空档。
+  "tray": {
+    "icon-size": 21,
+    "spacing": 0
+  },
+
+  // Clock（仿 KDE 数字时钟：上行大号时间，下行小号日期，两行互相居中）
+  // 套 popup-wrapper 做「点一下开、再点一下关」。两个模块必须行为一致：
+  // gsimplecal 自带 toggle、pavucontrol 只开不关，交给 wrapper 统一按窗口开关。
+  // 不用内置 clock 模块的原因：它的 format 必须以 % 开头（chrono-spec 解析器硬要求），
+  // 没法塞自定义 markup 结构。改成 custom/clock 走 date + Pango markup。
+  // - "justify": "center"（waybar 0.15 起 ALabel 支持）：label 宽度取最宽那行，
+  //   短行自动居中 —— 时间正好落在日期上方，不用再拿前导空格凑（那套已删）。
+  // - 两行字号/字重全在 markup 里：时间 span 的 weight=medium 配 CSS 的
+  //   font-size（见 style.css），日期 span size="small" 是 Pango 的 0.83 倍缩放，
+  //   weight="normal" 抵消 CSS 组规则里的 700。
+  // - line_height 是 Pango 行高倍率（1.50+，纯小数不带 %），包住整段（两行都缩）：
+  //   压掉每行基线上下的空白，两行贴得像 KDE 那样紧。只包时间行也行，但那样
+  //   日期行的行高不变、间隙仍偏大。倍率调得过小会让字顶溢出标签上沿被裁，
+  //   0.7 已经接近安全下限（再小就要靠 CSS 的 padding 兜住墨迹）。
+  // - exec 里的 \" 和 \n 原样输出给 jsoncpp：date 不解释它们，JSON 解码后才是
+  //   真引号 + 真换行。
+  // - tooltip 是同一个 JSON 里的另一个字段（custom 模块默认就开 tooltip，不用写
+  //   "tooltip": true）：bar 上已有日期，tooltip 补星期 + ISO 周数。%A 跟随 LC_TIME
+  //   （本机 zh_CN.UTF-8 → 「星期三」）；%V 按 ISO 算，年末/年初偶尔会出现
+  //   「第 1 周」配 12 月，属正常的 ISO 跨年现象。
+  "custom/clock": {
+    "exec": "date +'{\"text\": \"<span line_height=\\\"0.7\\\"><span weight=\\\"medium\\\">%H:%M</span>\\n<span size=\\\"small\\\" weight=\\\"normal\\\">%Y-%m-%d</span></span>\", \"tooltip\": \"%Y-%m-%d %A · 第 %V 周\"}'",
+    "return-type": "json",
+    "format": "{}",
+    "interval": 1,
+    "align": 1,
+    "justify": "center",
+    "on-click": "popup-wrapper gsimplecal"
+  },
+
+  // Battery
+  // 无 on-click：点它不做任何事。早期是弹 mako 通知，后来换成 yad / GTK 窗口，
+  // 现已全部撤掉，只保留 hover 反馈（见 style.css 的 #battery:hover）。
+  "battery": {
+    "align": 1,
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    // 放电：MD 电池电量图标（5 档与插头同宽 11px → 插电/放电右边缘恒定）。
+    // 分隔由 CSS 内边距负责（16px 等间距），不再需要尾随空格。
+    "format": "{capacity}% {icon}",
+    "format-icons": ["󰁺", "󰁼", "󰁾", "󰂀", "󰂂"],
+    // 插电 / 充电 / 满电 / not-charging：绿色插头（span 只包图标，数字不变色）。
+    // 必须覆盖 format-not-charging，否则该状态回落到 format 显示电池 → 闪烁。
+    "format-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-full": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-not-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-plugged": "{capacity}% <span color='#a7c080'>󰂄</span>",
+
+    // tooltip 补全：时间/功率 + 循环/健康度。battery.cpp 按 status（小写去空格）
+    // 查 tooltip-format-<status>；只有放电/充电有 Empty in …/Full in … 与实时功率，
+    // 插电停充（TLP 阈值）、满电没有可报的，就落到通用 tooltip-format，免得
+    // 冒出 "0.0 W" 噪音。{health} 在源码里已格式化成 "{:.3}"（三位有效数字）。
+    "tooltip-format-discharging": "{timeTo} · {power:.1f} W\n{cycles} cycles · health {health}%",
+    "tooltip-format-charging": "{timeTo} · {power:.1f} W\n{cycles} cycles · health {health}%",
+    "tooltip-format": "{cycles} cycles · health {health}%"
+  },
+
+  // Pulseaudio（单模块，FA 大图标，数字在左）
+  "pulseaudio": {
+    "align": 1,
+    "format": "{volume}% {icon}",
+    "format-muted": "<span color='#e67e80'>{icon}</span>",
+    // 音量为 0（即使未标记静音）：照常显示数字，仅图标换成白色 
+    "states": {
+      "mute": 0
+    },
+    "format-mute": "{volume}% ",
+    "format-icons": {
+      "default": "",
+      "default-muted": ""
+    },
+    "on-click": "popup-wrapper pavucontrol"
+  }
+}

@@ -1,0 +1,28 @@
+{
+    "layer": "top",
+    "margin-top": 0,
+    "margin-bottom": 0,
+    "margin-left": 0,
+    "margin-right": 0,
+    "spacing": 0,
+    "include": [
+        "~/.config/waybar/modules.json"
+    ],
+
+    "modules-left": [
+        "custom/idle-inhibit",
+        "custom/colpos"
+    ],
+
+    "modules-center": [
+        "niri/workspaces"
+    ],
+
+    "modules-right": [
+        "tray",
+        "battery",
+        "pulseaudio",
+        "custom/clock"
+    ]
+}
+

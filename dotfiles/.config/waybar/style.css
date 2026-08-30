@@ -1,0 +1,218 @@
+* {
+  font-family: "Noto Sans", "Maple Mono NL NF CN";
+}
+
+window#waybar {
+  background-color: #343f44;
+  font-size: 16px;
+  /* 高度地板：各模块自然高度的实测最大值（逐个移除模块截图量得）——
+     眼睛(31) > 列指示器(30) > workspaces(28) > 其余(≈27)。时钟不是决定者
+     （墨迹最高但盒子只 ≈25.5）。改任何模块的字号/垂直 padding 后，此值
+     应跟着实测最大值走。 */
+  min-height: 28px;
+  border-radius: 0;
+  margin: 0px;
+  padding: 0;
+}
+
+/* Workspace container（居中：modules-center） */
+#workspaces {
+  background: #343f44;
+  font-weight: 700;
+  border-radius: 0 0 8px 8px;
+  font-size: 16px;
+  color: #d3c6aa;
+}
+
+/* Individual workspace buttons - always visible */
+#workspaces button {
+  border-radius: 0 0 8px 8px;
+  font-size: 16px;
+  padding: 0px 5px;
+  color: #7a8478;
+  background: #343f44;
+  /* 非激活：收窄 */
+  min-width: 16px;
+  /* 覆盖 GTK 主题(adw-gtk3-dark)给 button 注入的 1px 透明边框，
+       否则悬停时去掉边框会导致按钮整体收窄约 2px */
+  border: none;
+}
+
+#workspaces button.active {
+  border-radius: 0;
+  color: #d3c6aa;
+  background: #343f44;
+  padding: 0px 6px 2px 6px;
+  /* 激活：较宽 */
+  min-width: 24px;
+  /* 底部扩散指示条：下面宽上面窄，2px 高度 */
+  border: none;
+  border-bottom: 2px solid #a7c080;
+  border-left: 2px solid transparent;
+  border-right: 2px solid transparent;
+}
+
+#workspaces button:hover {
+  border-radius: 0 0 8px 8px;
+  background: #475258;
+}
+
+/* Tooltips */
+tooltip {
+  border-radius: 8px;
+  background-color: #3d484d;
+  color: #d3c6aa;
+  padding: 4px 8px;
+  border: none;
+  box-shadow: none;
+}
+tooltip * {
+  border-radius: 8px;
+}
+
+/* 列指示器：左侧簇，眼睛右边（工作区数字已移到正中间）。
+   padding 就是它自己的左右留白：与眼睛的间距 = 它的 padL + 眼睛的 padR。
+   左右各 11px：与最右侧模块 #custom-clock 的留白一致
+   （也是 pulseaudio/battery/眼睛 的值）。hover 背景画在「内容 + padding」
+   这个盒子上，所以 padding 就是 hover 的两侧留白。
+   上下 padding 取 0：点是 size="large"（1.2×16≈19.2px），行盒 ≈ 26，
+   上下各留 2px 就变成 30 —— 实测是把 bar 顶到 32 的第二高模块；
+   归零后让位给 workspaces 的 28 地板。 */
+#custom-colpos {
+  font-size: 16px;
+  font-weight: 700;
+  color: #d3c6aa;
+  background-color: #343f44;
+  border-radius: 0 0 8px 8px;
+  padding: 0 11px;
+}
+
+/* All system info modules */
+#custom-clock,
+#pulseaudio,
+#battery,
+#tray,
+#custom-idle-inhibit {
+  background-color: #343f44;
+  font-size: 16px;
+  font-weight: 700;
+  color: #d3c6aa;
+  border-radius: 0 0 8px 8px;
+}
+
+/* 模块间距：由 padding 控制。眼睛→屏幕左缘由 #custom-idle-inhibit 的 padding-left 控制（见下）。
+   托盘例外：它的水平 padding 不属于任何图标，是纯死区（不可点、不 hover），
+   归零后最外侧图标的盒子直接顶到模块边缘，与右侧 #battery 的盒子相邻无缝隙。 */
+#tray {
+  padding: 2px 0;
+}
+/* 托盘图标：waybar 的每个 SNI 图标是一个独立 EventBox（CSS 节点
+   #tray > .passive/.active/.needs-attention），里面是图片节点 image。
+   - 图标间距不用 GtkBox 的 spacing（modules.json 里 "spacing": 0）：spacing
+     属于布局、不属于任何图标，点上去是空档。改由 image 自身的 padding 撑开
+     左右各 11px——两图标之间就是 22px，但这段空白算在图标盒子内，因而同样
+     可点、同样 hover（实测：padding 加在 EventBox 上会被 GTK 忽略，加在
+     image 上才会撑大盒子）。想让图标更近/更远就改这个数值。
+     11px 是为了和最右侧模块 #custom-clock 的 hover 留白对齐
+     （与时钟/音量/电池的 11px 同值）。
+   - hover 背景画在图标自己的盒子上，与可点击区域（该 EventBox 的输入窗口
+     = 整个分配区域）一一对应，圆角除外。 */
+#tray > .passive image,
+#tray > .active image,
+#tray > .needs-attention image {
+  padding: 0 11px;
+}
+
+#tray > .passive,
+#tray > .active,
+#tray > .needs-attention {
+  border-radius: 0 0 8px 8px;
+}
+
+#tray > .passive:hover,
+#tray > .active:hover,
+#tray > .needs-attention:hover {
+  background: #475258;
+}
+/* 时钟：字号基准 14px，两行的相对大小/字重由 modules.json 的 markup 决定
+   （时间 = 14px medium，日期 = 14×0.83 normal）。
+   注意选择器：#clock 匹配不到自定义模块 —— label 的节点名是 custom-clock
+   （AModule 里 event_box_ 无名，名字加在 label_ 上），原来的 #clock /
+   #clock label 规则一直是死代码，实际生效的是 window 继承下来的 16px。
+   padding 上下 0：行高被 markup 的 line_height 压紧后，label 盒子已经只剩
+   字本身的墨迹（约 26 逻辑像素），再留 padding 就是看得见的空档。
+   注意此时 bar 高度不再由时钟决定，而是由 #workspaces（28）撑着：
+   标签比别人矮就自动居中，多出的高度会被平均分到上下两边。
+   左右 11px 与其他模块同值（也是 hover 的两侧留白）。 */
+#custom-clock {
+  font-size: 14px;
+  padding: 0 11px;
+}
+#pulseaudio {
+  padding: 2px 11px 2px 11px;
+}
+#battery {
+  padding: 2px 11px 2px 11px;
+}
+/* idle（眼睛）：位于整条 bar 的最左端（modules-left 第一项）。
+   字形固定：Maple 的 fa-eye(f06e) / fa-eye_slash(f070)，字体仍是全 bar 的
+   Noto Sans + Maple，不引入第三字体。
+   实测 Maple Bold 20px：两字形 advance 均 13（16px 时为 10，线性 1.25×）；
+   ink 睁眼 [-1.25, 21.25]（宽 22.5）、闭眼 [-1.25, 23.75]（宽 25）——
+   字形自带 2.5px 宽度差。字号从 16→20 是单方向放大（用户要求），不反向改小。
+   右距参考右侧模块的留空：clock/pulseaudio/battery/tray 都是 11px 单边，
+   相邻两模块之间 = 11 + 11 = 22px。把眼睛 → colpos 的可见间距也拉到
+   22px 那一档（padR + colpos_padL + advance - ink_width - ink_offset = 22），
+   于是 padR 取 22（关）/ 21（开），盒宽 = 9+13+22 = 10+13+21 = 44（两态一致），
+   colpos 比 16px 原版（盒 36）右移 8px。
+   padL 仍取 9/10：左距（屏→眼 ink = 7.75/8.75）接近右侧 hover 留白 11，
+   比缩到 5.75 那种「眼睛贴左缘」观感好得多（用户原话「左右空间依然要
+   留出来」）。字形 2.5px 宽度差由两态 padR 各吃 1px（22 vs 21）吸收。
+   居中放弃：ink 中心 ≠ 盒中（盒中 22，ink 中心 20.25/20，差 1.75/2）——
+   这是为了把右距推到 22px 档位付的代价，再压就要么让 padL<5（贴左缘），
+   要么让盒宽涨到 46（colpos 右移 10px，更明显）。
+   字号放大但 bar 不许变高：GTK CSS 不支持 line-height（之前试过被 GTK
+   拒绝），用 Pango markup line_height 才能压，但眼睛只是单字，没法塞
+   markup。实测行盒 ≈ font-size × 1.36（Noto Sans 的 ascent+descent，
+   不是想当然的 1.2）：20×1.36 ≈ 27.2，垂直 padding 留 2px 就是 31，
+   实测正是把 bar 顶到 32 的最高模块 —— 故上下 padding 归零。
+   给将来加字号的安全上限（bar 28、无垂直 padding）：
+   font-size × 1.36 ≤ 28 → font-size ≤ 20.5px，当前 20px 已贴近上限。 */
+#custom-idle-inhibit {
+  font-size: 20px;
+  padding: 0 22px 0 9px;
+}
+
+/* Idle Inhibit active (抑制中 - 不会锁屏)。
+   padding 按上面的 22px 右距公式覆盖（10/21）：字形差 2.5px 由两态 padR
+   各吃 1px，盒宽仍 44px，colpos 与 base 态同位置；上下 0 与 base 态一致
+   （bar 高度约束，见窗口规则里的 min-height 注释）；此规则本身只负责绿色。 */
+#custom-idle-inhibit.active {
+  font-size: 20px;
+  color: #a7c080;
+  padding: 0 21px 0 10px;
+}
+
+/* Hover effect for right-side modules + 左侧（眼睛/列指示器） */
+#custom-clock:hover,
+#pulseaudio:hover,
+#battery:hover,
+#custom-idle-inhibit:hover,
+#custom-colpos:hover {
+  background: #475258;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Battery critical warning */
+#battery.critical:not(.charging) {
+  background-color: #e67e80;
+  color: #343f44;
+  animation: blink 0.5s linear infinite alternate;
+}
+
+@keyframes blink {
+  to {
+    background-color: #343f44;
+    color: #d3c6aa;
+  }
+}

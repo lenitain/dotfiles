@@ -1,0 +1,48 @@
+[dotfiles]
+"~/.agents" = {}
+"~/.cargo/config.toml" = {}
+"~/.config/bat" = {}
+"~/.config/btop" = {}
+"~/.config/cliphist" = {}
+"~/.config/dlv" = {}
+"~/.config/fcitx5/conf/classicui.conf" = {}
+"~/.config/fcitx5/profile" = {}
+"~/.config/fish" = {}
+"~/.config/fontconfig" = {}
+"~/.config/foot" = {}
+"~/.config/fuzzel" = {}
+"~/.config/fzf" = {}
+"~/.config/git/config" = {}
+"~/.config/go/env" = {}
+"~/.config/gtk-3.0" = {}
+"~/.config/gtk-4.0" = {}
+"~/.config/jj" = {}
+"~/.config/lazygit" = {}
+"~/.config/mako" = {}
+"~/.config/mimeapps.list" = {}
+"~/.config/mpv" = {}
+"~/.config/niri" = {}
+"~/.config/nvim" = {}
+"~/.config/psd" = {}
+"~/.config/qutebrowser" = {}
+"~/.config/swaylock" = {}
+# 整个 systemd user 配置目录一起管, 而不是逐个 .service 声明:
+#   qb-server.service  必须有 MainPID 跟踪才能保证主进程退出时整棵 cgroup 被扫掉
+#     (原理与三种启动方式的对比见该文件里 KillMode 那段注释)
+#   default.target.wants/ 是 systemctl enable 生成的软链目录, 逐文件声明会漏
+# 注意: enable/disable 会往 default.target.wants/ 里写, 那会让这个仓库变脏。
+"~/.config/systemd/user" = {}
+"~/.config/user-dirs.dirs" = {}
+"~/.config/user-dirs.locale" = {}
+"~/.config/uv" = {}
+"~/.config/waybar" = {}
+"~/.config/yazi" = {}
+"~/.config/zathura" = {}
+"~/.config/zellij" = {}
+"~/.local/bin/scripts" = {}
+"~/.local/share/fcitx5/themes" = {}
+"~/.npmrc" = {}
+"~/.palette" = {}
+"~/.pi" = {}
+"~/.profile" = {}
+"~/.config/environment.d" = {}

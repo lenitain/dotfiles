@@ -1,0 +1,64 @@
+{
+  "providers": {
+    "qwen": {
+      "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "apiKey": "$DASHSCOPE_API_KEY",
+      "api": "openai-completions",
+      "compat": {
+        "supportsDeveloperRole": false
+      },
+      "models": [
+        {
+          "id": "qwen3.8-max",
+          "name": "Qwen 3.8 Max (旗舰)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 1000000,
+          "maxTokens": 16384,
+          "cost": { "input": 12, "output": 36, "cacheRead": 1.2, "cacheWrite": 12 },
+          "compat": { "thinkingFormat": "qwen" }
+        },
+        {
+          "id": "qwen3.7-plus",
+          "name": "Qwen 3.7 Plus (推荐)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 1000000,
+          "maxTokens": 16384,
+          "cost": { "input": 2, "output": 8, "cacheRead": 0.2, "cacheWrite": 2 },
+          "compat": { "thinkingFormat": "qwen" }
+        },
+        {
+          "id": "qwen3.8-flash",
+          "name": "Qwen 3.8 Flash (快速)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "contextWindow": 1000000,
+          "maxTokens": 16384,
+          "cost": { "input": 0.8, "output": 2.7, "cacheRead": 0.1, "cacheWrite": 1.25 },
+          "compat": { "thinkingFormat": "qwen" }
+        },
+        {
+          "id": "qwen3.7-flash",
+          "name": "Qwen 3.7 Flash (经济)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 16384,
+          "cost": { "input": 0.2, "output": 0.8, "cacheRead": 0.04, "cacheWrite": 0.25 },
+          "compat": { "thinkingFormat": "qwen" }
+        },
+        {
+          "id": "qwen3-coder-plus",
+          "name": "Qwen 3 Coder Plus (编程)",
+          "reasoning": true,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 16384,
+          "cost": { "input": 2, "output": 8, "cacheRead": 0.2, "cacheWrite": 2 },
+          "compat": { "thinkingFormat": "qwen" }
+        }
+      ]
+    }
+  }
+}

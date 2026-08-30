@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#MISE description="Show per-ecosystem uninstall commands (docs only, no deletion)"
+
+set -euo pipefail
+
+cat <<'HELP'
+┌───────────────────────────────────────────────────────────┐
+│          Uninstall Reference (manual, per-item)           │
+├──────────────────┬────────────────────────────────────────┤
+│ Ecosystem        │ Command                                │
+├──────────────────┼────────────────────────────────────────┤
+│ mise tool        │ mise uninstall <tool>                  │
+│ mise stale ver.  │ mise prune                             │
+│ pacman package   │ sudo pacman -Rns <pkg>                 │
+│ flatpak app      │ flatpak uninstall <app>                │
+│ rustup toolchain │ rustup toolchain uninstall <name>      │
+│ moonbit          │ rm -rf ~/.moon (+ remove PATH entry)   │
+│ cargo crate      │ cargo uninstall <crate>                │
+│ yazi plugin      │ ya pkg delete <pkg>                    │
+│ github src       │ rm ~/.local/bin/<name>                 │
+│                  │   + rm -rf ~/.cloned/<repo>            │
+└──────────────────┴────────────────────────────────────────┘
+HELP
+
+# Detect orphans dynamically: installed tools with no config source
+orphans=$(mise ls --prunable 2>/dev/null)
+
+echo ""
+if [ -n "$orphans" ]; then
+  echo "Orphans detected (installed but not in any config):"
+  echo "$orphans"
+  echo ""
+  echo "  Remove with: mise uninstall <tool>"
+else
+  echo "No orphans detected."
+fi
+
+echo ""
+echo "⚠️  Uninstall is destructive — confirm the exact name before running."

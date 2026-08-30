@@ -1,0 +1,122 @@
+# 系统配置 [bootstrap.files / .directories / .services / .users / .groups / .user]
+# 声明式: 内容/属主/模式/服务状态均收敛; 必要时才提权(sudo)。
+# 阶段顺序见 `mise bootstrap --help`(账号 → 包 → 文件/服务 → …), 别在这里写死步号。
+
+# ── 登录会话: greetd + niri-session ──
+# 不挂 notify: greetd 无 reload (server 信号循环只处理 SIGALRM/SIGCHLD/SIGTERM/SIGINT,
+# 配置启动时一次性解析), 而 restart greetd 会踢掉当前会话 —— 它是会话的父进程
+# (session worker 用 PR_SET_PDEATHSIG=SIGTERM 挂在 greetd 名下)。
+# 因此配置变更随下次开机生效 (或登出后手动 systemctl restart greetd)。
+[bootstrap.files."/etc/greetd/config.toml"]
+content = """
+[terminal]
+vt = 1
+
+[default_session]
+command = "tuigreet --remember --cmd niri-session"
+user = "greeter"
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+[bootstrap.services.greetd]
+state = "running"
+enabled = true
+
+# ── 控制台字体 (greetd 大字, 重启后生效) ──
+[bootstrap.files."/etc/vconsole.conf"]
+content = """
+# Written by systemd-localed(8) or systemd-firstboot(1), read by systemd-localed
+# and systemd-vconsole-setup(8). Use localectl(1) to update this file.
+XKBLAYOUT=cn
+FONT=latarcyrheb-sun32
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# ── 登录 shell: fish ──
+# 由 `mise bootstrap user apply` 收敛: 必要时把该路径追加进 /etc/shells 再 chsh -s。
+# 路径必须写绝对路径, 且按字符串精确比较 —— /bin/fish 与 /usr/bin/fish 视为不同值,
+# 写错会多跑一次无谓的 chsh。本机已是 /bin/fish, 故 apply 为 no-op。
+[bootstrap.user]
+login_shell = "/bin/fish"
+
+# ── docker 组必须先于 docker 包存在（accounts 阶段早于 packages）──
+# 全新机器上 docker 还没装 → 该组不存在 → [bootstrap.users] 里的 "docker"
+# 会让 accounts 阶段报 "requires undeclared group 'docker'" 并中止整条 bootstrap。
+# 显式声明后由 mise 在系统组范围内创建; 已存在的组保持不变。
+# 注意: 加入 docker 组等价于免密 root。
+[bootstrap.groups.docker]
+system = true
+
+# ── 用户附加组 (input/docker, 只补缺, 保留其它成员) ──
+[bootstrap.users.lenitain]
+group = "lenitain"
+groups = ["input", "docker"]
+
+# ── /etc 下不属于任何软件包的父目录 ──
+# mise 只建你显式声明的目录；[bootstrap.files] 不会替目标文件补父目录，
+# 缺父目录会报 managed file parent does not exist 并中止整条 bootstrap。
+[bootstrap.directories."/etc/systemd/logind.conf.d"]
+owner = "root"
+group = "root"
+mode = "0755"
+
+[bootstrap.directories."/etc/docker"]
+owner = "root"
+group = "root"
+mode = "0755"
+
+# ── logind 合盖不挂起 (重启后生效) ──
+[bootstrap.files."/etc/systemd/logind.conf.d/keep-running.conf"]
+content = """
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# ── Docker 镜像加速 + 重启 docker ──
+[bootstrap.files."/etc/docker/daemon.json"]
+content = """
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://docker.1ms.run",
+    "https://docker.xuanyuan.me",
+    "https://docker-0.unsee.tech"
+  ]
+}
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+notify = ["docker"]
+
+[bootstrap.services.docker]
+state = "running"
+enabled = true
+on_change = "restart"
+
+# ── WebHID/hidraw 访问权 (vial.rocks, VIA, QMK 网页配置器) ──
+# 内核默认把 /dev/hidraw* 建成 root:root 0600: 浏览器 WebHID 能枚举设备(走 udev
+# 数据库, 不需要打开节点), 但 open() 被拒 → 页面永远卡在 "connecting to the
+# device"。Windows 无此权限模型, 故同一网页在那边正常。
+# GROUP=input 0660 与本机 /dev/input/event* (root:input 0660) 的现有模型一致 ——
+# 键盘按键事件本来就给了 input 组, hidraw 没理由更严格; 单人桌面不存在 systemd
+# 上游担心的多用户键记录问题。不用 0666: 写权限对配置器无必要。
+# udevd 处理事件前会自动检测规则文件变化并重载, 无需手动 reload; 但规则不回溯
+# 已存在节点 —— 见 conf.d/hooks.toml final hook 的 trigger (给已插着的设备补事件)。
+[bootstrap.files."/etc/udev/rules.d/70-hidraw-access.rules"]
+content = """
+# WebHID configurators (vial.rocks / VIA) open /dev/hidraw* directly.
+# Default 0600 root:root blocks the browser: device is listed but connect hangs.
+KERNEL=="hidraw*", GROUP="input", MODE="0660"
+"""
+owner = "root"
+group = "root"
+mode = "0644"

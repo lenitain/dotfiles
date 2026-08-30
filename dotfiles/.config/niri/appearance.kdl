@@ -1,0 +1,162 @@
+// Layout configuration
+layout {
+    gaps 4
+    center-focused-column "never"
+    always-center-single-column
+    empty-workspace-above-first
+    // 壁纸是从工作区透出来的, 所以这里必须透明
+    background-color "transparent"
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+    }
+    focus-ring {
+        width 1
+    }
+    border {
+        on
+        width 1
+    }
+    // 窗口阴影：overview 里工作区缩略图那圈阴影，是 overview.workspace-shadow
+    // （默认开启，参数即下面这套默认值）。窗口自己的阴影要在 layout.shadow 里单独开。
+    // 阴影形状跟随下面 window-rule 的 geometry-corner-radius（已知圆角时不需要
+    // draw-behind-window，画在窗口后面反而会在 CSD 圆角处露出破绽）。
+    // 阴影的用途是对比度兜底：壁纸颜色可能和 border / focus-ring 接近，
+    // 导致窗口轮廓"消失"，所以这里要的是一圈够深、四边等宽的轮廓，不是装饰性投影。
+    //
+    // 参数约束：
+    //   - offset x=0 y=0：四边均匀，不做方向性（下方厚上方薄会让上边兜底失效）。
+    //   - 阴影可见范围 ≈ spread + softness/2，必须 <= gaps 4，
+    //     否则会画到相邻窗口的内容上（niri 不会按间隙裁剪阴影）。
+    //   - 黑色阴影在接近纯黑的壁纸上依然会失效，这是该方案的天花板；
+    //     真正的聚焦区分仍靠 focus-ring，见下面 inactive-color。
+    shadow {
+        on
+        softness 4
+        spread 1
+        offset x=0 y=0
+        // 失焦窗口更淡，让阴影也能部分传达聚焦状态
+        color "#000000bb"
+        inactive-color "#00000077"
+    }
+    struts {}
+}
+
+// 新窗口默认铺满列宽，等同于按 Mod+F（set-column-width "100%"），
+// 而不是原来的 open-maximized-to-edges（= Mod+Shift+F 的贴边最大化）
+window-rule {
+    match app-id=r#"qutebrowser$"#
+    open-maximized-to-edges true
+}
+window-rule {
+    default-column-width { proportion 1.0; }
+}
+
+window-rule {
+    match app-id=r#"qutebrowser$"# title="^Picture-in-Picture$"
+    open-floating true
+    open-maximized-to-edges false
+    default-column-width { fixed 480; }
+    default-window-height { fixed 270; }
+    default-floating-position x=32 y=32 relative-to="bottom-right"
+}
+window-rule {
+    match title="^(Open|Save|Choose|Select|Preferences|About|Properties|File Upload|Create New Folder)"
+    open-floating true
+    // 浮窗不能同时是 maximized-to-edges（否则会被放进滚动布局并铺满屏幕），
+    // 这里显式撤销旧的全局默认
+    open-maximized-to-edges false
+    // 浮动对话框按自身请求的尺寸打开，不吃全局的铺满列宽
+    default-column-width {}
+}
+window-rule {
+    match title="^(打开|保存|选择|另存为|属性|上传)"
+    open-floating true
+    open-maximized-to-edges false
+    default-column-width {}
+}
+window-rule {
+    geometry-corner-radius 12
+    clip-to-geometry true
+}
+
+// Hotkey overlay
+hotkey-overlay {
+    skip-at-startup
+}
+
+// swaybg 的 namespace，可用 `niri msg layers` 核对；放进 backdrop 后壁纸不再随工作区缩放
+layer-rule {
+    match namespace="^wallpaper$"
+    place-within-backdrop true
+}
+
+// ---- layer-shell 表面的半透明 ----
+// 这里就是 layer-rule opacity 的本职用途：从合成器侧给外部程序加透明度，
+// 不用去改每个程序自己的配置格式。
+//
+// 注意 niri 文档的两条语义：
+//   1. opacity 叠加在「表面自身透明度」之上，半透明的表面会变得更透。
+//      下面这些程序的底色都是不透明纯色，所以这里是净效果，不会双重变淡：
+//        waybar style.css #343f44 / fuzzel 3D484Dff / mako #3d484d
+//   2. opacity 逐个作用于表面的每个 child，所以子表面和弹出菜单也会各自变透明
+//      （能透出后面的内容）。要给弹出菜单单独设值就写 popups { opacity ... }。
+//
+// 关于「提取变量」：niri 的 KDL 配置没有变量/常量机制（wiki 无此功能），
+// 所以让一个值只出现一次的唯一办法，是把要一起处理的程序用正则并进同一条规则
+// —— namespace 匹配器本身就是正则。想给某个程序单独一个值，就把它拆出去另写一条。
+//
+
+// fuzzel 是 launcher，mako 是 notifications
+// （两个 namespace 分别从 /usr/bin/fuzzel、/usr/bin/mako 的字符串里确认，运行时也核对过）
+// layer-rule {
+//     match namespace="^(launcher|notifications)$"
+//     opacity 0.93
+// }
+
+// waybar 当前保持不透明。想让它一起透明，把 waybar 并进上面那条正则；
+// 想给它单独的值，就取消下面的注释。
+// layer-rule {
+//     match namespace="^waybar$"
+//     opacity 0.93
+// }
+
+// Overview
+overview {
+    zoom 0.3125
+    backdrop-color "#232A2E"
+    // workspace-shadow {
+    //     off
+    // }
+}
+
+// 带缩略图的 Alt+Tab 切换窗口功能
+recent-windows {
+    // off
+    debounce-ms 750
+    open-delay-ms 150
+
+    highlight {
+        // active-color / urgent-color 在 colors.kdl 中定义
+        // 缩略图背景内间距
+        padding 30
+        // 缩略图的背景圆角
+        corner-radius 0
+    }
+
+    // 设置缩略图大小
+    previews {
+        max-height 480
+        max-scale 0.2
+    }
+
+    binds {
+        // scope 可以设置显示的窗口是当前工作区的、还是当前显示器的、或者显示全部窗口
+        Mod+Tab         { next-window scope="workspace"; }
+        Mod+Shift+Tab   { previous-window scope="workspace"; }
+        // grave 是波浪键，显示当前应用的所有窗口
+        Mod+grave       { next-window     filter="app-id"; }
+        Mod+Shift+grave { previous-window filter="app-id"; }
+    }
+}
+
