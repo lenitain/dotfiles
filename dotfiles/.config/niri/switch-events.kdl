@@ -1,0 +1,11 @@
+// 合盖行为：合盖时锁屏（swaylock）
+// 说明：
+//   - niri 会随合盖自动关闭内屏、开盖自动点亮
+//   - logind 侧已由 .chezmoiscripts/run_lid-lock.sh 设为 ignore，避免合盖挂起
+//   - 注意：niri 不响应 logind 的 HandleLidSwitch=lock（Lock 信号），
+//     所以锁屏必须走这里，而不是 logind 的 lock 动作
+switch-events {
+    lid-close {
+        spawn "swaylock"
+    }
+}

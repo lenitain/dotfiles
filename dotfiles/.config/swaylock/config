@@ -1,0 +1,37 @@
+# Everforest Dark Medium colors
+color=000000
+inside-color=2d353b
+inside-clear-color=2d353b
+inside-caps-lock-color=2d353b
+inside-ver-color=2d353b
+inside-wrong-color=2d353b
+
+ring-color=7FBBB3
+ring-clear-color=7FBBB3
+ring-caps-lock-color=7FBBB3
+ring-ver-color=7FBBB3
+ring-wrong-color=E67E80
+
+key-hl-color=A7C080
+bs-hl-color=A7C080
+
+line-color=4f585e
+line-clear-color=4f585e
+line-caps-lock-color=4f585e
+line-ver-color=4f585e
+line-wrong-color=4f585e
+
+separator-color=00000000
+
+text-color=d3c6aa
+text-clear-color=d3c6aa
+text-caps-lock-color=d3c6aa
+text-ver-color=d3c6aa
+text-wrong-color=e67e80
+
+# Font
+font=Noto Sans
+
+# Indicator
+indicator-radius=300
+indicator-thickness=23

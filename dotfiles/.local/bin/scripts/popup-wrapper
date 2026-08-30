@@ -1,0 +1,30 @@
+#!/bin/bash
+# popup-wrapper - 先杀后开：关闭旧弹窗，再弹新窗口
+# 与 fuzzel-wrapper / slurp-wrapper 同一模式，把「杀谁 / 开谁」参数化后，
+# 供 waybar 的时间 / 音量两个模块共用同一份逻辑。
+# 电量走 mako 通知，没有窗口可杀，在 battery-info.sh 里用「先撤旧通知再发新」对齐。
+#
+# 用法:
+#   popup-wrapper <杀谁> <开谁> [参数...]   双参数：第一个交给 pkill -x 关掉旧窗口，
+#                                           第二个及之后的参数 exec 开新窗口
+#   popup-wrapper <命令>                    单参数：杀谁 = 开谁 = 该命令
+#                                           （进程名取 basename，允许写完整路径）
+#
+# 「杀谁」是进程名（comm），ELF 与脚本类都取可执行文件名（脚本类取脚本名）。
+# 双参数形式用于「进程名 ≠ 命令」的场合，例如 python / footclient 这类包装器。
+
+if [ $# -eq 0 ]; then
+    echo "用法: popup-wrapper <杀谁> <开谁> [参数...]   或   popup-wrapper <命令>" >&2
+    exit 2
+fi
+
+if [ $# -eq 1 ]; then
+    name=$(basename -- "$1")
+else
+    name=$1
+    shift
+fi
+
+pkill -x "$name" 2>/dev/null
+sleep 0.01
+exec "$@"

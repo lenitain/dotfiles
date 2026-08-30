@@ -1,0 +1,106 @@
+{
+  // Workspaces
+  "niri/workspaces": {
+    "on-click": "activate"
+  },
+
+  // Idle Inhibit (阻止自动锁屏)
+  "custom/idle-inhibit": {
+    "return-type": "json",
+    "exec": "~/.config/waybar/scripts/idle-inhibit.sh",
+    "align": 1,
+    "signal": 8,
+    "on-click": "~/.config/waybar/scripts/idle-inhibit.sh toggle"
+  },
+
+  // 左侧模块（紧跟工作区数字右边）：列指示器（colpos.py 事件驱动常驻进程）
+  // 这里不能要 expand：expand 是给 center 盒子撑满用的，放在左簇会吃掉剩余空间、
+  // 把中心模块顶偏。max-length 保留：它是启用 GTK label ellipsize 的唯一开关
+  // （waybar 没有布尔选项），999999 不会被任何文本触及，实际截断点 100% 由 GTK
+  // 布局决定（碰撞点省略）——列很多而宽度不够时靠它省略，而不是把中心挤走。
+  // tooltip 只显示「当前列 / 总列数」。
+  // 想让它再带一行窗口名：给 exec 加 --tooltip-window-title（默认关闭；窗口标题现在
+  // 常驻中间，见下面的 niri/window）。
+  "custom/colpos": {
+    "return-type": "json",
+    "exec": "~/.config/waybar/scripts/colpos.py",
+    "hide-empty-text": true,
+    "tooltip": true,
+    "max-length": 999999
+  },
+
+  // 中心模块：当前聚焦窗口标题
+  // 用 waybar 内置的 niri/window（直接读 niri IPC，不再多起一个常驻脚本）：
+  //   - 没有聚焦窗口时它自己 label_.hide()，不需要 hide-empty-text。
+  //   - max-length 同上：开启 GTK 单行 + END 省略号（ALabel 会顺带设
+  //     single-line-mode）。长标题由布局在碰撞点截断，不会把左右两簇挤走。
+  //   - tooltip 必须显式写 false：waybar 的默认是 true（AModule.cpp 里 isTooltip
+  //     缺省 true），而 niri/window 每次更新（换焦点、改标题 —— 浏览器换标签就是
+  //     几秒一次）都会跑 label_.set_tooltip_text(title)，于是光标停在标题上就会冒出
+  //     显示完整标题的悬浮窗，并随标题刷新。代价：标题被省略号截断时没地方看全文，
+  //     要恢复就改回 true。
+  //     注意 tooltip 只管「悬浮文字窗」，管不了悬停高亮背景 —— 无窗口时那条 hover
+  //     死区（模块只藏 label、盒子还占着中心）在 style.css 里用
+  //     `window#waybar.empty #window` 收掉。
+  //   - 应用图标默认关闭（AIconLabel.iconEnabled 默认 false）；要图标加 "icon": true。
+  "niri/window": {
+    "format": "{title}",
+    "tooltip": false,
+    "max-length": 999999
+  },
+
+  // System tray
+  // spacing 必须是 0：图标间距改由 style.css 给 image 加 padding 提供，
+  // 这样间距属于图标自己（可点、可 hover），整条 tray 没有点不中的空档。
+  "tray": {
+    "icon-size": 21,
+    "spacing": 0
+  },
+
+  // Clock
+  // on-click 统一走 popup-wrapper（先杀后开）：和音量同一套逻辑
+  "clock": {
+    "align": 1,
+    "format": "{:%H : %M}",
+    "on-click": "popup-wrapper gsimplecal",
+    "tooltip": true,
+    "tooltip-format": "{:%Y - %m - %d %A}"
+  },
+
+  // Battery
+  "battery": {
+    "align": 1,
+    "on-click": "~/.config/waybar/scripts/battery-info.sh",
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    // 放电：MD 电池电量图标（5 档与插头同宽 11px → 插电/放电右边缘恒定）。
+    // 分隔由 CSS 内边距负责（16px 等间距），不再需要尾随空格。
+    "format": "{capacity}% {icon}",
+    "format-icons": ["󰁺", "󰁼", "󰁾", "󰂀", "󰂂"],
+    // 插电 / 充电 / 满电 / not-charging：绿色插头（span 只包图标，数字不变色）。
+    // 必须覆盖 format-not-charging，否则该状态回落到 format 显示电池 → 闪烁。
+    "format-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-full": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-not-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-plugged": "{capacity}% <span color='#a7c080'>󰂄</span>"
+  },
+
+  // Pulseaudio（单模块，FA 大图标，数字在左）
+  "pulseaudio": {
+    "align": 1,
+    "format": "{volume}% {icon}",
+    "format-muted": "<span color='#e67e80'>{icon}</span>",
+    // 音量为 0（即使未标记静音）：照常显示数字，仅图标换成白色 
+    "states": {
+      "mute": 0
+    },
+    "format-mute": "{volume}% ",
+    "format-icons": {
+      "default": "",
+      "default-muted": ""
+    },
+    "on-click": "popup-wrapper pavucontrol"
+  }
+}

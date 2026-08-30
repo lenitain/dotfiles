@@ -1,0 +1,9 @@
+#:schema https://docs.jj-vcs.dev/latest/config-schema.json
+
+[user]
+name = "lenitain"
+email = "xt.zhu@qq.com"
+
+[ui]
+diff-editor = ["nvim", "-c", "setlocal readonly | set filetype=diff"]
+merge-editor = ["nvim", "-d", "-c", "setlocal readonly | set filetype=diff"]

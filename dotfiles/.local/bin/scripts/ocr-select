@@ -1,0 +1,21 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+REGION=$("$SCRIPT_DIR/slurp-wrapper")
+if [ -z "$REGION" ]; then
+  exit 1
+fi
+
+TMP=$(mktemp /tmp/ocr_XXXXXX)
+grim -g "$REGION" "$TMP"
+TEXT=$(tesseract "$TMP" stdout -l chi_sim+eng 2>/dev/null | xargs)
+rm -f "$TMP"
+
+if [ -z "$TEXT" ]; then
+  notify-send "OCR" "No text recognized"
+  exit 1
+fi
+
+echo -n "$TEXT" | wl-copy
+notify-send "OCR(copied to clipboard): " "${TEXT}"

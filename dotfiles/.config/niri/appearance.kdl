@@ -1,0 +1,128 @@
+// Layout configuration
+layout {
+    gaps 4
+    center-focused-column "never"
+    always-center-single-column
+    empty-workspace-above-first
+    // backdrop 壁纸要从工作区透出来（原值 "#343F44"）
+    background-color "transparent"
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+    }
+    focus-ring {
+        width 1
+    }
+    border {
+        on
+        width 1
+    }
+    struts {}
+}
+
+// Window rules
+// 全局默认：所有新窗口以「最大化到边缘」打开（等价于 Mod+F 的 maximize-window-to-edges）。
+// 无 match 的规则会匹配所有窗口，且窗口规则按顺序解析、后到覆盖先到，
+// 所以这条必须放在最前面，后面的具体规则才能按需覆盖它。
+window-rule {
+    open-maximized-to-edges true
+}
+
+// 全局背景模糊参数，作用于所有 background-effect（窗口与 layer 表面）。
+// 调优顺序：先加大 offset（不增加 GPU 开销），出现拖影或断层后再增加 passes。
+blur {
+    offset 2
+    passes 1
+    noise 0.02
+    saturation 1
+}
+
+// 全局半透明 + 背景模糊：同样没有 match，因此作用于所有窗口。
+// 窗口自身不透明时模糊透不出来，所以两者写在同一条规则里。
+// 模糊默认走 xray（只模糊一次壁纸再复用），额外开销很小。
+window-rule {
+    opacity 0.92
+    background-effect {
+        blur true
+    }
+}
+
+window-rule {
+    match app-id=r#"qutebrowser$"#
+    open-maximized-to-edges true
+}
+// 必须排在通用 qutebrowser 规则之后：
+// 窗口规则按顺序解析、后到覆盖先到，显式撤销 maximized 才能让 PiP 真正浮动
+window-rule {
+    match app-id=r#"qutebrowser$"# title="^Picture-in-Picture$"
+    open-floating true
+    open-maximized-to-edges false
+    default-column-width { fixed 480; }
+    default-window-height { fixed 270; }
+    default-floating-position x=32 y=32 relative-to="bottom-right"
+}
+window-rule {
+    match title="^(Open|Save|Choose|Select|Preferences|About|Properties|File Upload|Create New Folder)"
+    open-floating true
+    // 浮窗不能同时是 maximized-to-edges（否则会被放进滚动布局并铺满屏幕），
+    // 这里显式撤销上面的全局默认
+    open-maximized-to-edges false
+}
+window-rule {
+    match title="^(打开|保存|选择|另存为|属性|上传)"
+    open-floating true
+    open-maximized-to-edges false
+}
+window-rule {
+    geometry-corner-radius 12
+    clip-to-geometry true
+}
+
+// Hotkey overlay
+hotkey-overlay {
+    skip-at-startup
+}
+
+// swaybg 的 namespace，可用 `niri msg layers` 核对；放进 backdrop 后壁纸不再随工作区缩放
+layer-rule {
+    match namespace="^wallpaper$"
+    place-within-backdrop true
+}
+
+// Overview
+overview {
+    zoom 0.3125
+    backdrop-color "#232A2E"
+    // workspace-shadow { off }
+}
+
+// 带缩略图的 Alt+Tab 切换窗口功能
+recent-windows {
+    // off
+    debounce-ms 750
+    open-delay-ms 150
+
+    highlight {
+        // active-color / urgent-color 在 colors.kdl 中定义
+        // 缩略图背景内间距
+        padding 30
+        // 缩略图的背景圆角
+        corner-radius 0
+    }
+
+    // 设置缩略图大小
+    previews {
+        max-height 480
+        max-scale 0.2
+    }
+
+    binds {
+        // scope 可以设置显示的窗口是当前工作区的、还是当前显示器的、或者显示全部窗口
+        Mod+Tab         { next-window scope="workspace"; }
+        Mod+Shift+Tab   { previous-window scope="workspace"; }
+        // grave 是波浪键，显示当前应用的所有窗口
+        Mod+grave       { next-window     filter="app-id"; }
+        Mod+Shift+grave { previous-window filter="app-id"; }
+    }
+}
+

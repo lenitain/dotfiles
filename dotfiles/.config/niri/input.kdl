@@ -1,0 +1,27 @@
+// Input configuration
+input {
+    keyboard {
+        xkb {
+            layout "us"
+        }
+        numlock
+    }
+    mouse {
+        accel-profile "flat"
+        accel-speed -0.4
+    }
+    touchpad {
+        tap
+        natural-scroll
+        drag-lock
+        tap-button-map "left-middle-right"
+    }
+    // focus-follows-mouse  # 注释掉，改为点击切换焦点
+}
+
+// Gestures
+gestures {
+    hot-corners {
+        off
+    }
+}

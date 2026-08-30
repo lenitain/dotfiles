@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+#MISE description="从 GitHub Release 下载 just-talk 二进制到 ~/.local/bin（无更新时跳过）"
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/gh.sh"
+
+REPO="whoamihappyhacking/just-talk-go"
+TARGET="$HOME/.local/bin/just-talk"
+MARKER="$HOME/.local/state/just-talk/version"
+
+# 上游产物命名: just-talk_<os>_<arch>.tar.gz（另有 windows .zip, 本任务只装 unix tarball）
+case "$(uname -s)" in
+  Linux)  OS="linux" ;;
+  Darwin) OS="darwin" ;;
+  *) err "不支持的系统: $(uname -s)（上游仅提供 linux/darwin tarball 与 windows zip）"; exit 1 ;;
+esac
+case "$(uname -m)" in
+  x86_64|amd64)  ARCH="amd64" ;;
+  aarch64|arm64) ARCH="arm64" ;;
+  *) err "不支持的架构: $(uname -m)（上游仅提供 amd64 / arm64）"; exit 1 ;;
+esac
+ASSET="just-talk_${OS}_${ARCH}.tar.gz"
+
+# ── 前置检查（二进制动态链接 X11/wayland, 缺库则无法启动 → 硬失败）──
+missing=()
+command -v curl &>/dev/null || missing+=("curl")
+command -v sha256sum &>/dev/null || missing+=("sha256sum (coreutils)")
+command -v pkg-config &>/dev/null || missing+=("pkg-config (pkgconf)")
+for pc in x11 xtst xext xinerama xrender wayland-client; do
+  pkg-config --exists "$pc" 2>/dev/null || missing+=("$pc")
+done
+if [[ ${#missing[@]} -gt 0 ]]; then
+  err "缺少依赖: ${missing[*]}"
+  err "  → sudo pacman -S --needed curl coreutils pkgconf libx11 libxtst libxext libxinerama libxrender wayland"
+  exit 1
+fi
+
+# ── 版本检测（GitHub API; 探测失败属更新失败 → 软处理, 保留现有二进制）──
+if ! JSON="$(gh_api "/repos/$REPO/releases/latest")"; then
+  warn "无法获取最新版本信息 (网络/镜像不可用)，保留现有二进制继续"
+  exit 0
+fi
+VERSION="$(printf '%s' "$JSON" | grep -oE '"tag_name": *"[^"]+"' | head -1 | cut -d'"' -f4)"
+if [[ -z "$VERSION" ]]; then
+  warn "release 中未找到版本号，保留现有二进制继续"
+  exit 0
+fi
+
+# ── 已是最新则跳过 ──
+if [[ "$(cat "$MARKER" 2>/dev/null)" == "$VERSION" ]] && [[ -x "$TARGET" ]]; then
+  info "just-talk 已是最新 ($VERSION)，跳过"
+  exit 0
+fi
+
+# ── 下载 + 上游校验和（失败 → 软处理, 原二进制未动）──
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+if ! gh_download "https://github.com/$REPO/releases/download/$VERSION/$ASSET" "$TMP/$ASSET"; then
+  warn "所有镜像均下载失败，原二进制未动，跳过本次更新"
+  exit 0
+fi
+if ! gh_download "https://github.com/$REPO/releases/download/$VERSION/SHA256SUMS.txt" "$TMP/SHA256SUMS.txt"; then
+  warn "校验和文件下载失败，原二进制未动，跳过本次更新"
+  exit 0
+fi
+# 经镜像下载, 按上游 SHA256SUMS 校验镜像内容是否与上游一致
+if ! (cd "$TMP" && grep -E " $ASSET\$" SHA256SUMS.txt | sha256sum -c -); then
+  warn "SHA256 校验失败 (镜像内容与上游不一致)，原二进制未动，跳过本次更新"
+  exit 0
+fi
+
+# ── 解包并安装 ──
+tar -xzf "$TMP/$ASSET" -C "$TMP"
+found="$(find "$TMP" -type f -name just-talk -print -quit)"
+if [[ -z "$found" ]]; then
+  warn "tar 包内未找到 just-talk，放弃安装（原二进制未动）"
+  exit 0
+fi
+mkdir -p "$HOME/.local/bin" "$(dirname "$MARKER")"
+install -Dm755 "$found" "$TARGET"
+echo "$VERSION" > "$MARKER"
+ok "已安装: $TARGET ($VERSION)"

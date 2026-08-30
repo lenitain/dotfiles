@@ -1,0 +1,16 @@
+// Startup commands
+spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"
+spawn-at-startup "waybar"
+spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
+spawn-at-startup "swayidle" "-w" "timeout" "200" "swaylock -f" "timeout" "200" "niri msg action power-off-monitors" "before-sleep" "swaylock -f"
+spawn-at-startup "foot" "--server"
+// qb-server 由 systemd user service 托管，不在这里直接 spawn。
+// 原因：service 有 MainPID 跟踪 —— 主进程无论正常退出还是被 kill -9，systemd 都会
+// stop 单元并按 KillMode=control-group 扫掉整个 cgroup，QtWebEngine 之类不会留孤儿。
+// 而 niri 直接 spawn 只建 systemd scope，scope 没有 MainPID 跟踪（进程没退光就一直
+// active），所以它保不住这个语义，别改回去。
+// 显式 start 而不是 enable：这样启动顺序保证在 niri 起来、Wayland socket 就绪之后。
+// 日志：journalctl --user -u qb-server -f
+spawn-at-startup "systemctl" "--user" "start" "qb-server"
+spawn-at-startup "swaybg" "-i" "/usr/share/wallpapers/Mountain/contents/images/5120x2880.png"
+prefer-no-csd
