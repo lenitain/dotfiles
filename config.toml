@@ -1,0 +1,21 @@
+# mise 全局配置 — 根入口
+# 文档: https://mise.jdx.dev/
+#
+# 分层拆分: conf.d/*.toml 按字母序自动加载并合并
+#   conf.d/tools.toml     → [tools]              版本化工具 + 预发布白名单
+#   conf.d/dotfiles.toml  → [dotfiles]           dotfile 声明式部署
+#   conf.d/packages.toml  → [bootstrap.packages] 系统包
+#   conf.d/system.toml    → [bootstrap.*]        系统配置(文件/服务/账号/登录 shell)
+#   conf.d/mirrors.toml   → [env] + [settings]   下载镜像(唯一来源)
+#   conf.d/hooks.toml     → [bootstrap.hooks]    声明式段覆盖不到的命令
+
+[settings]
+http_retries = 5
+# 关闭最小发布年龄(默认 24h): 新版本发布即可用, 不再等 24 小时
+# 必须是字符串 "0s"; 写成整数 0 会报 invalid type: integer `0`, expected a string
+minimum_release_age = "0s"
+# 不全局开 prereleases: 开了所有工具的 "latest" 都会含预发布, 而预发布版不刷新
+# installs/<tool>/latest 软链, `mise upgrade` 会反复报同一个升级而实际版本不变。
+# 需要预发布的工具在 conf.d/tools.toml 里单独打开。
+dotfiles.root = "~/.config/mise/dotfiles"
+dotfiles.default_mode = "symlink"

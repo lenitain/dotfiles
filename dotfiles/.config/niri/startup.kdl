@@ -1,0 +1,14 @@
+// Startup commands
+spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"
+// 常亮：开机把整套熄屏机制拉起来。脚本负责起 swayidle（5 分钟无操作自动熄屏）
+// 并挂上 logind 的 idle 抑制器（此刻不熄屏）。waybar 的 idle-inhibit 按钮认的是
+// 同一条锁（who=waybar-idle-inhibit），所以开机图标直接是 ON；点一下按钮放掉锁，
+// 5 分钟自动熄屏立刻恢复。放在 waybar 之前：锁先就位，waybar 第一次查状态就
+// 看到 ON。
+spawn-at-startup "~/.config/waybar/scripts/idle-inhibit.sh" "on"
+spawn-at-startup "waybar"
+spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
+spawn-at-startup "foot" "--server"
+spawn-at-startup "systemctl" "--user" "start" "qb-server"
+spawn-at-startup "swaybg" "-i" "/usr/share/wallpapers/Mountain/contents/images/5120x2880.png"
+prefer-no-csd

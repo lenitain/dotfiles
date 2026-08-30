@@ -1,0 +1,125 @@
+{
+  // Workspaces（最左）；所有 active 格子共用同一条上窄下宽 border-bottom 扩散条、
+  // 无首格特例的细节在 style.css 的 #workspaces。
+  "niri/workspaces": {
+    "on-click": "activate"
+  },
+
+  // Idle Inhibit（desktop 图标；挂在 modules-right 的 tray 与 battery 之间）
+  "custom/idle-inhibit": {
+    "return-type": "json",
+    "exec": "~/.config/waybar/scripts/idle-inhibit.sh",
+    "align": 1,
+    "signal": 8,
+    "on-click": "~/.config/waybar/scripts/idle-inhibit.sh toggle"
+  },
+
+  // 当前工作区每列最近聚焦的窗口标题；脚本直接输出 JSON，无文件、信号或轮询。
+  // 整个中间区域就是这一个模块（不 expand）：模块宽度 = 文字宽度，所以 style.css
+  // 里的内嵌暗盘只包住标题本身，不会横贯到右簇。右簇的锚定由 config 的
+  // expand-left 负责，不靠这个模块占宽。
+  // 无窗口时脚本输出空 text，hide-empty-text 会把暗盘一起收起来。
+  // max-length 只用来启用 GTK 的 ellipsize：999999 不会碰到，实际截断点由
+  // GTK 按可用宽度决定（标题长到撞上右簇时省略）。
+  "custom/coltitles": {
+    "exec": "~/.config/waybar/scripts/coltitles.py",
+    "return-type": "json",
+    "hide-empty-text": true,
+    "max-length": 999999,
+    "tooltip": true,
+    "exec-on-event": false,
+    "restart-interval": 1
+  },
+
+  // System tray
+  // spacing 必须是 0：图标间距改由 style.css 给 image 加 padding 提供，
+  // 这样间距属于图标自己（可点、可 hover），整条 tray 没有点不中的空档。
+  // icon-size 23：跟字号 18px 配套 —— 图标 23 + CSS 的上下 3px padding = 29，
+  // 与文字胶囊同高，裸图标和胶囊才齐平（16px 字号时是 21 + 2 = 25）。
+  "tray": {
+    "icon-size": 23,
+    "spacing": 0
+  },
+
+  // Clock（单行、英文：数字月-日 星期 时:分，例如 "10-24 Sat 15:55"）
+  // 套 popup-wrapper 做「点一下开、再点一下关」。两个模块必须行为一致：
+  // gsimplecal 自带 toggle、pavucontrol 只开不关，交给 wrapper 统一按窗口开关。
+  // 不用内置 clock 模块的原因：它的 format 必须以 % 开头（chrono-spec 解析器硬要求），
+  // 而这里要的「月-日 星期 时间」拼法它表达不了。改成 custom/clock 走 date + JSON。
+  // - 单行纯文本，不带 Pango markup：字号和字重都不在这里管 —— 全继承 style.css
+  //   里「系统信息模块」组规则的 16px / 500，与音量、电池完全同款。
+  //   旧版是在 markup 里写 weight="medium" + size="9216"，早就删了。
+  // - LC_TIME=C 仍然必须：月份已经数字化（不依赖 %b），但 %a 还是英文星期
+  //   —— 本机 locale 是 zh_CN.UTF-8，不覆盖就会输出「周六」，和数字月混排。
+  //   前缀只作用于这一条 date 命令，不改父进程/bar 的环境。
+  // - %-m / %-d 而非 %m / %d：去掉前导零（"Oct 4" → "10-4"，不是 "10-04"）。
+  //   GNU date 的修饰符，本机 glibc 支持。分隔符当前是 -（和 tooltip 的 ISO
+  //   日期 %Y-%m-%d 观感一致），想换斜杠就把 %-m-%-d 改成 %-m/%-d → "10/24 Sat"。
+  // - 变体（改一处即可）：星期全称 %a→%A（"10-24 Saturday 15:55"，宽约 +32px）；
+  //   12 小时制 %H:%M→%I:%M %p（"10-24 Sat 03:55 PM"）；带前导零用 %m-%d。
+  // - 宽度实测（Pango + Noto Sans，本机量得）：16px/500 下文字 113px + 左右 padding
+  //   22px = 盒宽约 135px；14px/500 的旧版是 123px，即变宽 12px，右簇会
+  //   相应左移。同一字符串换 700 只多 2px（文字 115px / 盒 137px），所以粗体
+  //   对右簇宽度的影响可以忽略。
+  // - "justify": "center" 对单行已无实际作用，留着无害（ALabel 只在多行时用得上）。
+  // - exec 里的 \" 原样输出给 jsoncpp：date 不解释它，JSON 解码后才是真引号。
+  // - tooltip 是同一个 JSON 里的另一个字段（custom 模块默认就开 tooltip，不用写
+  //   "tooltip": true）：bar 上已有月日星期，tooltip 补年份 + ISO 周数；文案也用
+  //   英文（"Week 43"），免得英文时钟配中文 tooltip。%V 按 ISO 算，年末/年初偶尔
+  //   会出现「Week 1」配 12 月，属正常的 ISO 跨年现象。
+  "custom/clock": {
+    "exec": "LC_TIME=C date +'{\"text\": \"%-m-%-d %a %H:%M\", \"tooltip\": \"%Y-%m-%d · Week %V\"}'",
+    "return-type": "json",
+    "format": "{}",
+    "interval": 1,
+    "align": 1,
+    "justify": "center",
+    "on-click": "popup-wrapper gsimplecal"
+  },
+
+  // Battery
+  // 无 on-click：点它不做任何事。早期是弹 mako 通知，后来换成 yad / GTK 窗口，
+  // 现已全部撤掉，只保留 hover 反馈（见 style.css 的 #battery:hover）。
+  "battery": {
+    "align": 1,
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    // 放电：MD 电池电量图标（5 档与插头同宽 11px → 插电/放电右边缘恒定）。
+    // 分隔由 CSS 内边距负责（16px 等间距），不再需要尾随空格。
+    "format": "{capacity}% {icon}",
+    "format-icons": ["󰁺", "󰁼", "󰁾", "󰂀", "󰂂"],
+    // 插电 / 充电 / 满电 / not-charging：绿色插头（span 只包图标，数字不变色）。
+    // 必须覆盖 format-not-charging，否则该状态回落到 format 显示电池 → 闪烁。
+    "format-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-full": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-not-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-plugged": "{capacity}% <span color='#a7c080'>󰂄</span>",
+
+    // tooltip 补全：时间/功率 + 循环/健康度。battery.cpp 按 status（小写去空格）
+    // 查 tooltip-format-<status>；只有放电/充电有 Empty in …/Full in … 与实时功率，
+    // 插电停充（TLP 阈值）、满电没有可报的，就落到通用 tooltip-format，免得
+    // 冒出 "0.0 W" 噪音。{health} 在源码里已格式化成 "{:.3}"（三位有效数字）。
+    "tooltip-format-discharging": "{timeTo} · {power:.1f} W\n{cycles} cycles · health {health}%",
+    "tooltip-format-charging": "{timeTo} · {power:.1f} W\n{cycles} cycles · health {health}%",
+    "tooltip-format": "{cycles} cycles · health {health}%"
+  },
+
+  // Pulseaudio（单模块，FA 大图标，数字在左）
+  "pulseaudio": {
+    "align": 1,
+    "format": "{volume}% {icon}",
+    "format-muted": "<span color='#e67e80'>{icon}</span>",
+    // 音量为 0（即使未标记静音）：照常显示数字，仅图标换成白色 
+    "states": {
+      "mute": 0
+    },
+    "format-mute": "{volume}% ",
+    "format-icons": {
+      "default": "",
+      "default-muted": ""
+    },
+    "on-click": "popup-wrapper pavucontrol"
+  }
+}

@@ -1,0 +1,20 @@
+// --- NIRI COLORS START ---
+// 颜色配置，方便后续通过 matugen 等工具动态替换
+layout {
+    focus-ring {
+        active-color "#7fbbb3"
+        inactive-color "#859289"
+    }
+    border {
+        active-color "#7fbbb3"
+        inactive-color "#859289"
+    }
+}
+
+recent-windows {
+    highlight {
+        active-color "#7fbbb3"
+        urgent-color "#ff9999ff"
+    }
+}
+// --- NIRI COLORS END ---

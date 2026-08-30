@@ -1,0 +1,38 @@
+{
+  "collapseChangelog": true,
+  "defaultModel": "MiniMax-M3.1-Flash",
+  "defaultProjectTrust": "always",
+  "defaultProvider": "minimax-cn",
+  "defaultThinkingLevel": "max",
+  "defaultTools": [
+    "+codemode"
+  ],
+  "enableInstallTelemetry": false,
+  "followUpMode": "all",
+  "hideThinkingBlock": true,
+  "httpIdleTimeoutMs": 0,
+  "lastChangelogVersion": "999.99.99",
+  "markdown": {
+    "mermaid": "streaming"
+  },
+  "npmCommand": [
+    "npm",
+    "--package-lock=false"
+  ],
+  "packages": [
+    "npm:pi-web-access"
+  ],
+  "showCacheMissNotices": false,
+  "showHardwareCursor": true,
+  "steeringMode": "all",
+  "terminal": {
+    "clearOnShrink": false
+  },
+  "theme": "everforest-dark-medium",
+  "transport": "auto",
+  "treeFilterMode": "no-tools",
+  "warnings": {
+    "anthropicExtraUsage": true
+  },
+  "quietStartup": true
+}

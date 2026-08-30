@@ -1,0 +1,73 @@
+#!/bin/bash
+# 开代理：先把 sing-box 拉起来（按需，幂等），再把常驻实例（qb-server）的
+# content.proxy 指向本地代理（sing-box 的 mixed 入站 7890）。
+#
+# 运行时改动，所有窗口共享（proxy.init() 装的是进程级 QNetworkProxyFactory），
+# QtWebEngine 几秒后应用新的连接（见 qutebrowser configdata.yml 的 content.proxy）。
+# -t = 会话级，不写 autoconfig，进程退出自动回到 config.py 的默认值。
+#
+# 幂等性（重复执行结果一致，无累积副作用）：
+#   - sing-box：systemctl start 对已 active 的单元是 no-op；端口已被手工启动的
+#     sing-box 占着时跳过 start，不去抢端口；单元不存在时只警告不报错退出。
+#   - content.proxy：每次写同一个值，覆盖式，没有状态叠加。
+#
+# 只 start、不 enable：开机自启是刻意去掉的，本脚本不碰 enabled/disabled 状态。
+
+PROXY="http://127.0.0.1:7890"
+PORT="${PROXY##*:}"
+UNIT="sing-box"
+
+port_listen() {
+  (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null
+}
+
+# 有界等待端口就绪：sing-box 冷启动要几百毫秒，起来之前设代理等于指向死端口。
+wait_port() {
+  local i
+  for ((i = 0; i < 50; i++)); do
+    port_listen && return 0
+    sleep 0.1
+  done
+  return 1
+}
+
+start_singbox() {
+  # systemd 已经在跑 → 幂等 no-op，不发多余的 start
+  if systemctl --user is-active --quiet "$UNIT"; then
+    return 0
+  fi
+
+  # 单元 inactive 但 7890 有人听：是手工 `sing-box run &` 起来的。
+  # 这时再 start 只会端口冲突失败，直接沿用现有实例。
+  if port_listen; then
+    echo "注: 7890 已由手工启动的 sing-box 监听，跳过 systemctl start"
+    return 0
+  fi
+
+  # 单元文件被删/改名时给可读提示，而不是让 systemctl 的红字刷屏
+  if ! systemctl --user cat "$UNIT" >/dev/null 2>&1; then
+    echo "警告: user unit ~/.config/systemd/user/$UNIT.service 不存在，无法自动拉起" >&2
+    echo "  手动起：sing-box run -c ~/.config/sing-box/config.json &" >&2
+    return 1
+  fi
+
+  if ! systemctl --user start "$UNIT"; then
+    echo "警告: systemctl --user start $UNIT 失败，详见 journalctl --user -u $UNIT" >&2
+    return 1
+  fi
+}
+
+if start_singbox && wait_port; then
+  echo "sing-box 就绪 → 127.0.0.1:$PORT"
+else
+  # 只警告，照常设置（可能马上就去起代理）
+  echo "警告: 代理端口 $PORT 未监听，代理将指向死端口" >&2
+fi
+
+# qb-server 没跑时 qb-open 会失败 —— 不能还打印「代理已开」骗人
+if qb-open ":set -t content.proxy $PROXY"; then
+  echo "代理已开 → $PROXY"
+else
+  echo "警告: qb-open 失败（qb-server 没在跑？）content.proxy 未改动" >&2
+  exit 1
+fi

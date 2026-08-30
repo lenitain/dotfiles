@@ -1,0 +1,17 @@
+#!/bin/bash
+# 使用 fuzzel 显示剪贴板历史,文本
+
+# 注意：不要加 --match-nth=2！
+# fuzzel 在 dmenu 模式下，只要 --with-nth 指定了显示列，匹配默认就发生在该列；
+# 显式给 --match-nth 会让 fuzzel 把 match_fields 切到 MATCH_NTH，
+# 而 MATCH_NTH 路径在 match.c 里调用 match_fzf 时 pos/pos_count 传的是 NULL，
+# 不会写入任何匹配位置，结果就是 fuzzel 没有 match.pos 可渲染，
+# 绿色高亮就不会出现。launcher 模式没有 --match-nth 的概念，所以不受影响。
+
+# 获取选择，保留完整的 ID\t内容 格式传给 fuzzel
+selected=$(cliphist list | fuzzel-wrapper --dmenu --prompt="Clipboard " --with-nth=2)
+
+if [ -n "$selected" ]; then
+  # 直接用选中的完整行(包含ID)进行decode
+  echo "$selected" | cliphist decode | wl-copy
+fi

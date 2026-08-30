@@ -1,0 +1,33 @@
+{
+    "layer": "top",
+    /* 整条 bar 贴住屏幕边缘：四周不留 margin，壁纸不再从上下左右透出，
+       bar 不再是浮岛。外壳圆角已一并删掉（style.css 的 window#waybar > box），
+       方角的外壳贴边才不显得是浮起来的方块。 */
+    "margin-top": 0,
+    "margin-bottom": 0,
+    "margin-left": 0,
+    "margin-right": 0,
+    "spacing": 0,
+    "no-center": true,
+    /* 左簇吃掉「工作区右侧 → 右簇左侧」的全部宽度：右簇因此锚定在屏幕右边，
+       不随标题数量/文字长度左右漂移。列标题模块本身不 expand（见 modules.json），
+       标题暗盘只包住文字，不会变成一条贯穿半屏的长条。 */
+    "expand-left": true,
+    "include": [
+        "~/.config/waybar/modules.json"
+    ],
+
+    "modules-left": [
+        "niri/workspaces",
+        "custom/coltitles"
+    ],
+
+    "modules-right": [
+        "tray",
+        "custom/idle-inhibit",
+        "battery",
+        "pulseaudio",
+        "custom/clock"
+    ]
+}
+

@@ -1,0 +1,7 @@
+models-store.json
+auth.json
+sessions/
+npm/
+pi-repl/
+web-search-cache/
+subagent-workflow/

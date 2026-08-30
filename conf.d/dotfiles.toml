@@ -1,0 +1,62 @@
+[dotfiles]
+"~/.agents" = {}
+"~/.cargo/config.toml" = {}
+"~/.config/bat" = {}
+"~/.config/btop" = {}
+"~/.config/cliphist" = {}
+"~/.config/dlv" = {}
+"~/.config/environment.d" = {}
+"~/.config/fcitx5/conf/classicui.conf" = {}
+"~/.config/fcitx5/profile" = {}
+"~/.config/fish" = {}
+"~/.config/fontconfig" = {}
+"~/.config/foot" = {}
+"~/.config/fuzzel" = {}
+"~/.config/fzf" = {}
+"~/.config/git/config" = {}
+"~/.config/go/env" = {}
+"~/.config/gtk-3.0" = {}
+"~/.config/gtk-4.0" = {}
+"~/.config/jj" = {}
+"~/.config/lazygit" = {}
+"~/.config/mako" = {}
+"~/.config/mimeapps.list" = {}
+"~/.config/mpv" = {}
+"~/.config/niri" = {}
+"~/.config/nvim" = {}
+"~/.config/psd" = {}
+"~/.config/qutebrowser" = {}
+"~/.config/swaylock" = {}
+# 整个 systemd user 配置目录一起管, 而不是逐个 .service 声明:
+#   qb-server.service  必须有 MainPID 跟踪才能保证主进程退出时整棵 cgroup 被扫掉
+#     (原理与三种启动方式的对比见该文件里 KillMode 那段注释)
+#   default.target.wants/ 是 systemctl enable 生成的软链目录, 逐文件声明会漏
+# 注意: enable/disable 会往 default.target.wants/ 里写, 那会让这个仓库变脏。
+"~/.config/systemd/user" = {}
+"~/.config/user-dirs.dirs" = {}
+"~/.config/user-dirs.locale" = {}
+"~/.config/uv" = {}
+"~/.config/waybar" = {}
+# 系统自带 niri-portals.conf 是 default=gnome;gtk, FileChooser 由
+# xdg-desktop-portal-gnome(51) 接管, 而它会把对话框委托给 Nautilus; Nautilus 在
+# 非 GNOME 会话(niri)下建不起 Wayland 服务通道 → "Delegated FileChooser call
+# failed: Remote peer disconnected", 窗口从未被映射, 表现为点了菜单没反应。
+# 这里仅把 FileChooser 单独钉给 xdg-desktop-portal-gtk 自绘, 其余接口不变。
+# 失效时用 `systemctl --user restart xdg-desktop-portal.service` 让它重读。
+"~/.config/xdg-desktop-portal" = {}
+"~/.config/yazi" = {}
+"~/.config/zathura" = {}
+"~/.local/bin/scripts" = {}
+# 万象拼音「关闭英文模式」补丁 (ascii_composer/switch_key 全设 noop → Shift/
+# CapsLock 不再切中英)。同上，靠 default.custom.yaml 这个上游不发布的文件名
+# 避开万象更新脚本的顶层 *.yaml 覆盖 (实测 v18.1.2 的 zip 顶层无此文件)。
+"~/.local/share/fcitx5/rime/default.custom.yaml" = {}
+# 万象拼音「按下 i 直出英文字母 i」补丁 (i 不作编码首字母 → 按键直通应用)。
+# 必须叫 wanxiang.custom.yaml 且放在 rime 用户根目录: 万象更新脚本只覆盖顶层
+# *.yaml, 而上游刻意不在顶层发布这个文件名, 所以不会被更新冲掉 (见文件内注释)。
+"~/.local/share/fcitx5/rime/wanxiang.custom.yaml" = {}
+"~/.local/share/fcitx5/themes" = {}
+"~/.npmrc" = {}
+"~/.palette" = {}
+"~/.pig" = {}
+"~/.profile" = {}

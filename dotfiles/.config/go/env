@@ -1,0 +1,2 @@
+// GOPROXY 由 mise 的 [env] 注入 (mise 配置的 conf.d/mirrors.toml), 不要在这里再写一遍。
+// 写成注释而非留空, 是为了让下一个改这里的人知道去哪找。

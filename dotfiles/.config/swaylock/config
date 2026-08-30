@@ -1,0 +1,46 @@
+# Background
+# 与 niri startup.kdl 里 swaybg 使用的壁纸保持一致
+image=/usr/share/wallpapers/Mountain/contents/images_dark/5120x2880.png
+scaling=fill
+
+# Everforest Dark Medium colors
+color=000000
+inside-color=2d353b
+inside-clear-color=2d353b
+inside-caps-lock-color=2d353b
+inside-ver-color=2d353b
+inside-wrong-color=2d353b
+
+ring-color=7FBBB3
+ring-clear-color=7FBBB3
+ring-caps-lock-color=7FBBB3
+ring-ver-color=7FBBB3
+ring-wrong-color=E67E80
+
+key-hl-color=A7C080
+bs-hl-color=A7C080
+
+line-color=4f585e
+line-clear-color=4f585e
+line-caps-lock-color=4f585e
+line-ver-color=4f585e
+line-wrong-color=4f585e
+
+separator-color=00000000
+
+text-color=d3c6aa
+text-clear-color=d3c6aa
+text-caps-lock-color=d3c6aa
+text-ver-color=d3c6aa
+text-wrong-color=e67e80
+
+# Font
+font=Noto Sans
+# 固定字号；留空则默认取 indicator-radius/3
+font-size=128
+
+# Indicator
+# 尺寸单位是逻辑像素，实际渲染时会再乘以输出缩放（当前 1.25）
+# 外径 = 2 * (radius + thickness) = 216，约占 1536x864 屏幕的 1/7
+indicator-radius=256
+indicator-thickness=16

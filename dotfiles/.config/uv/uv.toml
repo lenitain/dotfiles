@@ -1,0 +1,16 @@
+# uv 自己的 index 链(带 fallback 语义, 不能由 mise 的 [env] 取代)。
+# 其中 tsinghua 与 conf.d/mirrors.toml 的 PIP_INDEX_URL / UV_DEFAULT_INDEX 同源,
+# 换镜像时两处要同改; ustc / pytorch 是本文件独有的备用源。
+[[index]]
+name = "tsinghua"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+[[index]]
+name = "ustc"
+url = "https://mirrors.ustc.edu.cn/pypi/simple"
+
+# PyTorch 国内镜像
+[[index]]
+name = "pytorch-mirror"
+url = "https://mirrors.tuna.tsinghua.edu.cn/pytorch-wheels/"

@@ -1,0 +1,46 @@
+[tools]
+zig = "latest"
+"aqua:zigtools/zls" = "latest"
+go = "latest"
+"go:mvdan.cc/gofumpt" = "latest"
+"go:github.com/golangci/golangci-lint/v2/cmd/golangci-lint" = "latest"
+"go:golang.org/x/tools/gopls" = "latest"
+"go:github.com/go-delve/delve/cmd/dlv" = "latest"
+"go:github.com/MichaelKinsy/PiG/cmd/pig" = "latest"
+nodejs = "latest"
+"npm:pnpm" = "latest"
+bun = "latest"
+"npm:typescript" = "latest"
+"npm:typescript-language-server" = "latest"
+"npm:@fsouza/prettierd" = "latest"
+"npm:eslint_d" = "latest"
+"npm:pyright" = "latest"
+ruff = "latest"
+"pipx:debugpy" = "latest"
+"aqua:LuaLS/lua-language-server" = "latest"
+# Rust 工具链: stable 是默认 (数组第一项), rust-analyzer 走组件形式 (跟工具链走, 避免与项目 rustc 错位)
+# nightly 只为 miri 保留: 它没有 stable 版本, 且 rust-src 是 miri 编译标准库的前置组件。
+rust = [
+  { version = "stable", profile = "default", components = ["rust-analyzer", "rust-src"] },
+  { version = "nightly", profile = "minimal", components = ["miri", "rust-src"] },
+]
+"cargo:stylua" = "latest"
+"cargo:mbx" = "latest"
+"cargo:prek" = "latest"
+"cargo:jj-gh" = "latest"
+"cargo:typos-cli" = "latest"
+"cargo:wireforge" = "latest"
+"cargo:wrfm-cli" = "latest"
+# aqua 未收录的 GitHub Release 包走 github: 后端（资产自动选择 + API digest 校验）
+"github:whoamihappyhacking/just-talk-go" = "latest"
+# mise core registry 内置的 zmx, 后端也是 github: 但元信息(版本格式 / os 过滤 / test)由
+# jdx/mise/registry/zmx.toml 托管, 直接写纯名让 mise 用 registry 声明, 不要写 github: 前缀
+zmx = "latest"
+
+# ── 预发布白名单: 上游只发预发布版的工具在这里逐个打开 prerelease ──
+# 全局 prereleases 是关的, 原因见 config.toml。
+# ⚠️ 子表必须留在文件末尾: TOML 子表会终止上面的 [tools], 写在中间会把后续
+#    工具键吞进子表里(静默丢失)。
+[tools."npm:@deepseek-ai/dsh"]
+version = "latest"
+prerelease = true

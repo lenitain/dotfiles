@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+#MISE description="安装并更新 yazi 插件/配色 (从 package.toml)"
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
+
+if ! command -v ya &>/dev/null; then
+  err "缺少 ya，请先运行: mise bootstrap --yes"
+  exit 1
+fi
+
+# 1) 安装 package.toml 中锁定版本的插件/配色 (缺失则拉取, hash 不符则重装)
+info "安装 yazi 插件/配色 (package.toml 锁定版本) ..."
+ya pkg install
+ok "yazi 插件已安装"
+
+# 2) 追最新 (pacman -Syu 哲学): 非 "=" 前缀的 rev 会被升级到上游最新提交,
+#    并把新的 rev/hash 写回 package.toml (dotfiles 仓库需自行 commit)
+info "更新 yazi 插件到最新 (ya pkg upgrade) ..."
+if ya pkg upgrade; then
+  ok "yazi 插件已更新"
+else
+  warn "ya pkg upgrade 失败 (网络/上游不可达), 保留当前版本继续"
+fi
