@@ -1,0 +1,39 @@
+# ── 关闭 Rime 的英文模式（ascii_mode） ────────────────────────────
+#
+# 起因：万象自带的 default.yaml 把 Shift_L / Shift_R 设成 commit_code，
+#      所以打字打到一半按一下 Shift，就会把编码上屏并切进「英文」状态。
+#      又因为 Control_L / Control_R 已是 noop，中文状态下按 Ctrl 也回不来，
+#      只能用鼠标点托盘——这就是「误触后很难切回来」的原因。
+#
+# 依据：ascii_mode 是 librime 的内建开关，触发来源只有 ascii_composer。
+#      已在本机核实过两处：
+#        1. build/wanxiang.schema.yaml 中没有 ascii_composer 配置段
+#           （第 114 行的 "- ascii_composer" 只是处理器列表项），
+#           说明该配置只从 default.yaml 读取。
+#        2. 万象的 Lua（super_english.lua 等）与 key_binder 只读取
+#           ascii_mode，不会设置它；key_binder 里的 toggle: ascii_mode
+#           三行在上游就是注释掉的。
+#      因此补丁放在 default.custom.yaml（用户文件，万象升级不会覆盖）。
+#
+# 做法：把 switch_key 全部设为 noop。noop 只屏蔽「切换中英」这一个副作用，
+#      按键本身照常工作：
+#        Shift_L / Shift_R : 仍是普通 Shift，输入大写字母不受影响
+#        Caps_Lock         : 保持传统大写锁定（配合 good_old_caps_lock: true）
+#        Control_L / R     : 维持原本的 noop
+#      注意这里是整表替换 switch_key，5 个键必须写全，否则缺的键会回落到
+#      librime 内建默认值（Shift 是 commit_code）。
+#
+# 关不掉的残留（刻意保留，当作逃生口）：
+#   状态面板（Ctrl+`）里仍会列出「中文 / 英文」一项，可手动切一次。
+#   但 ascii_mode 不在 default.yaml 的 save_options 里，不会被记忆，
+#   每个新窗口都回到中文。想彻底从面板隐藏它，得改 wanxiang.schema.yaml
+#   的 switches 列表——那是方案文件，升级会被覆盖，不值得动。
+#
+# 取消方法：删除本文件和对应的软链，然后重新部署。
+patch:
+  ascii_composer/switch_key:
+    Caps_Lock: noop
+    Shift_L: noop
+    Shift_R: noop
+    Control_L: noop
+    Control_R: noop
