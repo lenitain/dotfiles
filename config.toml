@@ -5,7 +5,7 @@
 #   conf.d/tools.toml     → [tools]              版本化工具
 #   conf.d/dotfiles.toml  → [dotfiles]           dotfile 声明式部署
 #   conf.d/packages.toml  → [bootstrap.packages] 系统包
-#   conf.d/system.toml    → [bootstrap.*]        系统配置(文件/服务/账号)
+#   conf.d/system.toml    → [bootstrap.*]        系统配置(文件/服务/账号/登录 shell)
 
 [settings]
 http_retries = 5

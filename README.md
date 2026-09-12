@@ -62,6 +62,10 @@ mise bootstrap dotfiles edit ~/.config/xxx
 # 系统配置 /etc：改 conf.d/system.toml 的 content
 mise bootstrap files apply          # 有变化才 sudo
 
+# 登录 shell：改 conf.d/system.toml 的 [bootstrap.user] login_shell
+mise bootstrap user status          # 当前 vs 期望；--missing 不一致则 exit 1
+mise bootstrap user apply           # 必要时写 /etc/shells + chsh -s（本机已是 fish，为 no-op）
+
 # 工具
 mise use -g <tool>@<version>
 mise install / mise upgrade / mise ls

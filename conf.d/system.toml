@@ -1,4 +1,4 @@
-# 系统配置 [bootstrap.files / bootstrap.services / bootstrap.accounts]
+# 系统配置 [bootstrap.files / bootstrap.services / bootstrap.accounts / bootstrap.user]
 # 从 ansible system.yml + docker.yml 迁移而来。
 # 声明式: 内容/属主/模式/服务状态均收敛; 必要时才提权(sudo)。
 
@@ -32,6 +32,14 @@ FONT=latarcyrheb-sun32
 owner = "root"
 group = "root"
 mode = "0644"
+
+# ── 登录 shell: fish ──
+# 由 mise bootstrap 第 13 步 (mise bootstrap user apply) 收敛: 必要时把该路径
+# 追加进 /etc/shells 再 chsh -s。路径必须写绝对路径, 且按字符串精确比较 ——
+# /bin/fish 与 /usr/bin/fish 视为不同值, 写错会多跑一次无谓的 chsh。
+# 本机账户当前已是 /bin/fish, 故 apply 为 no-op; 新机器才会真正执行一次 chsh。
+[bootstrap.user]
+login_shell = "/bin/fish"
 
 # ── 用户附加组 (input/docker, 只补缺, 保留其它成员) ──
 [bootstrap.users.lenitain]
