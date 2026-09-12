@@ -37,17 +37,6 @@
 "~/.config/yazi" = {}
 "~/.config/zathura" = {}
 "~/.config/zellij" = {}
-# ── DSH (~/.dsh) 跨机管理: 只收手写/你拥有的部分 ──
-# settings.yaml 必须 copy 模式: DSH 用 dsh-atomic-write 的 rename 落盘,
-#   而该 rename 会"替换符号链接本身"而非写穿到 referent —— 软链会在第一次
-#   改设置时被静默换回普通文件。改动后用 `mise dotfiles add <target>` 把
-#   live 回灌进仓库(见仓库 README 备注)。
-# cordis.patch.yml / plugins 交给 symlink: 二者 DSH 只读不写,
-#   且直接编辑即生效(plugins 不设 symlink-each: 那只对目录源逐文件链接,
-#   单文件会解析成"把文件内容链进同名目录")。
-"~/.dsh/settings.yaml" = { mode = "copy" }
-"~/.dsh/profiles/web/cordis.patch.yml" = {}
-"~/.dsh/profiles/web/plugins" = {}
 "~/.gitconfig" = {}
 "~/.local/bin/scripts" = {}
 "~/.local/share/fcitx5/themes" = {}
