@@ -41,10 +41,31 @@ mode = "0644"
 [bootstrap.user]
 login_shell = "/bin/fish"
 
+# ── docker 组必须先于 docker 包存在（accounts 早于 packages）──
+# 全新机器上 docker 还没装 → 该组不存在 → [bootstrap.users] 里的 "docker"
+# 会让第 0 步报 "requires undeclared group 'docker'" 并中止整条 bootstrap。
+# 显式声明后由 mise 在系统组范围内创建; 已存在的组 (本机 gid 960) 保持不变。
+# 注意: 加入 docker 组等价于免密 root。
+[bootstrap.groups.docker]
+system = true
+
 # ── 用户附加组 (input/docker, 只补缺, 保留其它成员) ──
 [bootstrap.users.lenitain]
 group = "lenitain"
 groups = ["input", "docker"]
+
+# ── /etc 下不属于任何软件包的父目录 ──
+# mise 只建你显式声明的目录；[bootstrap.files] 不会替目标文件补父目录，
+# 缺父目录会报 managed file parent does not exist 并中止整条 bootstrap。
+[bootstrap.directories."/etc/systemd/logind.conf.d"]
+owner = "root"
+group = "root"
+mode = "0755"
+
+[bootstrap.directories."/etc/docker"]
+owner = "root"
+group = "root"
+mode = "0755"
 
 # ── logind 合盖不挂起 (重启后生效) ──
 [bootstrap.files."/etc/systemd/logind.conf.d/keep-running.conf"]
