@@ -1,28 +1,39 @@
 #!/usr/bin/python3
-"""qutebrowser 常驻 server 启动器。
+"""qutebrowser 常驻 server 启动器 —— 一个普通的 Python 脚本。
 
-以 --nowindow 启动时，关闭最后一个窗口不再退出应用：
-monkeypatch Quitter.on_last_window_closed，使常驻实例作为 IPC server 持续存活。
+只做两件事：
+  1. 复刻 qutebrowser.qutebrowser.main() 的启动顺序（必须在任何 Qt 导入之前调用
+     early_init()，earlyinit 模块的注释明确要求）；
+  2. 两个 monkeypatch，让「--nowindow 常驻 + 无窗口时也能开 tab」成立（见下文注释）。
+
+进程生命周期不在这里：何时启动、主进程死后怎么回收 QtWebEngine 等子孙、日志写到
+哪，全部由 qb-server.service（systemd user service）负责。脚本不知道 systemd 的
+存在，直接 `qb-server --nowindow -R` 手跑行为一致，只是少了自动收尸。
 
 不修改 /usr 下的任何文件；上游 qutebrowser 更新后本脚本照常工作。
-若上游重构导致补丁失效，行为回退为“关窗即退出”，此时需重新登录或手动重启本脚本。
-
-生命周期由用户显式控制（无守护/轮询）：开机由 niri spawn-sh-at-startup 拉起一次，
-`qb-open ':quit'` 或 kill 后保持终止，直到下次登录或手动启动。
-
-执行顺序复刻 qutebrowser.qutebrowser.main()：必须在任何 Qt 导入之前调用
-early_init()（earlyinit 模块的注释明确要求）。
+若上游重构导致补丁失效，行为回退为“关窗即退出”，此时需重新登录或手动重启。
 """
-import os
 import sys
 
-# --- PID namespace 隔离 ---
-# 首次启动时 unshare --fork --pid 重新 exec 自身，将所有子进程（QtWebEngine 等）
-# 关进同一 namespace。杀 namespace init 进程 → 内核自动回收全部子孙进程。
-if "_QB_NS" not in os.environ:
-    os.environ["_QB_NS"] = "1"
-    os.execvp("unshare", ["unshare", "--user", "--fork", "--pid", "--"] + sys.argv)
-# --- 到这里一定在 PID namespace 内 ---
+# --- 进程生命周期交给 systemd，脚本里不再自己搞 ---
+# 这里曾经用 `unshare --user --pid` 把整棵树关进 PID namespace，指望「杀掉 init
+# → 内核回收整个 namespace」来保证不留孤儿。那是用错了工具：PID namespace 是
+# 隔离原语，不是生命周期原语；而且非特权用户建 PID namespace 必须先建 user
+# namespace，于是 uid_map / SO_PEERCRED / D-Bus EXTERNAL 认证全被牵连——输入法
+# 就是这么挂掉的（getuid() 变 65534，对不上 dbus-broker 看到的 1000）。
+# 更要命的是它连本职工作都没做好：unshare 自己忽略 SIGTERM，杀 wrapper 也不会
+# 带走 namespace init，结果补丁越打越多（--kill-child、再套一层监督进程）。
+#
+# 现在由同目录下的 qb-server.service 持有生命周期：
+#   systemd 的 service 有 MainPID 跟踪，主进程无论以什么方式退出（正常退出、
+#   SIGTERM、SIGKILL），systemd 都会 stop 这个单元，并按默认的
+#   KillMode=control-group 扫掉整个 cgroup。这是 pid1 级保证，不依赖进程自己
+#   讲道理，也不指望 QtWebEngine 会乖乖跟着退。
+# 实测对比（三者的差别只有 cgroup 有没有 MainPID 跟踪）：
+#   裸 setsid            → 孤儿残留
+#   niri 的 spawn-sh scope → 孤儿残留（scope 的 MainPID 是空的，cgroup 空了才算 inactive）
+#   systemd service      → 孤儿被扫掉，正常退出和 kill -9 都扫
+# 所以启动方式必须走 service，别改回 niri 的 spawn-sh。
 
 from qutebrowser.misc import checkpyver
 checkpyver.check_python_version()

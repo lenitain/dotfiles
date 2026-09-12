@@ -25,6 +25,11 @@
 "~/.config/psd" = {}
 "~/.config/qutebrowser" = {}
 "~/.config/swaylock" = {}
+# 整个 systemd user 配置目录一起管：qb-server.service（生命周期载体，有 MainPID
+# 跟踪，主进程一退 systemd 就扫掉整个 cgroup）、sing-box.service、以及
+# default.target.wants/（systemctl enable 生成的软链）。
+# 注意：enable/disable 会往 default.target.wants/ 里写，那会让这个仓库变脏。
+"~/.config/systemd/user" = {}
 "~/.config/user-dirs.dirs" = {}
 "~/.config/user-dirs.locale" = {}
 "~/.config/uv" = {}
