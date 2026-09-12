@@ -8,13 +8,5 @@ animations {
         spring damping-ratio=1.0 stiffness=500 epsilon=0.01
     }
 
-    window-open {
-        off
-    }
-
-    window-close {
-        off
-    }
-
     slowdown 0.5
 }
