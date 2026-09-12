@@ -42,11 +42,6 @@ c.session.lazy_restore = False  # 不延迟加载恢复的标签页
 
 # 源码里没有能关闭后台 _autosave 的配置项，这里直接从内部禁掉它的写入
 import qutebrowser.misc.sessions as _sessions
-import qutebrowser.mainwindow.statusbar.bar as _statusbar_bar
-import qutebrowser.mainwindow.tabwidget as _tabwidget
-from qutebrowser.qt.gui import QPainterPath, QColor, QPainter
-from qutebrowser.qt.core import QRectF
-from qutebrowser.qt.widgets import QStyle
 
 
 def _noop_save_autosave(self):
@@ -303,55 +298,6 @@ c.colors.webpage.darkmode.threshold.background = 87
 
 # 全局页面底色：Everforest bg0，亮度低于阈值，darkmode 不会把它反转成纯黑
 c.content.user_stylesheets = "dark-bg.css"
-
-# ==================== 圆角 ====================
-_cornerRadius = 8  # px — 全局圆角半径
-
-# --- Hints & Prompt ---
-c.hints.radius = _cornerRadius
-c.prompt.radius = _cornerRadius
-
-# --- Status bar ---
-_orig_statusbar_ss = _statusbar_bar._generate_stylesheet
-
-
-def _rounded_statusbar_ss():
-    ss = _orig_statusbar_ss()
-    radius_css = f"border-radius: {_cornerRadius}px;"
-    ss = ss.replace(
-        "QWidget#StatusBar {\n            background-color:",
-        f"QWidget#StatusBar {{\n            {radius_css}\n            padding: 0 {_cornerRadius}px;\n            background-color:",
-    )
-    return ss
-
-
-_statusbar_bar._generate_stylesheet = _rounded_statusbar_ss
-_statusbar_bar.StatusBar.STYLESHEET = _rounded_statusbar_ss()
-
-# --- Tab bar: rounded tab shapes via custom drawControl ---
-_orig_draw = _tabwidget.TabBarStyle.drawControl
-
-
-def _rounded_draw(self, element, opt, p, widget=None):
-    if element == QStyle.ControlElement.CE_TabBarTabShape:
-        r = opt.rect
-        bg = opt.palette.window().color()
-        p.save()
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        path = QPainterPath()
-        path.addRoundedRect(QRectF(r), _cornerRadius, _cornerRadius)
-        p.setClipPath(path)
-        p.fillPath(path, QColor(bg))
-        # indicator strip (left edge, 4px wide, full height)
-        indicator_color = opt.palette.base().color()
-        if indicator_color.isValid():
-            p.fillRect(QRectF(r.x(), r.y(), 4, r.height()), indicator_color)
-        p.restore()
-        return
-    _orig_draw(self, element, opt, p, widget)
-
-
-_tabwidget.TabBarStyle.drawControl = _rounded_draw
 
 # 全局缩放
 c.zoom.default = "120%"
