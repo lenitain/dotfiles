@@ -31,10 +31,6 @@ ruff = "latest"
 "aqua:LuaLS/lua-language-server" = "latest"
 "aqua:JohnnyMorganz/StyLua" = "latest"
 
-# Rust
-# 1.0.0-alpha 起上游把仓库拆成 workspace：`vtracer` 只剩库（无 bin），CLI 在 `vtracer-cli`
-# 见文件末尾：该包只发布 alpha，需要单独放行 prerelease
-
 # ── 预发布工具：单独放行 prerelease ───────────────────────────────
 # 全局 prereleases 已关闭（原因见 config.toml）。上游只发布预发布版的工具必须在这里
 # 逐个打开 prerelease，否则会报 "no versions found ... matching date filter"。
@@ -42,9 +38,5 @@ ruff = "latest"
 # ⚠️ 这些子表必须放在文件末尾：TOML 子表会终止上面的 [tools] 表，
 #    写在中间会把后面所有工具键吞进该子表里（静默丢失）。
 [tools."npm:@deepseek-ai/dsh"]
-version = "latest"
-prerelease = true
-
-[tools."cargo:vtracer-cli"]
 version = "latest"
 prerelease = true
