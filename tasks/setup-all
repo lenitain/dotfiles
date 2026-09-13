@@ -7,19 +7,23 @@
 #   - 声明式 [bootstrap.*]/[dotfiles] 由 mise bootstrap 先行收敛
 #   - 命令式部分: pacman -Syu(系统) → mise upgrade(工具) → setup-* 各 sync 任务
 #   - setup-boot 保持手动(带守卫); setup-desktop 为设置类(无版本语义)
+#
+# 失败规范 (2026-09 起): "更新/同步"类步骤一律软失败 —— 失败只 warn, 不中断
+#   后续步骤, 便于一次跑完尽量多的收敛; 真正缺依赖/环境不符由各任务内部
+#   err + exit 1 表达, 在对应步骤的 warn 里可见。
 
 set -euo pipefail
 
-info() { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
-ok()   { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
-warn() { printf "\033[33m[warn]\033[0m  %s\n" "$*"; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
 
 # 1) 系统安装缺失包 + 升级 (mise bootstrap → pacman -Syu) — 非交互必须 --noconfirm
 info "1/13 系统安装+升级 (mise bootstrap → sudo pacman -Syu --noconfirm) ..."
 if ! mise bootstrap; then
   warn "mise bootstrap 失败，跳过"
 fi
-sudo pacman -Syu --noconfirm
+if ! sudo pacman -Syu --noconfirm; then
+  warn "pacman -Syu 失败，跳过系统升级，继续后续步骤"
+fi
 
 # 2) [tools] 安装缺失 + 升级到最新
 info "2/13 工具安装+升级 (mise install → mise upgrade) ..."
@@ -30,20 +34,26 @@ if ! mise upgrade; then
   warn "mise upgrade 失败，跳过"
 fi
 
-# 3..12 各 sync 任务 (已含"已最新则跳过"/"有新提交则重建"语义)
-info "3/13 setup-desktop (dconf/XDG) ..."          ; mise run setup-desktop
-info "4/13 setup-fonts (Maple Mono) ..."            ; mise run setup-fonts
-info "5/13 setup-dict (ECDICT) ..."                 ; mise run setup-dict
-info "6/13 setup-rime-wanxiang (万象拼音) ..."       ; mise run setup-rime-wanxiang
-info "7/13 setup-rust (rustup+rust-analyzer) ..."    ; mise run setup-rust
-info "8/13 setup-moonbit ..."                       ; mise run setup-moonbit
-info "9/13 setup-flatpak ..."                       ; mise run setup-flatpak
-info "10/13 setup-yazi ..."                          ; mise run setup-yazi
-info "11/13 setup-just-talk ..."                    ; mise run setup-just-talk
-info "12/13 setup-wl-screenrec ..."                 ; mise run setup-wl-screenrec
-info "13/13 setup-pi ..."
-if ! mise run setup-pi; then
-  warn "setup-pi 失败，跳过"
-fi
+# 3..13 各 sync 任务 (已含"已最新则跳过"/"有新提交则重建"语义)
+# 统一守卫: 任一步失败只 warn 并继续, 不拖死剩余步骤
+run_step() {  # run_step <序号> <任务名> <说明>
+  local step="$1" task="$2" desc="$3"
+  info "$step $task ($desc) ..."
+  if ! mise run "$task"; then
+    warn "$task 失败，跳过 (可单独重跑: mise run $task)"
+  fi
+}
 
-ok "bootstrap 完成: 系统+工具+配置已同步到最新"
+run_step "3/13"  setup-desktop        "dconf/XDG"
+run_step "4/13"  setup-fonts          "Maple Mono"
+run_step "5/13"  setup-dict           "ECDICT"
+run_step "6/13"  setup-rime-wanxiang  "万象拼音"
+run_step "7/13"  setup-rust           "rustup+rust-analyzer"
+run_step "8/13"  setup-moonbit        "MoonBit"
+run_step "9/13"  setup-flatpak        "flathub+apps"
+run_step "10/13" setup-yazi           "yazi 插件/配色"
+run_step "11/13" setup-just-talk      "just-talk"
+run_step "12/13" setup-wl-screenrec   "wl-screenrec"
+run_step "13/13" setup-pi             "Pi agent + 扩展"
+
+ok "bootstrap 完成: 系统+工具+配置已同步到最新 (失败项见上方 warn)"

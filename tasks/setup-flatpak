@@ -3,11 +3,9 @@
 
 set -euo pipefail
 
-FLATHUB_URL="https://mirror.sjtu.edu.cn/flathub"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
 
-info()  { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
-ok()    { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
-err()   { printf "\033[31m[err]\033[0m   %s\n" "$*"; }
+FLATHUB_URL="https://mirror.sjtu.edu.cn/flathub"
 
 if ! command -v flatpak &>/dev/null; then
   err "flatpak 未安装，请先运行: mise bootstrap --yes"
@@ -15,6 +13,7 @@ if ! command -v flatpak &>/dev/null; then
 fi
 
 tmp_key="$(mktemp)"
+trap 'rm -f "$tmp_key"' EXIT
 curl -fsSL -o "$tmp_key" https://mirror.sjtu.edu.cn/flathub/flathub.gpg
 if ! flatpak remote-list --user | grep -q '^flathub'; then
   info "注册 flathub 源 ($FLATHUB_URL) ..."
@@ -23,26 +22,34 @@ else
   info "flathub 源已存在，更新 GPG 密钥 ..."
   flatpak remote-modify --user flathub --gpg-import="$tmp_key"
 fi
-rm -f "$tmp_key"
 
 apps=(
   com.tencent.WeChat
   com.qq.QQ
 )
 
-# 确保 apps 已装 (缺则装)
+# 确保 apps 已装 (缺则装; 安装失败属真实错误 → 硬失败)
 for app in "${apps[@]}"; do
   if flatpak list --app --columns=application | grep -q "^${app}$"; then
     ok "$app 已存在"
   else
     info "安装 $app ..."
-    flatpak install -y --user flathub "$app" && ok "$app 已安装"
+    if flatpak install -y --user flathub "$app"; then
+      ok "$app 已安装"
+    else
+      err "$app 安装失败"
+      exit 1
+    fi
   fi
 done
 
-# -Syu 哲学: 有更新就更新到最新 (用户级 flathub 应用)
+# -Syu 哲学: 有更新就更新到最新 (用户级 flathub 应用); 更新失败软处理
 info "更新 flathub 应用到最新 (flatpak update) ..."
-flatpak update --user -y 2>&1 | tail -3 || true
+if flatpak update --user -y 2>&1 | tail -3; then
+  ok "flathub 应用已更新"
+else
+  warn "flatpak update 失败 (网络/远端不可达), 保留当前版本继续"
+fi
 
 echo ""
 ok "安装完成！重启后图标会出现在 fuzzel 中"

@@ -3,23 +3,26 @@
 
 set -euo pipefail
 
-info()  { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
-ok()    { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
 
 INSTALL_URL="https://cli.moonbitlang.cn/install/unix.sh"
 MOON_BIN="$HOME/.moon/bin/moon"
 
 if [ -x "$MOON_BIN" ]; then
   info "moon 已安装: $($MOON_BIN version 2>/dev/null | head -1)"
-  # -Syu 哲学: 有更新就升级
+  # -Syu 哲学: 有更新就升级 (更新软失败: 失败保留当前版本)
   info "升级到最新 (moon upgrade) ..."
-  "$MOON_BIN" upgrade 2>/dev/null && ok "moon 已升级" || ok "moon 已是最新"
+  if "$MOON_BIN" upgrade 2>/dev/null; then
+    ok "moon 已升级"
+  else
+    warn "moon upgrade 返回非零 (该命令仍属实验性, 可能已是最新或网络不可达), 保留当前版本继续"
+  fi
 else
   info "安装 MoonBit 工具链 ..."
   curl -fsSL "$INSTALL_URL" | bash
   if [ -x "$MOON_BIN" ]; then
     ok "MoonBit 已就绪: $($MOON_BIN version | head -1)"
   else
-    echo "安装完成，moon 在 ~/.moon/bin（重新登录后生效）"
+    info "安装完成，moon 在 ~/.moon/bin（重新登录后生效）"
   fi
 fi

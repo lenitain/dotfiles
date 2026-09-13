@@ -3,16 +3,15 @@
 
 set -euo pipefail
 
-info() { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
-ok()   { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
 
 # ── 守卫: 必须以普通用户运行, 防止误写 root 域 ──
 if [ "$(id -u)" -eq 0 ]; then
-  echo "错误: 本任务必须作为普通用户运行(请勿 sudo)" >&2
+  err "本任务必须作为普通用户运行(请勿 sudo)"
   exit 1
 fi
 if [ "$HOME" = "/root" ]; then
-  echo "错误: HOME=/root, 疑似越权" >&2
+  err "HOME=/root, 疑似越权"
   exit 1
 fi
 

@@ -3,6 +3,7 @@
 
 set -euo pipefail
 
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/gh.sh"
 
 REPO="amzxyz/rime-wanxiang"
@@ -16,36 +17,36 @@ command -v curl &>/dev/null || missing+=("curl")
 command -v unzip &>/dev/null || missing+=("unzip")
 command -v rime_deployer &>/dev/null || missing+=("rime_deployer (librime)")
 if [[ ${#missing[@]} -gt 0 ]]; then
-  echo "缺少依赖: ${missing[*]}"
-  echo "  → sudo pacman -S --needed curl unzip librime"
+  err "缺少依赖: ${missing[*]}"
+  err "  → sudo pacman -S --needed curl unzip librime"
   exit 1
 fi
 
-# ── 版本检测（GitHub API）──
-JSON="$(gh_api "/repos/$REPO/releases/latest")" || {
-  echo "无法获取最新版本信息，请检查网络"
-  exit 1
-}
+# ── 版本检测（GitHub API; 探测失败属更新失败 → 软处理, 保留现有方案）──
+if ! JSON="$(gh_api "/repos/$REPO/releases/latest")"; then
+  warn "无法获取最新版本信息 (网络/镜像不可用)，保留现有方案继续"
+  exit 0
+fi
 VERSION="$(printf '%s' "$JSON" | grep -oE '"tag_name": *"[^"]+"' | head -1 | cut -d'"' -f4)"
 ASSET_URL="$(printf '%s' "$JSON" | grep -oE '"browser_download_url": *"[^"]*'"$ASSET"'"' | head -1 | cut -d'"' -f4)"
 if [[ -z "$VERSION" || -z "$ASSET_URL" ]]; then
-  echo "release 中未找到 $ASSET"
-  exit 1
+  warn "release 中未找到 $ASSET，保留现有方案继续"
+  exit 0
 fi
 
 # ── 已是最新则跳过 ──
 if [[ -f "$MARKER" ]] && [[ "$(cat "$MARKER")" == "$VERSION" ]]; then
-  echo "万象拼音已是最新 ($VERSION)，跳过"
+  info "万象拼音已是最新 ($VERSION)，跳过"
   exit 0
 fi
 
 # ── 下载并解压 ──
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-gh_download "$ASSET_URL" "$TMP/$ASSET" || {
-  echo "所有镜像均下载失败，原方案未动"
-  exit 1
-}
+if ! gh_download "$ASSET_URL" "$TMP/$ASSET"; then
+  warn "所有镜像均下载失败，原方案未动，跳过本次更新"
+  exit 0
+fi
 unzip -qo "$TMP/$ASSET" -d "$TMP/src"
 
 # ── 1. 复制方案 YAML ──
@@ -81,10 +82,11 @@ if [[ -d "$TMP/src/lua/data" ]]; then
 fi
 
 # ── 4. 部署构建 ──
-echo "正在构建 Rime 数据 ..."
+info "正在构建 Rime 数据 ..."
+# 构建失败 → 软处理: 不写版本标记(build 未生成, 下次运行重试), 保留 build/ 现状
 if ! rime_deployer --build "$RIME_DIR" /usr/share/rime-data "$RIME_DIR/build" 2>&1; then
-  echo "Rime 构建失败，原方案未动"
-  exit 1
+  warn "Rime 构建失败 (方案文件已复制, build 未生成); 可单独重跑: mise run setup-rime-wanxiang"
+  exit 0
 fi
 echo "$VERSION" > "$MARKER"
 
@@ -102,8 +104,8 @@ fi
 
 if rime_missing; then
   if pgrep -x fcitx5 &>/dev/null; then
-    echo "  警告: fcitx5 未及时退出, 跳过 profile 注册"
-    echo "        请用 fcitx5-configtool 手动添加 Rime 输入法"
+    warn "  fcitx5 未及时退出, 跳过 profile 注册"
+    warn "        请用 fcitx5-configtool 手动添加 Rime 输入法"
   else
     mkdir -p "$(dirname "$PROFILE")"
     if [[ -s "$PROFILE" ]] && grep -q '^\[Groups/0\]' "$PROFILE"; then
@@ -157,4 +159,4 @@ if $was_running; then
   echo "已重启 fcitx5"
 fi
 
-echo "万象拼音 $VERSION 安装完成"
+ok "万象拼音 $VERSION 安装完成"

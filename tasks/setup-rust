@@ -3,24 +3,32 @@
 
 set -euo pipefail
 
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
+
 # USTC 镜像
 export RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static
 export RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
 
+# ── 安装 rustup（首次安装: 硬失败, 缺工具链后续全废）──
 if ! command -v rustup &>/dev/null; then
-  echo "安装 rustup ..."
+  info "安装 rustup ..."
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 fi
 
 if command -v rustup &>/dev/null; then
-  echo "Rust 安装完成 ($(rustup --version | head -1))"
+  ok "Rust 安装完成 ($(rustup --version | head -1))"
 else
-  echo "Rust 安装失败"
+  err "Rust 安装失败"
   exit 1
 fi
 
-echo "安装 rust-analyzer 组件 ..."
-rustup component add rust-analyzer
+# ── rust-analyzer 组件（更新软失败: 失败不影响编译器本身可用）──
+info "安装/更新 rust-analyzer 组件 ..."
+if rustup component add rust-analyzer; then
+  ok "rust-analyzer 已就绪"
+else
+  warn "rust-analyzer 组件安装失败 (网络/镜像不可达), 跳过"
+fi
 
 echo ""
-echo "完成！Rust 工具链 + rust-analyzer 已就绪 (由 rustup/脚本管理)"
+ok "完成！Rust 工具链 + rust-analyzer 已就绪 (由 rustup/脚本管理)"

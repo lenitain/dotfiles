@@ -3,11 +3,10 @@
 
 set -euo pipefail
 
-info()  { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
-ok()    { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
 
 if ! command -v pi &>/dev/null; then
-  echo "pi 未安装，请先运行: mise install"
+  err "pi 未安装，请先运行: mise install"
   exit 1
 fi
 
@@ -19,11 +18,20 @@ extensions=(
 
 for ext in "${extensions[@]}"; do
   info "  安装 $ext ..."
-  pi install "$ext" 2>/dev/null && ok "  $ext" || info "  $ext (已存在或跳过)"
+  if pi install "$ext" 2>/dev/null; then
+    ok "  $ext"
+  else
+    warn "  $ext (已存在或跳过)"
+  fi
 done
 
 echo ""
 ok "Pi + 扩展已安装"
-info "更新扩展 ..."
-pi update --extensions
-ok "扩展已更新"
+
+# 追最新: 扩展更新失败软处理, 保留当前版本
+info "更新扩展 (pi update --extensions) ..."
+if pi update --extensions; then
+  ok "扩展已更新"
+else
+  warn "pi update --extensions 失败 (网络/远端不可达), 保留当前版本继续"
+fi

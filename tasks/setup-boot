@@ -9,9 +9,7 @@
 
 set -euo pipefail
 
-info() { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
-ok()   { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
-err()  { printf "\033[31m[err]\033[0m   %s\n" "$*"; }
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
 
 # ── 守卫: 必须 root ──
 if [ "$(id -u)" -ne 0 ]; then

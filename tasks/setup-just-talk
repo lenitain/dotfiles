@@ -3,6 +3,7 @@
 
 set -euo pipefail
 
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/lib/source-build.sh"
 
 REPO_URL="https://github.com/whoamihappyhacking/just-talk-go.git"
@@ -10,33 +11,39 @@ INSTALL_DIR="$HOME/.cloned/just-talk-go"
 TARGET="$HOME/.local/bin/just-talk"
 STATE="$HOME/.local/state/cloned/just-talk.sha"
 
-# ── 前置检查：构建依赖 ──
+# ── 前置检查：构建依赖（真缺依赖 → 硬失败）──
 missing=()
 command -v gcc &>/dev/null || missing+=("gcc")
+command -v go &>/dev/null || missing+=("go (由 mise 提供: mise install)")
 pkg-config --exists x11 2>/dev/null || missing+=("libx11")
 pkg-config --exists xtst 2>/dev/null || missing+=("libxtst")
 pkg-config --exists xext 2>/dev/null || missing+=("libxext")
 pkg-config --exists wayland-client 2>/dev/null || missing+=("wayland")
 if [[ ${#missing[@]} -gt 0 ]]; then
-  echo "缺少构建依赖: ${missing[*]}"
-  echo "  → sudo pacman -S --needed gcc libx11 libxtst libxext wayland"
+  err "缺少构建依赖: ${missing[*]}"
+  err "  → sudo pacman -S --needed gcc libx11 libxtst libxext wayland"
   exit 1
 fi
 
-# ── 同步到上游并判定是否重建 ──
+# ── 同步到上游并判定是否重建（同步失败 → 软处理, 保留现有二进制）──
 rc=0
 sync_source "$REPO_URL" "$INSTALL_DIR" "$TARGET" "$STATE" || rc=$?
 if [ "$rc" -eq 2 ]; then
-  exit 1
+  warn "上游同步失败 (网络/镜像不可用), 保留现有二进制继续"
+  exit 0
 fi
 if [ "$rc" -eq 0 ]; then
   cd "$INSTALL_DIR"
   mkdir -p build
-  echo "构建 just-talk ..."
-  CGO_ENABLED=1 go build -o build/just-talk ./cmd/just-talk
-  mkdir -p "$HOME/.local/bin" "$(dirname "$STATE")"
-  cp build/just-talk "$TARGET"
-  chmod +x "$TARGET"
-  git -C "$INSTALL_DIR" rev-parse HEAD > "$STATE"
-  echo "已安装: $TARGET"
+  info "构建 just-talk ..."
+  # 构建失败 → 软处理: 保留旧二进制, 不覆盖已可用的命令
+  if CGO_ENABLED=1 go build -o build/just-talk ./cmd/just-talk; then
+    mkdir -p "$HOME/.local/bin" "$(dirname "$STATE")"
+    cp build/just-talk "$TARGET"
+    chmod +x "$TARGET"
+    git -C "$INSTALL_DIR" rev-parse HEAD > "$STATE"
+    ok "已安装: $TARGET"
+  else
+    warn "构建失败, 保留现有二进制 ($TARGET 未更新); 可单独重跑: mise run setup-just-talk"
+  fi
 fi
