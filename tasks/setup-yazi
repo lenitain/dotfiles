@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-#MISE description="安装 yazi 插件/配色 (从 package.toml)"
+#MISE description="安装并更新 yazi 插件/配色 (从 package.toml)"
 
 set -euo pipefail
 
 info()  { printf "\033[34m[info]\033[0m  %s\n" "$*"; }
 ok()    { printf "\033[32m[ok]\033[0m    %s\n" "$*"; }
+warn()  { printf "\033[33m[warn]\033[0m  %s\n" "$*"; }
 err()   { printf "\033[31m[err]\033[0m   %s\n" "$*"; }
 
 if ! command -v ya &>/dev/null; then
@@ -12,6 +13,16 @@ if ! command -v ya &>/dev/null; then
   exit 1
 fi
 
-info "安装 yazi 插件/配色 ..."
+# 1) 安装 package.toml 中锁定版本的插件/配色 (缺失则拉取, hash 不符则重装)
+info "安装 yazi 插件/配色 (package.toml 锁定版本) ..."
 ya pkg install
 ok "yazi 插件已安装"
+
+# 2) 追最新 (pacman -Syu 哲学): 非 "=" 前缀的 rev 会被升级到上游最新提交,
+#    并把新的 rev/hash 写回 package.toml (dotfiles 仓库需自行 commit)
+info "更新 yazi 插件到最新 (ya pkg upgrade) ..."
+if ya pkg upgrade; then
+  ok "yazi 插件已更新"
+else
+  warn "ya pkg upgrade 失败 (网络/上游不可达), 保留当前版本继续"
+fi

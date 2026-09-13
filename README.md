@@ -88,7 +88,7 @@ mise bootstrap packages use pacman:foo@version   # 或编辑 conf.d/packages.tom
 | `setup-fonts`        | Maple Mono 字体                                | 用户 |
 | `setup-flatpak`      | flathub + Flatpak 应用                         | 用户 |
 | `setup-moonbit`      | MoonBit 工具链                                 | 用户 |
-| `setup-yazi`         | yazi 插件/配色                                 | 用户 |
+| `setup-yazi`         | yazi 插件/配色（安装+更新）                    | 用户 |
 | `setup-just-talk`    | 构建到 ~/.local/bin                            | 用户 |
 | `setup-wl-screenrec` | 同上                                           | 用户 |
 
