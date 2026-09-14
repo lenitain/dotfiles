@@ -84,7 +84,7 @@ def render_segments(col, total_cols):
         color = COLOR_CURRENT if i == col else COLOR_PAST
         out.append(f"<span background='{color}'>{FILL}</span>")
 
-    gap = "<span size='15%'>    </span>"
+    gap = "<span size='15%'>   </span>"
     return gap.join(out)
 
 
