@@ -19,8 +19,12 @@
   // （waybar 没有布尔选项），999999 不会被任何文本触及，实际截断点 100% 由 GTK
   // 布局决定（碰撞点省略）——列很多而宽度不够时靠它省略，而不是把中心挤走。
   // tooltip 只显示「当前列 / 总列数」。
-  // 想让它再带一行窗口名：给 exec 加 --tooltip-window-title（默认关闭；窗口标题现在
-  // 常驻中间，见下面的 niri/window）。
+  // niri overview 打开时会把窗口焦点清成 None，此时锚点换成「聚焦（高亮）工作区的活动
+  // 窗口」，所以 overview 里高亮/切到哪个工作区、按 ←/→ 换到哪一列，列指示器就跟到哪里，
+  // 而不是整块消失；高亮到没有平铺窗口的工作区才回落成空文本（细节见 colpos.py 的
+  // overview_window / Anchor 注释）。
+  // exec 不带任何参数：脚本自己连 niri event-stream 取状态，启动和断线重连都不额外查询
+  // （连上时的首帧就是 niri 重放的完整状态），细节见 colpos.py 顶部的 State 段。
   "custom/colpos": {
     "return-type": "json",
     "exec": "~/.config/waybar/scripts/colpos.py",
