@@ -41,9 +41,9 @@ blur {
 // 窗口自身不透明时模糊透不出来，所以两者写在同一条规则里。
 // 模糊默认走 xray（只模糊一次壁纸再复用），额外开销很小。
 window-rule {
-    opacity 0.92
+    opacity 0.93
     background-effect {
-        blur true
+        blur false
     }
 }
 
