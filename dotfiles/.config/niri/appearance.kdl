@@ -117,10 +117,10 @@ layer-rule {
 
 // fuzzel 是 launcher，mako 是 notifications
 // （两个 namespace 分别从 /usr/bin/fuzzel、/usr/bin/mako 的字符串里确认，运行时也核对过）
-layer-rule {
-    match namespace="^(launcher|notifications)$"
-    opacity 0.93
-}
+// layer-rule {
+//     match namespace="^(launcher|notifications)$"
+//     opacity 0.93
+// }
 
 // waybar 当前保持不透明。想让它一起透明，把 waybar 并进上面那条正则；
 // 想给它单独的值，就取消下面的注释。
