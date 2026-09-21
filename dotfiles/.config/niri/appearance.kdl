@@ -89,6 +89,46 @@ layer-rule {
     place-within-backdrop true
 }
 
+// ---- layer-shell 表面的半透明 ----
+// 这里就是 layer-rule opacity 的本职用途：从合成器侧给外部程序加透明度，
+// 不用去改每个程序自己的配置格式。
+//
+// 注意 niri 文档的两条语义：
+//   1. opacity 叠加在「表面自身透明度」之上，半透明的表面会变得更透。
+//      下面这些程序的底色都是不透明纯色，所以这里是净效果，不会双重变淡：
+//        waybar style.css #343f44 / fuzzel 3D484Dff / mako #3d484d
+//   2. opacity 逐个作用于表面的每个 child，所以子表面和弹出菜单也会各自变透明
+//      （能透出后面的内容）。要给弹出菜单单独设值就写 popups { opacity ... }。
+//
+// 关于「提取变量」：niri 的 KDL 配置没有变量/常量机制（wiki 无此功能），
+// 所以让一个值只出现一次的唯一办法，是把要一起处理的程序用正则并进同一条规则
+// —— namespace 匹配器本身就是正则。想给某个程序单独一个值，就把它拆出去另写一条。
+//
+// 0.93 和上面 window-rule 的窗口透明度保持一致（那个值在 window-rule 里，
+// 与这里分属两类规则，KDL 没法让两处共用一个数；真要一处定义只能用脚本生成配置）。
+//
+// 另一个"一个全局旋钮"的写法：匹配所有 layer surface、排除壁纸，
+// 这样以后新加的程序自动跟随，代价是不可控（也会波及通知、overlay 等）：
+//   layer-rule {
+//       match namespace=".*"
+//       exclude namespace="^wallpaper$"
+//       opacity 0.93
+//   }
+
+// fuzzel 是 launcher，mako 是 notifications
+// （两个 namespace 分别从 /usr/bin/fuzzel、/usr/bin/mako 的字符串里确认，运行时也核对过）
+layer-rule {
+    match namespace="^(launcher|notifications)$"
+    opacity 0.93
+}
+
+// waybar 当前保持不透明。想让它一起透明，把 waybar 并进上面那条正则；
+// 想给它单独的值，就取消下面的注释。
+// layer-rule {
+//     match namespace="^waybar$"
+//     opacity 0.93
+// }
+
 // Overview
 overview {
     zoom 0.3125

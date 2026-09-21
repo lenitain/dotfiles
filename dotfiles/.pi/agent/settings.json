@@ -5,7 +5,7 @@
   "packages": [
     "npm:pi-web-access"
   ],
-  "lastChangelogVersion": "0.85.1",
+  "lastChangelogVersion": "0.86.0",
   "theme": "everforest-dark-medium",
   "hideThinkingBlock": true,
   "quietStartup": true,
