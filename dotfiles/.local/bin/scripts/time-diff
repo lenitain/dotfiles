@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+  echo "用法: $(basename "$0") <年月日时分秒>" >&2
+  echo "示例: $(basename "$0") '2026-01-01 00:00:00'" >&2
+  exit 1
+fi
+
+TARGET=$(date -d "$*" +%s 2>/dev/null) || {
+  echo "无法解析时间: $*" >&2
+  exit 1
+}
+NOW=$(date +%s)
+
+echo $((TARGET - NOW))
