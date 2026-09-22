@@ -17,7 +17,7 @@ fish_add_path ~/.moon/bin
 fish_add_path ~/.go/bin
 
 # ─── XDG ───
-set -gx QT_QPA_PLATFORMTHEME qt6ct
+set -gx QT_QPA_PLATFORMTHEME gtk3
 set -gx XDG_DATA_DIRS "/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share:/usr/local/share:/usr/share"
 
 # ─── Rust (USTC Mirror) ───
