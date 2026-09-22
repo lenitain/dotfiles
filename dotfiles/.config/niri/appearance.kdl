@@ -123,7 +123,9 @@ layer-rule {
 overview {
     zoom 0.3125
     backdrop-color "#232A2E"
-    // workspace-shadow { off }
+    // workspace-shadow {
+    //     off
+    // }
 }
 
 // 带缩略图的 Alt+Tab 切换窗口功能
