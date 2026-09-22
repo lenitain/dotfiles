@@ -28,7 +28,6 @@ image/tiff=swayimg.desktop
 image/avif=swayimg.desktop
 image/heif=swayimg.desktop
 image/jxl=swayimg.desktop
-image/x-xcf=gimp.desktop
 
 # ── 音视频（mpv，底层 ffmpeg，几乎全格式）──
 # 音频
@@ -106,16 +105,44 @@ application/x-ogg=mpv.desktop
 # ── 目录：文件管理器 ──
 inode/directory=yazi.desktop
 
-# ── Office（LibreOffice）──
-application/vnd.oasis.opendocument.text=libreoffice-writer.desktop
-application/msword=libreoffice-writer.desktop
-application/vnd.openxmlformats-officedocument.wordprocessingml.document=libreoffice-writer.desktop
-application/vnd.oasis.opendocument.spreadsheet=libreoffice-calc.desktop
-application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=libreoffice-calc.desktop
-application/vnd.oasis.opendocument.presentation=libreoffice-impress.desktop
-application/vnd.openxmlformats-officedocument.presentationml.presentation=libreoffice-impress.desktop
+# ── Office（ONLYOFFICE）──
+# 文档：ODF / Word / RTF
+application/vnd.oasis.opendocument.text=onlyoffice-desktopeditors.desktop
+application/vnd.oasis.opendocument.text-template=onlyoffice-desktopeditors.desktop
+application/msword=onlyoffice-desktopeditors.desktop
+application/vnd.ms-word.document.macroEnabled.12=onlyoffice-desktopeditors.desktop
+application/vnd.openxmlformats-officedocument.wordprocessingml.document=onlyoffice-desktopeditors.desktop
+application/vnd.openxmlformats-officedocument.wordprocessingml.template=onlyoffice-desktopeditors.desktop
+application/rtf=onlyoffice-desktopeditors.desktop
 
-# ── geo 链接（OpenStreetMap，隐私友好）──
-x-scheme-handler/geo=openstreetmap-geo-handler.desktop
+# 表格：ODF / Excel / CSV
+application/vnd.oasis.opendocument.spreadsheet=onlyoffice-desktopeditors.desktop
+application/vnd.oasis.opendocument.spreadsheet-template=onlyoffice-desktopeditors.desktop
+application/vnd.ms-excel=onlyoffice-desktopeditors.desktop
+application/vnd.ms-excel.sheet.macroEnabled.12=onlyoffice-desktopeditors.desktop
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=onlyoffice-desktopeditors.desktop
+application/vnd.openxmlformats-officedocument.spreadsheetml.template=onlyoffice-desktopeditors.desktop
+text/csv=onlyoffice-desktopeditors.desktop
+text/tab-separated-values=onlyoffice-desktopeditors.desktop
+
+# 演示：ODF / PowerPoint
+application/vnd.oasis.opendocument.presentation=onlyoffice-desktopeditors.desktop
+application/vnd.oasis.opendocument.presentation-template=onlyoffice-desktopeditors.desktop
+application/vnd.ms-powerpoint=onlyoffice-desktopeditors.desktop
+application/vnd.ms-powerpoint.presentation.macroEnabled.12=onlyoffice-desktopeditors.desktop
+application/vnd.openxmlformats-officedocument.presentationml.presentation=onlyoffice-desktopeditors.desktop
+application/vnd.openxmlformats-officedocument.presentationml.slideshow=onlyoffice-desktopeditors.desktop
+application/vnd.openxmlformats-officedocument.presentationml.template=onlyoffice-desktopeditors.desktop
+
+# 绘图：ODF Draw / Visio（OnlyOffice 自带 Visio 支持）
+application/vnd.oasis.opendocument.graphics=onlyoffice-desktopeditors.desktop
+application/vnd.ms-visio.drawing.main+xml=onlyoffice-desktopeditors.desktop
+
+# ── 阅读器（OnlyOffice 也声明了这些类型，需显式压回查看器）──
+image/vnd.djvu=org.pwmt.zathura-djvu.desktop
+application/epub+zip=org.pwmt.zathura-pdf-mupdf.desktop
+application/x-fictionbook+xml=org.pwmt.zathura-pdf-mupdf.desktop
+
+# ── 自定义协议 ──
 x-scheme-handler/clash=clash-verge.desktop;
 x-scheme-handler/clash-verge=clash-verge.desktop;

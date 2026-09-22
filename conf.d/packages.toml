@@ -51,7 +51,7 @@
 "pacman:zathura-pdf-mupdf" = "latest"
 "pacman:zathura-ps" = "latest"
 "pacman:zathura-djvu" = "latest"
-"pacman:libreoffice" = "latest"
+"pacman:onlyoffice-bin" = "latest"
 "pacman:tesseract" = "latest"
 "pacman:tesseract-data-eng" = "latest"
 "pacman:lazygit" = "latest"
