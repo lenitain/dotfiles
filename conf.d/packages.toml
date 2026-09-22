@@ -112,3 +112,5 @@
 "pacman:noto-fonts" = "latest"
 "pacman:swaybg" = "latest"
 "pacman:plasma-workspace-wallpapers" = "latest"
+"pacman:onefetch" = "latest"
+"pacman:fastfetch" = "latest"
