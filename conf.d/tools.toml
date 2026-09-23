@@ -39,3 +39,11 @@ ruff = "latest"
 [tools."npm:@deepseek-ai/dsh"]
 version = "latest"
 prerelease = true
+
+# MiMoCode（Xiaomi，运行命令 mimo）。全局 minimum_release_age 内置默认 24h（防供应链），
+# 而该包 registry 里目前只有 0.1.15 一个版本且发布不足 24h，会解析成
+# "no versions found ... matching date filter"，故逐工具关掉发布时长过滤。
+# 若之后想恢复 24h 保护（升级会滞后一天），删掉下面这行即可。
+[tools."npm:@mimo-ai/cli"]
+version = "latest"
+minimum_release_age = "0s"

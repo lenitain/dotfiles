@@ -22,7 +22,9 @@ environment {
 
     // Qt/GTK Theme
     QT_QPA_PLATFORMTHEME               "gtk3"
-    QT_QPA_PLATFORMTHEME_QT6           "gtk3"
+    // 注意：不要写 QT_QPA_PLATFORMTHEME_QT6——Qt5/Qt6 库只读 QT_QPA_PLATFORMTHEME
+    // 这一个变量（strings libQt6Gui 已证实），Qt5/Qt6 都自带 libqgtk3.so 平台主题
+    // 插件，同一变量对两代 Qt 同时生效，无需按版本分开设置。
     QS_ICON_THEME                      "Adwaita"  // 解决 QuickShell 图标主题缺失问题
     GSK_RENDERER                        "gl"  // 解决 NVIDIA 双显卡导致的 GTK 应用启动缓慢问题
 
