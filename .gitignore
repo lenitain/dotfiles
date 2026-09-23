@@ -37,3 +37,7 @@ dotfiles/.local/bin/scripts/qb-open
 
 # 硬件相关显示配置
 dotfiles/.config/niri/output.kdl
+
+# jujutsu per repo info
+dotfiles/.config/jj/repos
+dotfiles/.config/jj/workspaces
