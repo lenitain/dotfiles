@@ -3,7 +3,8 @@
   "defaultModel": "deepseek-flash",
   "defaultThinkingLevel": "max",
   "packages": [
-    "npm:pi-web-access"
+    "npm:pi-web-access",
+    "npm:pi-repl-py"
   ],
   "lastChangelogVersion": "0.87.0",
   "theme": "everforest-dark-medium",
