@@ -7,3 +7,6 @@ email = "xt.zhu@qq.com"
 [ui]
 diff-editor = ["nvim", "-c", "setlocal readonly | set filetype=diff"]
 merge-editor = ["nvim", "-d", "-c", "setlocal readonly | set filetype=diff"]
+
+[diff.git]
+context = 5
