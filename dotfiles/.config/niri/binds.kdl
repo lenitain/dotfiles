@@ -358,7 +358,7 @@ binds {
     }
 
     // Pick color (点选取色)
-    MOD+CTRL+G hotkey-overlay-title="Pick color" {
+    MOD+SHIFT+G hotkey-overlay-title="Pick color" {
         spawn "hyprpicker" "--autocopy" "--notify" "--format" "hex"
     }
 
