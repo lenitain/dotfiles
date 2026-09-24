@@ -84,7 +84,6 @@ mise bootstrap packages use pacman:foo@version   # 或编辑 conf.d/packages.tom
 | `setup-boot`         | systemd-boot / sdboot-manage（守卫，**手动**） | sudo |
 | `setup-desktop`      | dconf + XDG 用户目录                           | 用户 |
 | `setup-rust`         | rustup + rust-analyzer                         | 用户 |
-| `setup-dict`         | ECDICT 词典                                    | 用户 |
 | `setup-fonts`        | Maple Mono 字体                                | 用户 |
 | `setup-flatpak`      | flathub + Flatpak 应用                         | 用户 |
 | `setup-moonbit`      | MoonBit 工具链                                 | 用户 |

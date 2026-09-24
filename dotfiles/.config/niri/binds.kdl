@@ -357,11 +357,6 @@ binds {
         spawn "ocr-select"
     }
 
-    // Translate
-    MOD+SHIFT+G hotkey-overlay-title="Translate" {
-        spawn "translate"
-    }
-
     // Pick color (点选取色)
     MOD+CTRL+G hotkey-overlay-title="Pick color" {
         spawn "hyprpicker" "--autocopy" "--notify" "--format" "hex"
