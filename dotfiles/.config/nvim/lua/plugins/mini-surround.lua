@@ -1,7 +1,18 @@
 return {
   "echasnovski/mini.surround",
   event = "VeryLazy",
-  -- 默认键位（LazyVim 同款）：sa 添加 / sd 删除 / cs 替换，可视模式选中后按 sa 加环绕。
-  -- flash 主跳转已挪到大写 S（见 plugins/flash.lua），小写 s 仅作本插件前缀，互不冲突。
-  opts = {},
+  -- 前缀从默认的 s* 挪到 gs*（gsa 添加 / gsd 删除 / gsr 替换，可视模式同样按 gsa），
+  -- 让小写 s 完全归还给原生替换命令，零延迟零冲突。
+  opts = {
+    mappings = {
+      add = "gsa",
+      delete = "gsd",
+      replace = "gsr",
+      find = "gsf",
+      find_left = "gsF",
+      highlight = "gsh",
+      suffix_last = "", -- 禁用扩展搜索后缀映射
+      suffix_next = "",
+    },
+  },
 }

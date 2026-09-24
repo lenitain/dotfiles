@@ -86,8 +86,8 @@ map("v", "<A-j>", "<Cmd>lua __alt_move(1, vim.fn.line('<'), vim.fn.line('>'))<CR
   { desc = "向下移动选区" })
 map("v", "<A-k>", "<Cmd>lua __alt_move(-1, vim.fn.line('<'), vim.fn.line('>'))<CR>gv",
   { desc = "向上移动选区" })
-map("i", "<A-j>", "<Esc><Cmd>lua __alt_move(1)<CR>gi", { desc = "向下移动当前行" })
-map("i", "<A-k>", "<Esc><Cmd>lua __alt_move(-1)<CR>gi", { desc = "向上移动当前行" })
+-- 插入模式的 Alt+j/k 已删除：SSH 下终端可能把 Alt 拆成 Esc+j 发送，
+-- 导致意外退出插入模式（ttimeoutlen 只有 50ms）。Normal/Visual 模式保留。
 
 -- 复制当前行/选区到下方（走 "a 寄存器，不污染默认寄存器）
 map("n", "<leader>D", '"ayy"ap', { desc = "复制当前行到下方" })
@@ -133,9 +133,6 @@ map("n", "]w", function() vim.diagnostic.jump({ count = 1,  severity = vim.diagn
 -- 基础终端模式映射（Ctrl+hjkl, Ctrl+\）由 toggleterm 插件处理
 
 -- ==================== 快速编辑 ====================
-
--- jj 退出插入模式（替代 <Esc>）
-map("i", "jj", "<esc>", { desc = "退出插入模式" })
 
 -- H/L 快速跳转到行首非空字符 / 行尾
 map({ "n", "v" }, "H", "^", { desc = "行首非空字符" })
