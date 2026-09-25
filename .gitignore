@@ -21,7 +21,8 @@ dotfiles/.pi/agent/web-search-cache/
 
 # fish shell 变量文件 (自动生成)
 dotfiles/.config/fish/fish_variables
-dotfiles/.config/fish/conf.d/DEEPSEEK_API_KEY.fish
+# fish conf.d 中的 API 密钥 (按 *_API_KEY.fish 命名约定自动忽略)
+dotfiles/.config/fish/conf.d/*_API_KEY.fish
 
 # yazi 插件目录
 dotfiles/.config/yazi/plugins/
