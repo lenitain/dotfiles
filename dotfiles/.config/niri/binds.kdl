@@ -8,9 +8,6 @@ binds {
     MOD+RETURN hotkey-overlay-title="Open terminal (plain)" {
         spawn "footclient"
     }
-    MOD+SHIFT+RETURN hotkey-overlay-title="Open terminal (zellij)" {
-        spawn "footclient" "-e" "zellij" "attach" "main" "-c"
-    }
     MOD+SPACE hotkey-overlay-title="App launcher" {
         spawn "fuzzel-wrapper"
     }
