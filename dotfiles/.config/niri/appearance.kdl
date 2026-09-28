@@ -32,7 +32,7 @@ window-rule {
 // 调优顺序：先加大 offset（不增加 GPU 开销），出现拖影或断层后再增加 passes。
 blur {
     offset 2
-    passes 1
+    passes 2
     noise 0.02
     saturation 1
 }
@@ -43,7 +43,7 @@ blur {
 window-rule {
     opacity 0.93
     background-effect {
-        blur false
+        blur true
     }
 }
 
