@@ -2,7 +2,6 @@
 # popup-wrapper - 先杀后开：关闭旧弹窗，再弹新窗口
 # 与 fuzzel-wrapper / slurp-wrapper 同一模式，把「杀谁 / 开谁」参数化后，
 # 供 waybar 的时间 / 音量两个模块共用同一份逻辑。
-# 电量走 mako 通知，没有窗口可杀，在 battery-info.sh 里用「先撤旧通知再发新」对齐。
 #
 # 用法:
 #   popup-wrapper <杀谁> <开谁> [参数...]   双参数：第一个交给 pkill -x 关掉旧窗口，

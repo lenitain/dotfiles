@@ -78,19 +78,19 @@ mise bootstrap packages use pacman:foo@version   # 或编辑 conf.d/packages.tom
 
 `mise run <task>`；`mise tasks` 列全部。`bootstrap` 是聚合入口。
 
-| 任务                 | 作用                                           | 权限 |
-| -------------------- | ---------------------------------------------- | ---- |
-| `bootstrap`          | 全量 sync+升级                                 | sudo |
-| `setup-boot`         | systemd-boot / sdboot-manage（守卫，**手动**） | sudo |
-| `setup-desktop`      | dconf + XDG 用户目录                           | 用户 |
-| `setup-rust`         | rustup + rust-analyzer                         | 用户 |
-| `setup-fonts`        | Maple Mono 字体                                | 用户 |
-| `setup-flatpak`      | flathub + Flatpak 应用                         | 用户 |
-| `setup-moonbit`      | MoonBit 工具链                                 | 用户 |
-| `setup-yazi`         | yazi 插件/配色（安装+更新）                    | 用户 |
-| `setup-just-talk`    | 构建到 ~/.local/bin                            | 用户 |
-| `setup-pi`           | Pi agent + 扩展                                | 用户 |
-| `uninstall-help`     | 卸载命令（文档）                               | —    |
+| 任务              | 作用                                           | 权限 |
+| ----------------- | ---------------------------------------------- | ---- |
+| `bootstrap`       | 全量 sync+升级                                 | sudo |
+| `setup-boot`      | systemd-boot / sdboot-manage（守卫，**手动**） | sudo |
+| `setup-desktop`   | dconf + XDG 用户目录                           | 用户 |
+| `setup-rust`      | rustup + rust-analyzer                         | 用户 |
+| `setup-fonts`     | Maple Mono 字体                                | 用户 |
+| `setup-flatpak`   | flathub + Flatpak 应用                         | 用户 |
+| `setup-moonbit`   | MoonBit 工具链                                 | 用户 |
+| `setup-yazi`      | yazi 插件/配色（安装+更新）                    | 用户 |
+| `setup-just-talk` | 构建到 ~/.local/bin                            | 用户 |
+| `setup-pi`        | Pi agent + 扩展                                | 用户 |
+| `uninstall-help`  | 卸载命令（文档）                               | —    |
 
 > `conf.d/hooks.toml` post-dotfiles 钩子自动重建 bat 缓存。
 
@@ -112,7 +112,6 @@ python3 scripts/gen-keys.py <VPS_IP>        # 写 host_vars/<IP>.yml（gitignore
 ansible-playbook deploy-xray.yml --limit <VPS_IP>
 ```
 
-
 ## 笔记本电池续航保护
 
 > 不同厂商/型号的电池养护接口各异，无法统一命令。以下为本机（联想 81YN）的 udev 方案作为参考：
@@ -125,5 +124,5 @@ ACTION=="add", SUBSYSTEM=="power_supply", ATTR{type}=="Battery", ATTR{charge_typ
 ```bash
 # 当前值查看
 cat /sys/class/power_supply/BAT1/charge_types
-# Fast / Standard / Long_Life（约 60% 上限）
+# Fast / Standard / Long_Life   ← Long_Life 约 60% 上限
 ```

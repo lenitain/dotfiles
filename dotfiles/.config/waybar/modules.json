@@ -72,9 +72,10 @@
   },
 
   // Battery
+  // 无 on-click：点它不做任何事。早期是弹 mako 通知，后来换成 yad / GTK 窗口，
+  // 现已全部撤掉，只保留 hover 反馈（见 style.css 的 #battery:hover）。
   "battery": {
     "align": 1,
-    "on-click": "~/.config/waybar/scripts/battery-info.sh",
     "states": {
       "warning": 30,
       "critical": 15
