@@ -62,7 +62,8 @@
   },
 
   // Clock
-  // on-click 统一走 popup-wrapper（先杀后开）：和音量同一套逻辑
+  // 套 popup-wrapper 做「点一下开、再点一下关」。两个模块必须行为一致：
+  // gsimplecal 自带 toggle、pavucontrol 只开不关，交给 wrapper 统一按窗口开关。
   "clock": {
     "align": 1,
     "format": "{:%H : %M}",
