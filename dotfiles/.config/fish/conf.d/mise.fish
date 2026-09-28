@@ -1,4 +1,4 @@
-# ─── mise (dev tools, env vars, task runner) ───
 if command -v mise &>/dev/null
-    mise activate fish | source
+    mise activate --no-hook-env fish | source
+    mise hook-env -s fish | source
 end
