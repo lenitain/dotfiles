@@ -3,6 +3,13 @@
 # slurp 框选区域，截图后进入 satty 编辑并选择保存位置
 # 保存后直接使用 satty 输出的 PNG（satty 无压缩等级选项，无额外工具链）
 #
+# 通知归属:
+#   satty 自带 save/copy 动作通知，但它的文案是硬编码英文且无法配置
+#   （src/notification.rs；ConfigurationFileGeneral 的 31 个字段里没有文案项），
+#   与 record 的中文「录屏已保存」不同构。故用 --disable-notifications 让它闭嘴，
+#   通知统一由本脚本的 notify() 发出，格式对齐 record：中文标题 + 正文为完整路径 + 缩略图。
+#   代价：按 satty 的「复制」按钮（图片进剪贴板但不落盘）时不再有通知。
+#
 # 用法:
 #   screenshot.sh  # 区域选择（slurp 框选）
 
@@ -13,25 +20,63 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCREENSHOT_DIR="$HOME/Pictures/Screenshots"
 mkdir -p "$SCREENSHOT_DIR"
 
+# 通知统一入口，与 record 的 notify() 同名同构，第三个参数为可选图标。
+#
+# 这里没有 record 里那个 9>&-：那是因为 record 用 flock 独占 fd 9 做单例闸门，
+# 子进程继承后会把锁攥住不放（见 record 的注释）。本脚本不持任何锁，没有 fd 9 可关。
+#
+# || true 是必需的：本脚本开了 set -euo pipefail，notify-send 失败
+# （mako 未运行 / D-Bus 抽风）会让整个脚本非零退出；
+# 但通知纯属提示，不该因此把「截图已成功」变成失败。
+notify() {
+    local -a args=("$1" "$2")
+    [ -n "${3:-}" ] && args+=(-i "$3")
+    notify-send "${args[@]}" || true
+}
+
+# 复制文件路径到剪贴板。写法对齐 record 的 copy_path()：
+# wl-copy 会 fork 一个后台进程持有剪贴板所有权，并继承调用者的 stdout/stderr；
+# 不重定向的话该进程会一直攥着管道，使 "screenshot | 任何命令" 永久挂起。
+copy_path() { printf '%s' "$1" | wl-copy >/dev/null 2>&1 || notify "复制失败" "无法写入剪贴板"; }
+
+# 目录指纹：文件名 + mtime + 字节数。用于判定「哪个文件是本次 satty 写下的」，
+# 详见下方 SAVED 的求取。
+snapshot() { find "$SCREENSHOT_DIR" -maxdepth 1 -name '*.png' -printf '%f\t%T@\t%s\n' 2>/dev/null | sort; }
+
 # 生成默认文件名（satty 里可再改保存位置）
 FILENAME="$SCREENSHOT_DIR/Screenshot_$(date +%Y%m%d_%H%M%S).png"
 
 # slurp 框选区域（经 wrapper：单实例，先杀后开）
 GEOM="$("$SCRIPT_DIR/slurp-wrapper")" || exit 1
 
-# 截取选区输出到 stdout 管道给 satty
-grim -g "$GEOM" - | satty --filename - --fullscreen --output-filename "$FILENAME" --early-exit --copy-command wl-copy
+# 指纹基线必须在 satty 启动之前取，否则会把 satty 自己写的文件也算进基线
+BEFORE="$(snapshot)"
 
-# 定位 satty 保存的 PNG（默认路径；若用户在对话框里改了名，则取目录里最近 1 分钟内的 png）
+# 截取选区输出到 stdout 管道给 satty
+# --disable-notifications：通知改由本脚本统一负责，详见文件头「通知归属」
+grim -g "$GEOM" - | satty --filename - --fullscreen --output-filename "$FILENAME" --early-exit --copy-command wl-copy --disable-notifications
+
+# 定位本次 satty 真正保存的 PNG。
+#
+# 不用「取最近 1 分钟内修改的 png」这种时间窗启发式：上一轮截图存下来的文件会落进
+# 同一个时间窗，于是按「复制」（图片进剪贴板但不落盘）时，会把上一轮的旧文件当成
+# 本次结果——报出一条假的「截图已保存」，还把旧路径塞进剪贴板。
+#
+# 改用启动前后的指纹对比，无歧义：
+#   新增文件        → 指纹不在基线里 → 命中
+#   覆盖同名旧文件   → mtime/大小已变 → 指纹不在基线里 → 命中
+#   上一轮的旧文件   → 指纹与基线逐字节一致 → 被排除（这正是原 bug 的场景）
+#
+# --early-exit 保证 satty 存一次就退出，理论上至多命中一个；保险起见只取第一个。
 SAVED=""
-if [ -f "$FILENAME" ]; then
-    SAVED="$FILENAME"
-else
-    SAVED="$(find "$SCREENSHOT_DIR" -maxdepth 1 -name '*.png' -mmin -1 -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)"
-fi
+while IFS=$'\t' read -r name _rest; do
+    [ -n "$name" ] || continue
+    SAVED="$SCREENSHOT_DIR/$name"
+    break
+done < <(snapshot | comm -13 <(printf '%s\n' "$BEFORE") -)
 
 # satty 直接输出的 PNG 即最终文件（satty 用 image crate 默认压缩级别保存，无更高压缩选项）
 if [ -n "$SAVED" ]; then
-    echo -n "$SAVED" | wl-copy
-    notify-send "截图已保存" "$SAVED" -i "$SAVED"
+    copy_path "$SAVED"
+    notify "截图已保存" "$SAVED" "$SAVED"
 fi
