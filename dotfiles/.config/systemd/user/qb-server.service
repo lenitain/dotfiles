@@ -3,7 +3,6 @@ Description=qutebrowser 常驻 server（--nowindow + IPC socket）
 Documentation=file:%h/.local/bin/scripts/qb-server
 # 会话结束（niri-session 会 `systemctl --user start niri-shutdown.target`，
 # 该 target 与 graphical-session.target 冲突）时跟着一起停。
-# 停单元 = 按 KillMode 扫掉整个 cgroup，整棵树一起走。
 PartOf=graphical-session.target
 
 [Service]
@@ -22,9 +21,14 @@ Environment=SDL_IM_MODULE=fcitx
 # 退出后保持停止：qb-open ':quit' 之后要一直死着，直到下次手动启动或下次登录。
 Restart=no
 
-# 不要动 KillMode。默认的 control-group 正是「主进程一退，systemd 就扫掉
-# cgroup 里剩下的进程」这条保证的来源；改成 process / mixed 就退化成普通父子
-# 关系，QtWebEngine 卡住的子进程会留下来。
+# 不要动 KillMode。默认的 control-group 是「主进程一退就扫掉 cgroup 里剩下的
+# 进程」这条保证的来源；改成 process / mixed 会退化成普通父子关系，
+# QtWebEngine 卡住的子进程会留下来。
+# 这是本单元存在的核心理由 —— 差别只在于 cgroup 有没有 MainPID 跟踪：
+#   裸 setsid              → 孤儿残留
+#   niri 的 spawn-sh scope  → 孤儿残留（scope 的 MainPID 为空，要 cgroup 空了才算 inactive）
+#   systemd service（本例） → 孤儿被扫掉，正常退出和 kill -9 都扫
+# 所以启动方式必须走这个 service，别改回 niri 的 spawn-sh。
 KillMode=control-group
 
 # 给 qutebrowser 一点时间正常收尾（关标签、存 session），超时才 SIGKILL。
@@ -44,5 +48,5 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-# 实际由 niri 的 startup.kdl 显式 `systemctl --user start qb-server` 拉起，
+# 实际由 niri startup.kdl 显式 `systemctl --user start qb-server` 拉起，
 # 这样能保证顺序在 Wayland socket 就绪之后。WantedBy 留空即可，不 enable。

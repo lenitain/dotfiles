@@ -1,7 +1,7 @@
 ---
 # Deploy Xray (VLESS + REALITY + Vision) to your proxy VPS.
 #
-#   cd ansible
+#   cd xray
 #   ansible-playbook deploy-xray.yml
 #
 # Idempotent: safe to re-run. REALITY keys are generated once on the first run

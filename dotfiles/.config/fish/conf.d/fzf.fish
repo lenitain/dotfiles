@@ -1,9 +1,9 @@
 # ─── fzf 统一配置 ───
 
-# ─── Theme ───
+# ─── Theme (本文件唯一的加载点; theme.fish 不再重复 source) ───
 source $HOME/.config/fzf/everforest_dark_medium.sh
 
-# ─── 绑定（追加到主题之后，避免被覆盖）───
+# ─── 绑定（追加到上面那次 theme 之后，避免被覆盖）───
 set -gx FZF_DEFAULT_OPTS "$FZF_DEFAULT_OPTS --bind='tab:replace-query' --bind='btab:toggle+down'"
 
 # ─── 预览变量 ───

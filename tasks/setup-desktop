@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="用户层: dconf 桌面设置 + XDG 用户目录 + bat 缓存 (无 root)"
+#MISE description="用户层: dconf 桌面设置 + XDG 用户目录 (无 root)"
 
 set -euo pipefail
 

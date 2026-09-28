@@ -30,12 +30,10 @@ ruff = "latest"
 "aqua:LuaLS/lua-language-server" = "latest"
 "aqua:JohnnyMorganz/StyLua" = "latest"
 
-# ── 预发布工具：单独放行 prerelease ───────────────────────────────
-# 全局 prereleases 已关闭（原因见 config.toml）。上游只发布预发布版的工具必须在这里
-# 逐个打开 prerelease，否则会报 "no versions found ... matching date filter"。
-#
-# ⚠️ 这些子表必须放在文件末尾：TOML 子表会终止上面的 [tools] 表，
-#    写在中间会把后面所有工具键吞进该子表里（静默丢失）。
+# ── 预发布白名单: 上游只发预发布版的工具在这里逐个打开 prerelease ──
+# 全局 prereleases 是关的, 原因见 config.toml。
+# ⚠️ 子表必须留在文件末尾: TOML 子表会终止上面的 [tools], 写在中间会把后续
+#    工具键吞进子表里(静默丢失)。
 [tools."npm:@deepseek-ai/dsh"]
 version = "latest"
 prerelease = true

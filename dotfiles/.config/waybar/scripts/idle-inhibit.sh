@@ -1,19 +1,17 @@
 #!/bin/bash
 # Idle inhibit toggle script for waybar
-# 显示眼睛图标：睁眼=抑制中(不会熄屏)，闭眼=正常(170 秒后熄屏)
+# 显示眼睛图标：睁眼=抑制中(不会熄屏)，闭眼=正常(niri 侧 idle 超时后熄屏)
 #   注意：niri 侧 idle 只熄屏、从不锁屏（只有合盖和 before-sleep 才 swaylock），
 #   所以这个按钮的语义是「不熄屏」，不是「不锁屏」。
 #
-# 抑制原理：swayidle 认 logind 的 idle 抑制剂 —— 发现有就整条 timeout 都不注册
-# （二进制里的 "Not enabling timeouts: idle inhibitor found"），
-# 见 ../niri/startup.kdl 的 `swayidle -w timeout 170 niri msg action power-off-monitors`。
+# 抑制原理：swayidle 认 logind 的 idle 抑制剂 —— 发现有就整条 timeout 都不注册。
+# 那个 timeout 的实际数值在 ../niri/startup.kdl 的 swayidle 行，图标 tooltip 与
+# 本脚本的回显文字以那里为准。
 #
 # 状态不记在 pid 文件里，而是每次用 pgrep 现场找「属于我们」的抑制器
-# （argv[0] 以 systemd-inhibit 开头 + --who=waybar-idle-inhibit），因此：
-#   - 抑制器被外部杀掉 / logind 重启后自动纠正，不留「假 ON」或空 pid 文件
-#   - 不会被系统回收复用的 pid 骗到，也就不会误 kill 无关进程
-#   - 手抖点多次、或手动起过多个时，关闭一次全清干净
-#   - 不往 /tmp 写固定名文件（别人可预建/抢占，同名不同用户时写入静默失败）
+# （argv[0] 以 systemd-inhibit 开头 + --who=waybar-idle-inhibit）。这样抑制器被
+# 外部杀掉 / logind 重启后自动纠正，不留「假 ON」或空 pid 文件，也不会被系统
+# 回收复用的 pid 骗到而误杀无关进程；不往 /tmp 写固定名文件（别人可预建抢占）。
 #
 # 抑制器必须 setsid 脱离调用方进程组、且不继承 stdio：否则 waybar（或启动它的
 # 终端）一退出它就被一起带走，图标会自己变回闭眼，而用户什么也没做。
@@ -52,7 +50,7 @@ show() {
         # 抑制中 - 显示睁开的眼睛（不会熄屏）
         echo '{"text": "", "alt": "active", "class": "active", "tooltip": "Idle Inhibit: ON"}'
     else
-        # 正常 - 显示闭上的眼睛（170 秒后会熄屏）
+        # 正常 - 显示闭上的眼睛（niri idle 超时后会熄屏）
         echo '{"text": "", "alt": "inactive", "class": "inactive", "tooltip": "Idle Inhibit: OFF"}'
     fi
 }

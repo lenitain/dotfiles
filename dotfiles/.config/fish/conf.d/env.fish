@@ -20,9 +20,6 @@ fish_add_path ~/.go/bin
 set -gx QT_QPA_PLATFORMTHEME gtk3
 set -gx XDG_DATA_DIRS "/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share:/usr/local/share:/usr/share"
 
-# ─── Rust (USTC Mirror) ───
-set -gx RUSTUP_DIST_SERVER https://mirrors.ustc.edu.cn/rust-static
-set -gx RUSTUP_UPDATE_ROOT https://mirrors.ustc.edu.cn/rust-static/rustup
-
-# ─── Go (goproxy.cn) ───
-set -gx GOPROXY https://goproxy.cn,direct
+# GOPROXY / RUSTUP_* / PIP_INDEX_URL / UV_DEFAULT_INDEX / NODEJS_ORG_MIRROR /
+# NPM_CONFIG_REGISTRY 全部由 mise 的 [env] 注入, 见 mise 配置的 conf.d/mirrors.toml。
+# 这里不要再抄一遍 —— 那里是镜像的唯一来源。

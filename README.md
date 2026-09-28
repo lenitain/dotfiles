@@ -10,18 +10,21 @@
 │   ├── dotfiles.toml  #   [dotfiles]
 │   ├── packages.toml  #   [bootstrap.packages]
 │   ├── system.toml    #   [bootstrap.*]
-│   ├── mirrors.toml   #   [env] + [settings] 下载镜像
+│   ├── mirrors.toml   #   [env] + [settings] 下载镜像（唯一来源）
 │   └── hooks.toml     #   [bootstrap.hooks]
 ├── dotfiles/          # dotfile 源树（home 相对）
-├── templates/         # 不直接部署的模板
 ├── xray/              # 远程 VPS 供给（ansible）
 └── tasks/             # 任务
 ```
 
-## 日常（唯一入口）
+## 日常
+
+`mise bootstrap` 只负责**声明式收敛**（装缺的、纠正漂移的），不做升级。
+追最新走 `mise run setup-all`（= bootstrap + `pacman -Syu` + `mise upgrade` + 各 sync 任务）。
 
 ```bash
-mise bootstrap --yes            # 声明式收敛 + 全量升级（pacman -Syu + mise upgrade）
+mise run setup-all              # 日常唯一入口：收敛 + 全量升级
+mise bootstrap --yes            # 只收敛声明式资源，不升级
 mise bootstrap --dry-run        # 模拟 apply，打印将执行的变更，不改任何东西
 mise tasks                      # 列任务
 mise ls                         # 已装工具
@@ -34,7 +37,6 @@ mise bootstrap status                    # 逐资源一行：资源 / 当前值 
 mise bootstrap status --missing          # 同上；只要有资源未达期望态就 exit 1（脚本/CI 用）
 mise bootstrap plan                      # 逐资源并排「当前 vs 期望」，即 apply 会改成的样子
 mise bootstrap plan --detailed-exitcode  # 0=无变更 2=有变更 1=计划失败或有资源 unknown
-mise bootstrap --dry-run                 # 全量模拟 apply，打印将执行的动作
 mise bootstrap dotfiles apply --dry-run --verbose   # dotfile 逐文件 diff
 ```
 
@@ -48,8 +50,10 @@ mise bootstrap services status   # service:greetd  active; enabled  vs  期望
 mise bootstrap accounts status   # user:lenitain  present ...   vs  期望
 mise bootstrap repos status      # git 仓库
 mise bootstrap user status       # 登录 shell
-mise bootstrap linux systemd-units status   # systemd 用户单元
 ```
+
+> systemd user 单元不走 `[bootstrap.linux.systemd.units]`，而是作为普通文件由
+> `[dotfiles]` 的 `~/.config/systemd/user` 收敛。
 
 ## 改配置
 
@@ -76,23 +80,26 @@ mise bootstrap packages use pacman:foo@version   # 或编辑 conf.d/packages.tom
 
 ## 任务
 
-`mise run <task>`；`mise tasks` 列全部。`bootstrap` 是聚合入口。
+`mise run <task>`；`mise tasks` 是权威列表（`setup-all` 会调其中除 `setup-boot`
+和 `uninstall-help` 外的全部）。
 
-| 任务              | 作用                                           | 权限 |
-| ----------------- | ---------------------------------------------- | ---- |
-| `bootstrap`       | 全量 sync+升级                                 | sudo |
-| `setup-boot`      | systemd-boot / sdboot-manage（守卫，**手动**） | sudo |
-| `setup-desktop`   | dconf + XDG 用户目录                           | 用户 |
-| `setup-rust`      | rustup + rust-analyzer                         | 用户 |
-| `setup-fonts`     | Maple Mono 字体                                | 用户 |
-| `setup-flatpak`   | flathub + Flatpak 应用                         | 用户 |
-| `setup-moonbit`   | MoonBit 工具链                                 | 用户 |
-| `setup-yazi`      | yazi 插件/配色（安装+更新）                    | 用户 |
-| `setup-just-talk` | 构建到 ~/.local/bin                            | 用户 |
-| `setup-pi`        | Pi agent + 扩展                                | 用户 |
-| `uninstall-help`  | 卸载命令（文档）                               | —    |
+| 任务                   | 作用                                    | 权限 |
+| ---------------------- | --------------------------------------- | ---- |
+| `setup-all`            | 聚合入口：收敛 + 全量升级                | sudo |
+| `setup-boot`           | systemd-boot / sdboot-manage（守卫，**手动**，不入 setup-all） | sudo |
+| `setup-desktop`        | dconf + XDG 用户目录                     | 用户 |
+| `setup-rust`           | rustup + rust-analyzer                  | 用户 |
+| `setup-fonts`          | Maple Mono 字体                         | 用户 |
+| `setup-flatpak`        | flathub + Flatpak 应用                  | 用户 |
+| `setup-moonbit`        | MoonBit 工具链                          | 用户 |
+| `setup-yazi`           | yazi 插件/配色（安装+更新）             | 用户 |
+| `setup-just-talk`      | 二进制 → ~/.local/bin                   | 用户 |
+| `setup-pi`             | Pi agent + 扩展                         | 用户 |
+| `setup-rime-wanxiang`  | 万象拼音 → fcitx5                       | 用户 |
+| `setup-clash-verge`    | Clash Verge Rev → ~/.local（deb 解包）  | 用户 |
+| `uninstall-help`       | 卸载命令（仅文档，不删任何东西）        | —    |
 
-> `conf.d/hooks.toml` post-dotfiles 钩子自动重建 bat 缓存。
+> bat 缓存由 `conf.d/hooks.toml` 的 post-dotfiles 钩子重建，不在任何 setup-* 里。
 
 ## 新机器
 

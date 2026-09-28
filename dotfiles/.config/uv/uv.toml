@@ -1,6 +1,6 @@
-# uv 国内镜像配置
-# 用户级配置文件：~/.config/uv/uv.toml
-
+# uv 自己的 index 链(带 fallback 语义, 不能由 mise 的 [env] 取代)。
+# 其中 tsinghua 与 conf.d/mirrors.toml 的 PIP_INDEX_URL / UV_DEFAULT_INDEX 同源,
+# 换镜像时两处要同改; ustc / pytorch 是本文件独有的备用源。
 [[index]]
 name = "tsinghua"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"

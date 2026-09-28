@@ -31,7 +31,6 @@ alias mirror="sudo cachyos-rate-mirrors"
 alias gitpkg='pacman -Q | grep -i "\-git" | wc -l'
 
 # ─── System ───
-alias grubup="sudo grub-mkconfig -o /boot/grub/grub.cfg"
 alias jctl="journalctl -p 3 -xb"
 alias hw='hwinfo --short'
 alias ssu='systemctl suspend'
@@ -52,5 +51,4 @@ alias wf='wireforge'
 alias zl='zellij'
 alias lg='lazygit'
 alias mc='cd ~/.config/mise'
-alias ms='mise run setup-all'
 alias ap='ansible-playbook'

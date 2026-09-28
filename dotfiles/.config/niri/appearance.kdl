@@ -4,7 +4,7 @@ layout {
     center-focused-column "never"
     always-center-single-column
     empty-workspace-above-first
-    // backdrop 壁纸要从工作区透出来（原值 "#343F44"）
+    // 壁纸是从工作区透出来的, 所以这里必须透明
     background-color "transparent"
     preset-column-widths {
         proportion 0.33333

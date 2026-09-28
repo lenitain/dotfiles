@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 供 setup-*.sh 共用的 GitHub 镜像代理函数。
+# 供 tasks/setup-* 共用的 GitHub 镜像代理函数。
 #
 # 提供三个场景：
 #   gh_api <endpoint>           — GitHub API 调用（输出 JSON）

@@ -5,9 +5,8 @@ set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
 
-# USTC 镜像
-export RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static
-export RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
+# USTC 镜像: RUSTUP_DIST_SERVER / RUSTUP_UPDATE_ROOT 由 mise 的 [env] 注入
+# (见 conf.d/mirrors.toml), mise run 的子进程继承得到, 这里不必再 export 一遍。
 
 # ── 安装 rustup（首次安装: 硬失败, 缺工具链后续全废）──
 if ! command -v rustup &>/dev/null; then

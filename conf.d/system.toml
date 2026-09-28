@@ -1,6 +1,6 @@
-# 系统配置 [bootstrap.files / bootstrap.services / bootstrap.accounts / bootstrap.user]
-# 从 ansible system.yml + docker.yml 迁移而来。
+# 系统配置 [bootstrap.files / .directories / .services / .users / .groups / .user]
 # 声明式: 内容/属主/模式/服务状态均收敛; 必要时才提权(sudo)。
+# 阶段顺序见 `mise bootstrap --help`(账号 → 包 → 文件/服务 → …), 别在这里写死步号。
 
 # ── 登录会话: greetd + niri-session ──
 [bootstrap.files."/etc/greetd/config.toml"]
@@ -34,17 +34,16 @@ group = "root"
 mode = "0644"
 
 # ── 登录 shell: fish ──
-# 由 mise bootstrap 第 13 步 (mise bootstrap user apply) 收敛: 必要时把该路径
-# 追加进 /etc/shells 再 chsh -s。路径必须写绝对路径, 且按字符串精确比较 ——
-# /bin/fish 与 /usr/bin/fish 视为不同值, 写错会多跑一次无谓的 chsh。
-# 本机账户当前已是 /bin/fish, 故 apply 为 no-op; 新机器才会真正执行一次 chsh。
+# 由 `mise bootstrap user apply` 收敛: 必要时把该路径追加进 /etc/shells 再 chsh -s。
+# 路径必须写绝对路径, 且按字符串精确比较 —— /bin/fish 与 /usr/bin/fish 视为不同值,
+# 写错会多跑一次无谓的 chsh。本机已是 /bin/fish, 故 apply 为 no-op。
 [bootstrap.user]
 login_shell = "/bin/fish"
 
-# ── docker 组必须先于 docker 包存在（accounts 早于 packages）──
+# ── docker 组必须先于 docker 包存在（accounts 阶段早于 packages）──
 # 全新机器上 docker 还没装 → 该组不存在 → [bootstrap.users] 里的 "docker"
-# 会让第 0 步报 "requires undeclared group 'docker'" 并中止整条 bootstrap。
-# 显式声明后由 mise 在系统组范围内创建; 已存在的组 (本机 gid 960) 保持不变。
+# 会让 accounts 阶段报 "requires undeclared group 'docker'" 并中止整条 bootstrap。
+# 显式声明后由 mise 在系统组范围内创建; 已存在的组保持不变。
 # 注意: 加入 docker 组等价于免密 root。
 [bootstrap.groups.docker]
 system = true
