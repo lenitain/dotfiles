@@ -1,9 +1,0 @@
-#!/bin/bash
-# 恢复系统代理：content.proxy 回默认值 system。
-#
-# qutebrowser 的 system 模式在 Linux 上走 QNetworkProxyFactory.systemProxyForQuery
-# （读 http_proxy 环境变量）；qb-server 由 systemd 拉起，没有这些变量，实际就是直连。
-# 与 qb-proxy-on 对称：运行时改动、所有窗口生效、-t 会话级。
-
-qb-open ':set -t content.proxy system'
-echo "已恢复 system 代理（直连）"

@@ -1,0 +1,47 @@
+#!/bin/bash
+# 恢复代理：content.proxy 回默认值 system，并停掉它拉起的 sing-box。
+#
+# qutebrowser 的 system 模式在 Linux 上走 QNetworkProxyFactory.systemProxyForQuery
+# （读 http_proxy 环境变量）；qb-server 由 systemd 拉起，没有这些变量，实际就是直连。
+# 与 qb-proxy-on 对称：运行时改动、所有窗口生效、-t 会话级。
+#
+# 顺序不能反：先切回直连、再停 sing-box。反过来会有一小段时间 qb 指着死端口，
+# 已在飞行的请求会失败。on 是「先起代理再指向它」，off 就是「先不指向它再关」。
+#
+# 幂等性（重复执行结果一致，无累积副作用）：
+#   - content.proxy 每次写同一个 system，覆盖式。
+#   - stop 对已 inactive 的单元是 no-op；本来就没跑时明确说明，不报错。
+#
+# 只 stop、不 disable：开机自启是刻意去掉的，本脚本不碰 enabled/disabled 状态。
+
+PROXY="http://127.0.0.1:7890"
+PORT="${PROXY##*:}"
+UNIT="sing-box"
+
+port_listen() {
+  (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null
+}
+
+# qb-server 没跑时 qb-open 会失败，但仍要继续把 sing-box 收拾干净
+if qb-open ':set -t content.proxy system'; then
+  echo "已恢复 system 代理（直连）"
+else
+  echo "警告: qb-open 失败（qb-server 没在跑？）content.proxy 未改动" >&2
+fi
+
+if systemctl --user is-active --quiet "$UNIT"; then
+  if systemctl --user stop "$UNIT"; then
+    echo "sing-box 已停止"
+  else
+    echo "警告: systemctl --user stop $UNIT 失败，详见 journalctl --user -u $UNIT" >&2
+    exit 1
+  fi
+else
+  echo "sing-box 本就未运行，跳过 stop"
+fi
+
+# stop 只管 systemd 拉起的那个；手工起的 sing-box 仍占着端口，点名告知而不是
+# 悄悄留着 —— 否则下次 on 会误判成「已有实例」而沿用一个 off 时就该关掉的东西。
+if port_listen; then
+  echo "注意: 7890 仍被手工启动的 sing-box 监听（非 systemd 管理），需要的话自行 kill" >&2
+fi
