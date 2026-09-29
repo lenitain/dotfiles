@@ -1,5 +1,5 @@
 #!/bin/bash
-# 开代理：把常驻实例（qb-server）的 content.proxy 指向 Clash Verge（mixed-port 7897）。
+# 开代理：把常驻实例（qb-server）的 content.proxy 指向本地代理（mixed-port 7897）。
 #
 # 运行时改动，所有窗口共享（proxy.init() 装的是进程级 QNetworkProxyFactory），
 # QtWebEngine 几秒后应用新的连接（见 qutebrowser configdata.yml 的 content.proxy）。
@@ -8,9 +8,9 @@
 PROXY="http://127.0.0.1:7897"
 PORT="${PROXY##*:}"
 
-# Clash 没跑就设了也指向死端口，先探一下：只警告，照常设置（可能马上就去起 Clash）
+# 代理没跑就设了也指向死端口，先探一下：只警告，照常设置（可能马上就去起代理）
 if ! (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; then
-  echo "警告: Clash 端口 $PORT 未监听，代理将指向死端口" >&2
+  echo "警告: 代理端口 $PORT 未监听，代理将指向死端口" >&2
 fi
 
 qb-open ":set -t content.proxy $PROXY"
