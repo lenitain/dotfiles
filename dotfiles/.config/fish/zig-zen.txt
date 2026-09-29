@@ -12,3 +12,4 @@
 * Resource deallocation must succeed.
 * Memory is a resource.
 * Together we serve the users.
+
