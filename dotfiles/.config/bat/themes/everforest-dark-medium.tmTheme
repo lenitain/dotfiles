@@ -18,15 +18,15 @@
           <key>foreground</key>
           <string>#d3c6aa</string>
           <key>lineHighlight</key>
-          <string>#3d484d90</string>
+          <string>#343f4490</string>
           <key>selection</key>
-          <string>#475258c0</string>
+          <string>#543a48c0</string>
           <key>activeGuide</key>
-          <string>#9aa79d20</string>
+          <string>#9da9a020</string>
           <key>findHighlight</key>
-          <string>#899c4040</string>
+          <string>#a7c08040</string>
           <key>misspelling</key>
-          <string>#da6362</string>
+          <string>#e67e80</string>
         </dict>
       </dict>
       <dict>
@@ -92,19 +92,9 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <dict>
-            <key>name</key>
-            <string>Comment</string>
-            <key>scope</key>
-            <string>comment, string.comment, punctuation.definition.comment</string>
-            <key>settings</key>
-            <dict>
-              <key>foreground</key>
-              <string>#859289</string>
-              <key>fontStyle</key>
-              <string>italic</string>
-            </dict>
-          </dict>
+          <string>#859289</string>
+          <key>fontStyle</key>
+          <string>italic</string>
         </dict>
       </dict>
       <dict>
@@ -126,7 +116,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#e67e80</string>
+          <string>#e69875</string>
         </dict>
       </dict>
       <dict>
@@ -159,7 +149,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#dbbc7f</string>
+          <string>#a7c080</string>
         </dict>
       </dict>
       <dict>
@@ -199,11 +189,22 @@
         <key>name</key>
         <string>Preproc</string>
         <key>scope</key>
-        <string>keyword.control.at-rule, keyword.control.import, keyword.control.export, storage.type.namespace, punctuation.decorator, keyword.control.directive, keyword.preprocessor, punctuation.definition.preprocessor, punctuation.definition.directive, keyword.other.import, keyword.other.package, entity.name.type.namespace, entity.name.scope-resolution, keyword.other.using, keyword.package, keyword.import, keyword.map</string>
+        <string>keyword.control.at-rule, punctuation.decorator, punctuation.definition.decorator.python, keyword.control.directive, keyword.preprocessor, punctuation.definition.preprocessor, punctuation.definition.directive</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#83c092</string>
+          <string>#d699b6</string>
+        </dict>
+      </dict>
+      <dict>
+        <key>name</key>
+        <string>Include</string>
+        <key>scope</key>
+        <string>keyword.control.import, keyword.control.export, keyword.other.import, keyword.other.package, keyword.other.using, keyword.package, keyword.import, keyword.map</string>
+        <key>settings</key>
+        <dict>
+          <key>foreground</key>
+          <string>#e67e80</string>
         </dict>
       </dict>
       <dict>
@@ -225,7 +226,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#83c092</string>
+          <string>#e69875</string>
         </dict>
       </dict>
       <dict>
@@ -243,11 +244,11 @@
         <key>name</key>
         <string>Type</string>
         <key>scope</key>
-        <string>storage.type, support.type, entity.name.type, keyword.type</string>
+        <string>storage.type, support.type, entity.name.type, keyword.type, entity.name.scope-resolution</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#7fbbb3</string>
+          <string>#dbbc7f</string>
         </dict>
       </dict>
       <dict>
@@ -258,7 +259,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#7fbbb3</string>
+          <string>#dbbc7f</string>
         </dict>
       </dict>
       <dict>
@@ -291,18 +292,18 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#d699b6</string>
+          <string>#83c092</string>
         </dict>
       </dict>
       <dict>
         <key>name</key>
         <string>Special identifier</string>
         <key>scope</key>
-        <string>variable.language.this, variable.language.self, variable.language.super, keyword.other.this, variable.language.special, constant.language.null, constant.language.undefined, constant.language.nan</string>
+        <string>variable.language.this, variable.language.self, variable.language.super, keyword.other.this, variable.language.special</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#d699b6</string>
+          <string>#7fbbb3</string>
         </dict>
       </dict>
       <dict>
@@ -313,7 +314,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#d699b6</string>
+          <string>#83c092</string>
         </dict>
       </dict>
       <dict>
@@ -324,7 +325,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#d3c6aa</string>
+          <string>#7fbbb3</string>
         </dict>
       </dict>
       <dict>
@@ -346,7 +347,7 @@
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#d3c6aa</string>
+          <string>#859289</string>
         </dict>
       </dict>
       <dict>
@@ -764,7 +765,7 @@
         <key>name</key>
         <string>Html purple</string>
         <key>scope</key>
-        <string>variable.language.documentroot.xml, meta.tag.sgml.doctype.xml</string>
+        <string>meta.tag.sgml.doctype.xml</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -791,17 +792,6 @@
         <dict>
           <key>foreground</key>
           <string>#a7c080</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Proto aqua</string>
-        <key>scope</key>
-        <string>entity.name.class.proto, entity.name.class.message.proto</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#83c092</string>
         </dict>
       </dict>
       <dict>
@@ -852,33 +842,11 @@
         <key>name</key>
         <string>CSS green</string>
         <key>scope</key>
-        <string>string.quoted.single.css, string.quoted.double.css, support.constant.property-value.css, meta.property-value.css, punctuation.definition.string.begin.css, punctuation.definition.string.end.css, constant.numeric.css, support.constant.font-name.css, variable.parameter.keyframe-list.css</string>
+        <string>string.quoted.single.css, string.quoted.double.css, meta.property-value.css, punctuation.definition.string.begin.css, punctuation.definition.string.end.css</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
           <string>#a7c080</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>CSS aqua</string>
-        <key>scope</key>
-        <string>support.type.property-name.css</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>CSS blue</string>
-        <key>scope</key>
-        <string>support.type.vendored.property-name.css</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#7fbbb3</string>
         </dict>
       </dict>
       <dict>
@@ -901,28 +869,6 @@
         <dict>
           <key>foreground</key>
           <string>#859289</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>SASS orange</string>
-        <key>scope</key>
-        <string>keyword.control.at-rule.keyframes.scss</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e69875</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>SASS yellow</string>
-        <key>scope</key>
-        <string>punctuation.definition.interpolation.begin.bracket.curly.scss, punctuation.definition.interpolation.end.bracket.curly.scss</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#dbbc7f</string>
         </dict>
       </dict>
       <dict>
@@ -967,17 +913,6 @@
         <dict>
           <key>foreground</key>
           <string>#dbbc7f</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>JavaScript white</string>
-        <key>scope</key>
-        <string>string.unquoted.js</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d3c6aa</string>
         </dict>
       </dict>
       <dict>
@@ -1037,17 +972,6 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>TypeScript white</string>
-        <key>scope</key>
-        <string>entity.name.type.module.ts</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d3c6aa</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>TypeScript grey</string>
         <key>scope</key>
         <string>keyword.operator.type.annotation.ts, punctuation.accessor.ts, punctuation.separator.key-value.ts</string>
@@ -1070,13 +994,13 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>TypeScript aqua</string>
+        <string>TypeScript yellow</string>
         <key>scope</key>
         <string>entity.name.type.ts, entity.name.type.interface.ts, entity.other.inherited-class.ts, entity.name.type.alias.ts, entity.name.type.class.ts, entity.name.type.enum.ts</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#83c092</string>
+          <string>#dbbc7f</string>
         </dict>
       </dict>
       <dict>
@@ -1088,39 +1012,6 @@
         <dict>
           <key>foreground</key>
           <string>#e69875</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>TypeScript blue</string>
-        <key>scope</key>
-        <string>entity.name.type.module.ts</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#7fbbb3</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>TypeScript purple</string>
-        <key>scope</key>
-        <string>keyword.control.import.ts, keyword.control.export.ts, storage.type.namespace.ts</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d699b6</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>TSX white</string>
-        <key>scope</key>
-        <string>entity.name.type.module.tsx</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d3c6aa</string>
         </dict>
       </dict>
       <dict>
@@ -1147,35 +1038,13 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>TSX aqua</string>
+        <string>TSX yellow</string>
         <key>scope</key>
         <string>entity.name.type.tsx, entity.name.type.interface.tsx, entity.other.inherited-class.tsx, entity.name.type.alias.tsx, entity.name.type.class.tsx, entity.name.type.enum.tsx</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>TSX blue</string>
-        <key>scope</key>
-        <string>entity.name.type.module.tsx</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#7fbbb3</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>TSX purple</string>
-        <key>scope</key>
-        <string>keyword.control.import.tsx, keyword.control.export.tsx, storage.type.namespace.tsx</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d699b6</string>
+          <string>#dbbc7f</string>
         </dict>
       </dict>
       <dict>
@@ -1237,7 +1106,7 @@
         <key>name</key>
         <string>PureScript green</string>
         <key>scope</key>
-        <string>string.quoted.single.purescript, string.quoted.double.purescript, punctuation.definition.string.begin.purescript, punctuation.definition.string.end.purescript, string.quoted.triple.purescript, entity.name.type.purescript</string>
+        <string>string.quoted.single.purescript, string.quoted.double.purescript, punctuation.definition.string.begin.purescript, punctuation.definition.string.end.purescript, string.quoted.triple.purescript</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -1264,17 +1133,6 @@
         <dict>
           <key>foreground</key>
           <string>#859289</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Dart orange</string>
-        <key>scope</key>
-        <string>storage.type.primitive.dart</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e69875</string>
         </dict>
       </dict>
       <dict>
@@ -1314,7 +1172,7 @@
         <key>name</key>
         <string>Dart purple</string>
         <key>scope</key>
-        <string>keyword.other.import.dart, storage.type.annotation.dart</string>
+        <string>storage.type.annotation.dart</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -1325,7 +1183,7 @@
         <key>name</key>
         <string>Pug red</string>
         <key>scope</key>
-        <string>entity.other.attribute-name.class.pug</string>
+        <string>entity.other.attribute-name.class.pug, storage.type.import.include.pug</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -1358,7 +1216,7 @@
         <key>name</key>
         <string>Pug purple</string>
         <key>scope</key>
-        <string>entity.name.tag.pug, storage.type.import.include.pug</string>
+        <string>entity.name.tag.pug</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -1380,44 +1238,11 @@
         <key>name</key>
         <string>C grey</string>
         <key>scope</key>
-        <string>punctuation.separator.dot-access.c, constant.character.escape.line-continuation.c</string>
+        <string>punctuation.separator.dot-access.c</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
           <string>#859289</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>C red</string>
-        <key>scope</key>
-        <string>keyword.control.directive.include.c, punctuation.definition.directive.c, keyword.control.directive.pragma.c, keyword.control.directive.line.c, keyword.control.directive.define.c, keyword.control.directive.conditional.c, keyword.control.directive.diagnostic.error.c, keyword.control.directive.undef.c, keyword.control.directive.conditional.ifdef.c, keyword.control.directive.endif.c, keyword.control.directive.conditional.ifndef.c, keyword.control.directive.conditional.if.c, keyword.control.directive.else.c</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e67e80</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>C orange</string>
-        <key>scope</key>
-        <string>punctuation.separator.pointer-access.c</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e69875</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>C aqua</string>
-        <key>scope</key>
-        <string>variable.other.member.c</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#83c092</string>
         </dict>
       </dict>
       <dict>
@@ -1435,7 +1260,7 @@
         <key>name</key>
         <string>C++ grey</string>
         <key>scope</key>
-        <string>punctuation.separator.dot-access.cpp, constant.character.escape.line-continuation.cpp</string>
+        <string>punctuation.separator.dot-access.cpp</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -1444,64 +1269,9 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>C++ red</string>
-        <key>scope</key>
-        <string>keyword.control.directive.include.cpp, punctuation.definition.directive.cpp, keyword.control.directive.pragma.cpp, keyword.control.directive.line.cpp, keyword.control.directive.define.cpp, keyword.control.directive.conditional.cpp, keyword.control.directive.diagnostic.error.cpp, keyword.control.directive.undef.cpp, keyword.control.directive.conditional.ifdef.cpp, keyword.control.directive.endif.cpp, keyword.control.directive.conditional.ifndef.cpp, keyword.control.directive.conditional.if.cpp, keyword.control.directive.else.cpp, storage.type.namespace.definition.cpp, keyword.other.using.directive.cpp, storage.type.struct.cpp</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e67e80</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>C++ orange</string>
-        <key>scope</key>
-        <string>punctuation.separator.pointer-access.cpp, punctuation.section.angle-brackets.begin.template.call.cpp, punctuation.section.angle-brackets.end.template.call.cpp</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e69875</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>C++ aqua</string>
-        <key>scope</key>
-        <string>variable.other.member.cpp</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>C# red</string>
-        <key>scope</key>
-        <string>keyword.other.using.cs</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e67e80</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>C# yellow</string>
-        <key>scope</key>
-        <string>keyword.type.cs, constant.character.escape.cs, punctuation.definition.interpolation.begin.cs, punctuation.definition.interpolation.end.cs</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#dbbc7f</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>C# green</string>
         <key>scope</key>
-        <string>string.quoted.double.cs, string.quoted.single.cs, punctuation.definition.string.begin.cs, punctuation.definition.string.end.cs</string>
+        <string>string.quoted.double.cs, string.quoted.single.cs, punctuation.definition.string.begin.cs, punctuation.definition.string.end.cs, punctuation.definition.interpolation.begin.cs, punctuation.definition.interpolation.end.cs</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -1517,28 +1287,6 @@
         <dict>
           <key>foreground</key>
           <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>C# purple</string>
-        <key>scope</key>
-        <string>entity.name.type.namespace.cs</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d699b6</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>F# white</string>
-        <key>scope</key>
-        <string>keyword.symbol.fsharp, constant.language.unit.fsharp</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d3c6aa</string>
         </dict>
       </dict>
       <dict>
@@ -1600,7 +1348,7 @@
         <key>name</key>
         <string>Java red</string>
         <key>scope</key>
-        <string>keyword.other.import.java, keyword.other.package.java</string>
+        <string>storage.modifier.import.java, storage.modifier.package.java</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -1620,35 +1368,13 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>Java aqua</string>
-        <key>scope</key>
-        <string>variable.other.property.java</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>Java purple</string>
         <key>scope</key>
-        <string>variable.language.wildcard.java, storage.modifier.import.java, storage.type.annotation.java, punctuation.definition.annotation.java, storage.modifier.package.java, entity.name.type.module.java</string>
+        <string>variable.language.wildcard.java, storage.type.annotation.java, punctuation.definition.annotation.java</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
           <string>#d699b6</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Kotlin red</string>
-        <key>scope</key>
-        <string>keyword.other.import.kotlin</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e67e80</string>
         </dict>
       </dict>
       <dict>
@@ -1697,17 +1423,6 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>Scala blue</string>
-        <key>scope</key>
-        <string>constant.language.scala</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#7fbbb3</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>Scala aqua</string>
         <key>scope</key>
         <string>entity.name.import.scala</string>
@@ -1752,17 +1467,6 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>Scala red</string>
-        <key>scope</key>
-        <string>keyword.other.import.scala</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e67e80</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>Groovy white</string>
         <key>scope</key>
         <string>keyword.operator.navigation.groovy, meta.method.body.java, meta.definition.method.groovy, meta.definition.method.signature.java</string>
@@ -1774,24 +1478,13 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>Scala grey</string>
+        <string>Groovy grey</string>
         <key>scope</key>
         <string>punctuation.separator.groovy</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
           <string>#859289</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Scala red</string>
-        <key>scope</key>
-        <string>keyword.other.import.groovy, keyword.other.package.groovy, keyword.other.import.static.groovy</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e67e80</string>
         </dict>
       </dict>
       <dict>
@@ -1809,7 +1502,7 @@
         <key>name</key>
         <string>Groovy green</string>
         <key>scope</key>
-        <string>variable.other.interpolated.groovy, meta.method.groovy</string>
+        <string>meta.method.groovy</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -1818,13 +1511,13 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>Groovy aqua</string>
+        <string>Groovy red</string>
         <key>scope</key>
         <string>storage.modifier.import.groovy, storage.modifier.package.groovy</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#83c092</string>
+          <string>#e67e80</string>
         </dict>
       </dict>
       <dict>
@@ -1840,17 +1533,6 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>Go red</string>
-        <key>scope</key>
-        <string>keyword.type.go</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e67e80</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>Go aqua</string>
         <key>scope</key>
         <string>entity.name.package.go</string>
@@ -1858,28 +1540,6 @@
         <dict>
           <key>foreground</key>
           <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Go purple</string>
-        <key>scope</key>
-        <string>keyword.import.go, keyword.package.go</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d699b6</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Rust white</string>
-        <key>scope</key>
-        <string>entity.name.type.mod.rust</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d3c6aa</string>
         </dict>
       </dict>
       <dict>
@@ -1919,7 +1579,7 @@
         <key>name</key>
         <string>Rust purple</string>
         <key>scope</key>
-        <string>meta.attribute.rust, variable.language.rust, storage.type.module.rust</string>
+        <string>meta.attribute.rust</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -1939,31 +1599,9 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>Swift aqua</string>
-        <key>scope</key>
-        <string>support.variable.swift</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>PHP white</string>
-        <key>scope</key>
-        <string>keyword.operator.class.php</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d3c6aa</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>PHP orange</string>
         <key>scope</key>
-        <string>storage.type.trait.php</string>
+        <string>storage.type.trait.php, storage.type.php, storage.type.modifier.access.control.public.cpp, storage.type.modifier.access.control.private.cpp</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -1983,28 +1621,6 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>PHP blue</string>
-        <key>scope</key>
-        <string>storage.type.modifier.access.control.public.cpp, storage.type.modifier.access.control.private.cpp</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#7fbbb3</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>PHP purple</string>
-        <key>scope</key>
-        <string>keyword.control.import.include.php, storage.type.php</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d699b6</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>Python white</string>
         <key>scope</key>
         <string>meta.function-call.arguments.python</string>
@@ -2018,7 +1634,7 @@
         <key>name</key>
         <string>Python grey</string>
         <key>scope</key>
-        <string>punctuation.definition.decorator.python, punctuation.separator.period.python</string>
+        <string>punctuation.separator.period.python</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -2038,17 +1654,6 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>Python purple</string>
-        <key>scope</key>
-        <string>keyword.control.import.python, keyword.control.import.from.python</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d699b6</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>Lua aqua</string>
         <key>scope</key>
         <string>constant.language.lua</string>
@@ -2056,17 +1661,6 @@
         <dict>
           <key>foreground</key>
           <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Lua blue</string>
-        <key>scope</key>
-        <string>entity.name.class.lua</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#7fbbb3</string>
         </dict>
       </dict>
       <dict>
@@ -2115,28 +1709,6 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>Ruby purple</string>
-        <key>scope</key>
-        <string>keyword.control.module.ruby, punctuation.definition.constant.ruby</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d699b6</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Ruby yellow</string>
-        <key>scope</key>
-        <string>string.regexp.character-class.ruby,string.regexp.interpolated.ruby,punctuation.definition.character-class.ruby,string.regexp.group.ruby, punctuation.section.regexp.ruby, punctuation.definition.group.ruby</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#dbbc7f</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>Ruby blue</string>
         <key>scope</key>
         <string>variable.other.constant.ruby</string>
@@ -2172,7 +1744,7 @@
         <key>name</key>
         <string>Haskell green</string>
         <key>scope</key>
-        <string>constant.other.haskell, string.quoted.double.haskell, string.quoted.single.haskell, punctuation.definition.string.begin.haskell, punctuation.definition.string.end.haskell</string>
+        <string>string.quoted.double.haskell, string.quoted.single.haskell, punctuation.definition.string.begin.haskell, punctuation.definition.string.end.haskell</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -2194,22 +1766,11 @@
         <key>name</key>
         <string>Haskell aqua</string>
         <key>scope</key>
-        <string>entity.name.namespace, meta.preprocessor.haskell</string>
+        <string>entity.name.namespace, meta.preprocessor.haskell, constant.other.haskell</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
           <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Julia red</string>
-        <key>scope</key>
-        <string>keyword.control.import.julia, keyword.control.export.julia</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e67e80</string>
         </dict>
       </dict>
       <dict>
@@ -2282,7 +1843,7 @@
         <key>name</key>
         <string>R green</string>
         <key>scope</key>
-        <string>entity.name.function.r, variable.function.r</string>
+        <string>entity.name.function.r</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -2360,39 +1921,6 @@
         <string>Erlang purple</string>
         <key>scope</key>
         <string>keyword.control.directive.export.erlang, keyword.control.directive.module.erlang, keyword.control.directive.import.erlang, keyword.control.directive.behaviour.erlang</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d699b6</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Elixir aqua</string>
-        <key>scope</key>
-        <string>variable.other.readwrite.module.elixir, punctuation.definition.variable.elixir</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Elixir blue</string>
-        <key>scope</key>
-        <string>constant.language.elixir</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#7fbbb3</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Elixir purple</string>
-        <key>scope</key>
-        <string>keyword.control.module.elixir</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -2489,13 +2017,13 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>Clojure green</string>
+        <string>Clojure aqua</string>
         <key>scope</key>
-        <string>constant.keyword.clojure, support.variable.clojure, meta.definition.variable.clojure</string>
+        <string>constant.keyword.clojure</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
-          <string>#a7c080</string>
+          <string>#83c092</string>
         </dict>
       </dict>
       <dict>
@@ -2557,7 +2085,7 @@
         <key>name</key>
         <string>Shell purple</string>
         <key>scope</key>
-        <string>keyword.control.heredoc-token.shell, variable.other.normal.shell, punctuation.definition.variable.shell, variable.other.special.shell, variable.other.positional.shell, variable.other.bracket.shell</string>
+        <string>keyword.control.heredoc-token.shell</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -2590,7 +2118,7 @@
         <key>name</key>
         <string>Fish blue</string>
         <key>scope</key>
-        <string>variable.other.normal.fish, punctuation.definition.variable.fish, variable.other.fixed.fish, variable.other.special.fish</string>
+        <string>variable.other.normal.fish, variable.other.fixed.fish, variable.other.special.fish</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -2606,28 +2134,6 @@
         <dict>
           <key>foreground</key>
           <string>#a7c080</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Fish purple</string>
-        <key>scope</key>
-        <string>constant.character.escape.single.fish</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d699b6</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>PowerShell grey</string>
-        <key>scope</key>
-        <string>punctuation.definition.variable.powershell</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#859289</string>
         </dict>
       </dict>
       <dict>
@@ -2654,39 +2160,6 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>PowerShell aqua</string>
-        <key>scope</key>
-        <string>variable.other.member.powershell</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>GraphQL white</string>
-        <key>scope</key>
-        <string>string.unquoted.alias.graphql</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d3c6aa</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>GraphQL red</string>
-        <key>scope</key>
-        <string>keyword.type.graphql</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e67e80</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>GraphQL purple</string>
         <key>scope</key>
         <string>entity.name.fragment.graphql</string>
@@ -2705,17 +2178,6 @@
         <dict>
           <key>foreground</key>
           <string>#e69875</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Makefile yellow</string>
-        <key>scope</key>
-        <string>variable.other.makefile</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#dbbc7f</string>
         </dict>
       </dict>
       <dict>
@@ -2808,17 +2270,6 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>Tmux green</string>
-        <key>scope</key>
-        <string>constant.language.tmux, constant.numeric.tmux</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#a7c080</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>Dockerfile orange</string>
         <key>scope</key>
         <string>entity.name.function.package-manager.dockerfile</string>
@@ -2832,7 +2283,7 @@
         <key>name</key>
         <string>Dockerfile yellow</string>
         <key>scope</key>
-        <string>keyword.operator.flag.dockerfile</string>
+        <string>keyword.operator.flag.dockerfile, entity.name.type.base-image.dockerfile, entity.name.image.dockerfile</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -2848,28 +2299,6 @@
         <dict>
           <key>foreground</key>
           <string>#a7c080</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Dockerfile aqua</string>
-        <key>scope</key>
-        <string>constant.character.escape.dockerfile</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>Dockerfile purple</string>
-        <key>scope</key>
-        <string>entity.name.type.base-image.dockerfile, entity.name.image.dockerfile</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#d699b6</string>
         </dict>
       </dict>
       <dict>
@@ -3052,22 +2481,11 @@
         <key>name</key>
         <string>JSON grey</string>
         <key>scope</key>
-        <string>punctuation.support.type.property-name.begin.json, punctuation.support.type.property-name.end.json, punctuation.separator.dictionary.key-value.json, punctuation.definition.string.begin.json, punctuation.definition.string.end.json, punctuation.separator.dictionary.pair.json, punctuation.separator.array.json</string>
+        <string>punctuation.support.type.property-name.begin.json, punctuation.support.type.property-name.end.json, punctuation.separator.dictionary.key-value.json, punctuation.separator.dictionary.pair.json, punctuation.separator.array.json</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
           <string>#859289</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
-        <string>JSON orange</string>
-        <key>scope</key>
-        <string>support.type.property-name.json</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#e69875</string>
         </dict>
       </dict>
       <dict>
@@ -3105,17 +2523,6 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>YAML aqua</string>
-        <key>scope</key>
-        <string>punctuation.definition.anchor.yaml, punctuation.definition.block.sequence.item.yaml</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#83c092</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>TOML orange</string>
         <key>scope</key>
         <string>keyword.key.toml</string>
@@ -3129,7 +2536,7 @@
         <key>name</key>
         <string>TOML green</string>
         <key>scope</key>
-        <string>string.quoted.single.basic.line.toml, string.quoted.single.literal.line.toml, punctuation.definition.keyValuePair.toml</string>
+        <string>string.quoted.single.basic.line.toml, string.quoted.single.literal.line.toml</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
@@ -3138,20 +2545,9 @@
       </dict>
       <dict>
         <key>name</key>
-        <string>TOML blue</string>
-        <key>scope</key>
-        <string>constant.other.boolean.toml</string>
-        <key>settings</key>
-        <dict>
-          <key>foreground</key>
-          <string>#7fbbb3</string>
-        </dict>
-      </dict>
-      <dict>
-        <key>name</key>
         <string>TOML purple</string>
         <key>scope</key>
-        <string>entity.other.attribute-name.table.toml, punctuation.definition.table.toml, entity.other.attribute-name.table.array.toml, punctuation.definition.table.array.toml</string>
+        <string>entity.other.attribute-name.table.toml, entity.other.attribute-name.table.array.toml, constant.other.boolean.toml</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
