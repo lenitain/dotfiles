@@ -7,7 +7,7 @@
 # (上游 sharkdp/bat#3914 在提 --line-number-width，尚未合并)。
 # 语法高亮不受 plain 影响，仍然保留。
 bat_preview() {
-  bat --color=always --style=plain --theme="Everforest Dark" --paging=never "$1"
+  bat --color=always --style=plain --theme="everforest-dark-medium" --paging=never "$1"
 }
 
 # 接收 fzf 传递的文件路径参数
