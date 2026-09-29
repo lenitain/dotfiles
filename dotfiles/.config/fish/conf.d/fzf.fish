@@ -4,48 +4,54 @@
 source $HOME/.config/fzf/everforest_dark_medium.sh
 
 # ─── 绑定（追加到上面那次 theme 之后，避免被覆盖）───
-set -gx FZF_DEFAULT_OPTS "$FZF_DEFAULT_OPTS --bind='tab:replace-query' --bind='btab:toggle+down'"
+# 逐条查重，重复 source 时不会叠加
+for bind_spec in tab:replace-query btab:toggle+down
+    string match -q -- "*--bind='$bind_spec'*" "$FZF_DEFAULT_OPTS"
+    or set -gx FZF_DEFAULT_OPTS "$FZF_DEFAULT_OPTS --bind='$bind_spec'"
+end
 
 # ─── 预览变量 ───
-set -gx FZF_PREVIEW_SCRIPT "$HOME/.config/fish/scripts/fzf_preview.sh"
-set -gx FZF_PREVIEW_WINDOW right:38%
+# 刻意不用 FZF_ 前缀：fzf 本体不读这两个变量，fzf.fish 内部自用。
+set -g __fzf_preview_script "$HOME/.config/fish/scripts/fzf_preview.sh"
+# wrap: 长路径（尤其符号链接那两行）超出窗口宽度时换行，否则被截断到屏幕外。
+# 注意 wrap-sign 是独立选项，不能塞进 --preview-window 的逗号列表里。
+set -g __fzf_preview_window right:38%,wrap
+set -g __fzf_preview_wrap_sign '│ '
 
 # ─── 预览参数生成 ───
-function fzf_preview_opts
-    # 用法: fzf_preview_opts [dir]
-    # 返回: --preview "script {}" --preview-window right:38%
+function fzf_preview_opts -d '生成 fzf 预览参数；用法: fzf (fzf_preview_opts [dir])'
+    # 注意: fish 4.x 的 if 块有独立作用域，set -l 不会带出块外，
+    #       所以 target 先声明好，块内只赋值不用 set -l
+    set -l target '{}'
     if test (count $argv) -gt 0
-        set -l prefix "$argv[1]/"
-        printf "%s\n" "--preview" "$FZF_PREVIEW_SCRIPT $prefix{}" "--preview-window" "$FZF_PREVIEW_WINDOW"
-    else
-        printf "%s\n" "--preview" "$FZF_PREVIEW_SCRIPT {}" "--preview-window" "$FZF_PREVIEW_WINDOW"
+        set target "$argv[1]/{}"
     end
+    # 逐行输出，由命令替换按换行切成独立参数（fish 不做二次解析）
+    printf "%s\n" \
+        --preview "$__fzf_preview_script $target" \
+        --preview-window "$__fzf_preview_window" \
+        --preview-wrap-sign "$__fzf_preview_wrap_sign"
 end
 
 # ─── 自定义函数 ───
-function pfzf
+function pfzf -d '带预览的裸 fzf（配合管道使用）'
     fzf (fzf_preview_opts)
 end
 
-function dfzf
-    set target_dir (fd -t d -H | fzf (fzf_preview_opts))
-    if [ -n "$target_dir" ]
-        cd "$target_dir"
-        echo "已切换到目录："(pwd)
-    else
+function dfzf -d 'fuzzy 选择目录并跳转；取消返回 1'
+    set -l target_dir (fd -t d -H | fzf (fzf_preview_opts))
+    if test -z "$target_dir"
         echo "未选择目录，取消操作"
+        return 1
     end
+    cd "$target_dir"
+    echo "已切换到目录："(pwd)
 end
 
-function nfzf
-    set target_dir (fd -t d -H | fzf (fzf_preview_opts))
-    if [ -n "$target_dir" ]
-        cd "$target_dir"
-        nvim .
-        echo "nvim打开目录："(pwd)
-    else
-        echo "未选择目录，取消操作"
-    end
+function nfzf -d 'fuzzy 选择目录，跳转后用 nvim 打开'
+    dfzf
+    or return 1
+    nvim .
 end
 
 # ─── Keybindings（Ctrl+T / Alt+C 带预览）───
