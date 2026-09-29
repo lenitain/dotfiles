@@ -1,0 +1,16 @@
+[Unit]
+Description=sing-box service (user)
+Documentation=https://sing-box.sagernet.org
+After=network-online.target nss-lookup.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/sing-box run -c %h/.config/sing-box/config.json
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=default.target
