@@ -3,7 +3,7 @@
 #
 # qutebrowser 的 system 模式在 Linux 上走 QNetworkProxyFactory.systemProxyForQuery
 # （读 http_proxy 环境变量）；qb-server 由 systemd 拉起，没有这些变量，实际就是直连。
-# 与 qb-proxy-on 对称：运行时改动、所有窗口生效、-t 会话级。
+# 与 proxy-on 对称：运行时改动、所有窗口生效、-t 会话级。
 #
 # 顺序不能反：先切回直连、再停 sing-box。反过来会有一小段时间 qb 指着死端口，
 # 已在飞行的请求会失败。on 是「先起代理再指向它」，off 就是「先不指向它再关」。
