@@ -111,6 +111,13 @@ return {
 		end
 		vim.lsp.enable(enabled)
 
+		-- 关闭 semantic tokens：0.12 里该模块被首次 require 时会执行末尾的 M.enable(true)，
+		-- 所以挂上 LSP 默认就开；其 @lsp.* 组优先级（125+）高于 treesitter（100），而移植版
+		-- 有可疑条目（如 @lsp.typemod.variable.static → Red，Rust 的 static 会变红）。
+		-- 关掉后由 Everforest 的 treesitter 映射着色。全局标记只在这里设一次；client
+		-- attach 不会重置它（模块 require 有缓存）。
+		vim.lsp.semantic_tokens.enable(false)
+
 		-- LSP 快捷键
 		vim.api.nvim_create_autocmd("LspAttach", {
 			callback = function(args)
