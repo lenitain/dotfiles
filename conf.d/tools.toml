@@ -3,11 +3,9 @@
 zig = "latest"
 "aqua:zigtools/zls" = "latest"
 
-# Go
 go = "latest"
-"aqua:mvdan/gofumpt" = "latest"
-"aqua:golangci/golangci-lint" = "latest"
-# Go 工具 (go 后端, 经 [env] GOPROXY 镜像)
+"go:mvdan.cc/gofumpt" = "latest"
+"go:github.com/golangci/golangci-lint/v2/cmd/golangci-lint" = "latest"
 "go:golang.org/x/tools/gopls" = "latest"
 "go:github.com/go-delve/delve/cmd/dlv" = "latest"
 
@@ -23,13 +21,16 @@ nodejs = "latest"
 
 # Python
 "npm:pyright" = "latest"
+# ruff 留 core: GitHub 官方二进制比 pypi 镜像 JSON 新 (当前 0.16.9 vs 0.16.8)
 ruff = "latest"
 "pipx:debugpy" = "latest"
-"pipx:pre-commit" = "latest"
 
 # Lua
 "aqua:LuaLS/lua-language-server" = "latest"
-"aqua:JohnnyMorganz/StyLua" = "latest"
+"cargo:stylua" = "latest"
+
+# Rust
+"cargo:prek" = "latest"
 
 # ── 预发布白名单: 上游只发预发布版的工具在这里逐个打开 prerelease ──
 # 全局 prereleases 是关的, 原因见 config.toml。
