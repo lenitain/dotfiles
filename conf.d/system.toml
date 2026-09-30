@@ -3,6 +3,10 @@
 # 阶段顺序见 `mise bootstrap --help`(账号 → 包 → 文件/服务 → …), 别在这里写死步号。
 
 # ── 登录会话: greetd + niri-session ──
+# 不挂 notify: greetd 无 reload (server 信号循环只处理 SIGALRM/SIGCHLD/SIGTERM/SIGINT,
+# 配置启动时一次性解析), 而 restart greetd 会踢掉当前会话 —— 它是会话的父进程
+# (session worker 用 PR_SET_PDEATHSIG=SIGTERM 挂在 greetd 名下)。
+# 因此配置变更随下次开机生效 (或登出后手动 systemctl restart greetd)。
 [bootstrap.files."/etc/greetd/config.toml"]
 content = """
 [terminal]
@@ -15,7 +19,6 @@ user = "greeter"
 owner = "root"
 group = "root"
 mode = "0644"
-notify = ["greetd"]
 
 [bootstrap.services.greetd]
 state = "running"
