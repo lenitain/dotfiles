@@ -235,7 +235,7 @@
         <key>name</key>
         <string>Modules</string>
         <key>scope</key>
-        <string>support.module, support.node, support.other.module, support.type.object.module, entity.name.type.module, entity.name.type.class.module, keyword.control.module, entity.name.namespace, entity.name.package, support.other.namespace, entity.namespace</string>
+        <string>support.module, support.node, support.other.module, support.type.object.module, entity.name.type.module, entity.name.module, entity.name.type.class.module, entity.name.namespace, entity.name.package, support.other.namespace, entity.namespace</string>
         <key>settings</key>
         <dict>
           <key>foreground</key>
