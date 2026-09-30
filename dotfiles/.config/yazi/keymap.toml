@@ -12,6 +12,7 @@ prepend_keymap = [
   # 快速目录跳转
   # =======================
   { on = [ "g", "h" ], run = "cd ~", desc = "跳转到主目录" },
+  { on = [ "g", "l" ], run = "cd ~/.local/", desc = "跳转到 ~/.local/" },
   { on = [ "g", "d" ], run = "cd ~/Downloads/", desc = "跳转到下载目录" },
   { on = [ "g", "p" ], run = "cd ~/Pictures/", desc = "跳转到图片目录" },
   { on = [ "g", "v" ], run = "cd ~/Videos/", desc = "跳转到视频目录" },

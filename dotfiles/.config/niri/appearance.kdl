@@ -20,10 +20,6 @@ layout {
     struts {}
 }
 
-// Window rules
-// 全局默认：所有新窗口以「最大化到边缘」打开（等价于 Mod+F 的 maximize-window-to-edges）。
-// 无 match 的规则会匹配所有窗口，且窗口规则按顺序解析、后到覆盖先到，
-// 所以这条必须放在最前面，后面的具体规则才能按需覆盖它。
 window-rule {
     open-maximized-to-edges true
 }
