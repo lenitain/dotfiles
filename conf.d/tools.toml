@@ -25,6 +25,7 @@ nodejs = "latest"
 "npm:pyright" = "latest"
 ruff = "latest"
 "pipx:debugpy" = "latest"
+"pipx:pre-commit" = "latest"
 
 # Lua
 "aqua:LuaLS/lua-language-server" = "latest"

@@ -19,6 +19,3 @@ minimum_release_age = "0s"
 # 需要预发布的工具在 conf.d/tools.toml 里单独打开。
 dotfiles.root = "~/.config/mise/dotfiles"
 dotfiles.default_mode = "symlink"
-
-[tools]
-"pipx:pre-commit" = "4.6.2"
