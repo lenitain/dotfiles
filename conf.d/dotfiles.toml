@@ -12,6 +12,7 @@
 "~/.config/foot" = {}
 "~/.config/fuzzel" = {}
 "~/.config/fzf" = {}
+"~/.config/git/config" = {}
 "~/.config/go/env" = {}
 "~/.config/gtk-3.0" = {}
 "~/.config/gtk-4.0" = {}
@@ -38,7 +39,6 @@
 "~/.config/yazi" = {}
 "~/.config/zathura" = {}
 "~/.config/zellij" = {}
-"~/.gitconfig" = {}
 "~/.local/bin/scripts" = {}
 "~/.local/share/fcitx5/themes" = {}
 "~/.palette" = {}
