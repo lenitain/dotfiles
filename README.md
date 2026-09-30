@@ -83,21 +83,20 @@ mise bootstrap packages use pacman:foo@version   # 或编辑 conf.d/packages.tom
 `mise run <task>`；`mise tasks` 是权威列表（`setup-all` 会调其中除 `setup-boot`
 和 `uninstall-help` 外的全部）。
 
-| 任务                   | 作用                                    | 权限 |
-| ---------------------- | --------------------------------------- | ---- |
-| `setup-all`            | 聚合入口：收敛 + 全量升级                | sudo |
-| `setup-boot`           | systemd-boot / sdboot-manage（守卫，**手动**，不入 setup-all） | sudo |
-| `setup-desktop`        | dconf + XDG 用户目录                     | 用户 |
-| `setup-rust`           | rustup + rust-analyzer                  | 用户 |
-| `setup-fonts`          | Maple Mono 字体                         | 用户 |
-| `setup-flatpak`        | flathub + Flatpak 应用                  | 用户 |
-| `setup-moonbit`        | MoonBit 工具链                          | 用户 |
-| `setup-yazi`           | yazi 插件/配色（安装+更新）             | 用户 |
-| `setup-just-talk`      | 二进制 → ~/.local/bin                   | 用户 |
-| `setup-pi`             | Pi agent + 扩展                         | 用户 |
-| `setup-rime-wanxiang`  | 万象拼音 → fcitx5                       | 用户 |
-| `setup-clash-verge`    | Clash Verge Rev → ~/.local（deb 解包）  | 用户 |
-| `uninstall-help`       | 卸载命令（仅文档，不删任何东西）        | —    |
+| 任务                  | 作用                                                           | 权限 |
+| --------------------- | -------------------------------------------------------------- | ---- |
+| `setup-all`           | 聚合入口：收敛 + 全量升级                                      | sudo |
+| `setup-boot`          | systemd-boot / sdboot-manage（守卫，**手动**，不入 setup-all） | sudo |
+| `setup-desktop`       | dconf + XDG 用户目录                                           | 用户 |
+| `setup-rust`          | rustup + rust-analyzer                                         | 用户 |
+| `setup-fonts`         | Maple Mono 字体                                                | 用户 |
+| `setup-flatpak`       | flathub + Flatpak 应用                                         | 用户 |
+| `setup-moonbit`       | MoonBit 工具链                                                 | 用户 |
+| `setup-yazi`          | yazi 插件/配色（安装+更新）                                    | 用户 |
+| `setup-just-talk`     | 二进制 → ~/.local/bin                                          | 用户 |
+| `setup-pi`            | Pi agent + 扩展                                                | 用户 |
+| `setup-rime-wanxiang` | 万象拼音 → fcitx5                                              | 用户 |
+| `uninstall-help`      | 卸载命令（仅文档，不删任何东西）                               | —    |
 
 > bat 缓存由 `conf.d/hooks.toml` 的 post-dotfiles 钩子重建，不在任何 setup-* 里。
 
