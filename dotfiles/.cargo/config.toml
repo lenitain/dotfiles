@@ -1,3 +1,5 @@
+# crates 镜像: 本文件管 cargo 的构建/下载; mise 的 cargo 后端版本查询走
+# conf.d/mirrors.toml 的 url_replacements 单独配的一份 — 换镜像时两处同改。
 [source.crates-io]
 replace-with = 'ustc'
 

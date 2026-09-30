@@ -41,6 +41,7 @@
 "~/.config/zellij" = {}
 "~/.local/bin/scripts" = {}
 "~/.local/share/fcitx5/themes" = {}
+"~/.npmrc" = {}
 "~/.palette" = {}
 "~/.pi" = {}
 "~/.profile" = {}

@@ -40,8 +40,13 @@ pypi.registry_url = "https://mirrors.aliyun.com/pypi/web/json/{}"
 # 校验不受影响: 下载后仍按 sha256 + GitHub attestations 验证。
 # 任务脚本另走 tasks/lib/gh.sh(前缀式 gh-proxy, 带多镜像回退), 裸 git 走
 # ~/.gitconfig。临时绕过: MISE_URL_REPLACEMENTS='{}' mise install <tool>
+#
+# crates 稀疏索引: cargo 后端的版本解析由 mise 自己发 HTTP 请求, 不经 cargo,
+# 因此不受 ~/.cargo/config.toml 的 source 替换影响, 只能在这里路由到 USTC。
+# 与 cargo 侧各配一份(那条管构建, 这条管版本查询), 换镜像时两处同改。
 [settings.url_replacements]
 "https://github.com/" = "https://gh-proxy.com/https://github.com/"
+"https://index.crates.io/" = "https://mirrors.ustc.edu.cn/crates.io-index/"
 
 # 已确认不需要配(免得日后重查):
 #   go 运行时  默认 dl.google.com 够快; 阿里云 /golang 虽托管 tarball 但缺 .sha256,
