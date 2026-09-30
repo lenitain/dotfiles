@@ -1,6 +1,6 @@
 {
-  "defaultProvider": "deepseek",
-  "defaultModel": "deepseek-flash",
+  "defaultProvider": "minimax-cn",
+  "defaultModel": "MiniMax-M3",
   "defaultThinkingLevel": "max",
   "packages": [
     "npm:pi-web-access",
