@@ -153,6 +153,13 @@ c.downloads.location.prompt = False
 c.content.cookies.accept = "no-3rdparty"
 c.content.javascript.clipboard = "access"
 
+# ==================== 语言 ====================
+# qutebrowser 不读系统 locale，Accept-Language 的默认值是硬编码的 "en-US,en;q=0.9"。
+# 它一手决定两件事：请求头本身（站点按内容协商发英文版页）和 JS 的 navigator.languages
+# （SPA 站点在客户端自己判断语言，然后渲染英文登录页，微信扫码那栏就不出来了）。
+# 语言标签用 BCP 47 的连字符形式，"zh-CN" 而非 "zh_CN"。
+c.content.headers.accept_language = "zh-CN,zh;q=0.9,en;q=0.8"
+
 # 广告拦截：双引擎（Brave 规则 + hosts），默认列表上追加中文规则
 # ,b 对当前网站开关拦截（官方 FAQ 推荐做法，误伤时一键放行）
 c.content.blocking.method = "both"
