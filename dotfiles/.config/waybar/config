@@ -20,10 +20,10 @@
 
     "modules-right": [
         "tray",
-        "clock",
+        "custom/clock",
         "pulseaudio",
         "battery",
-        "custom/idle-inhibit" 
+        "custom/idle-inhibit"
     ]
 }
 

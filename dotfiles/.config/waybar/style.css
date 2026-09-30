@@ -5,7 +5,7 @@
 window#waybar {
   background-color: #343f44;
   font-size: 16px;
-  min-height: 56px;
+  min-height: 32px;
   border-radius: 0;
   margin: 0px;
   padding: 0;
@@ -81,7 +81,7 @@ tooltip * {
 }
 
 /* All system info modules */
-#clock,
+#custom-clock,
 #pulseaudio,
 #bluetooth,
 #battery,
@@ -97,7 +97,7 @@ tooltip * {
 
 /* 模块间距：由 padding 控制。眼睛→屏幕右缘由 #custom-idle-inhibit 的 padding-right 控制（见下）。
    托盘例外：它的水平 padding 不属于任何图标，是纯死区（不可点、不 hover），
-   归零后最外侧图标的盒子直接顶到模块边缘，与右侧 #clock 的盒子相邻无缝隙。 */
+   归零后最外侧图标的盒子直接顶到模块边缘，与右侧 #custom-clock 的盒子相邻无缝隙。 */
 #tray {
   padding: 2px 0;
 }
@@ -129,8 +129,19 @@ tooltip * {
 #tray > .needs-attention:hover {
   background: #475258;
 }
-#clock {
-  padding: 2px 11px 2px 11px;
+/* 时钟：字号基准 14px，两行的相对大小/字重由 modules.json 的 markup 决定
+   （时间 = 14px medium，日期 = 14×0.83 normal）。
+   注意选择器：#clock 匹配不到自定义模块 —— label 的节点名是 custom-clock
+   （AModule 里 event_box_ 无名，名字加在 label_ 上），原来的 #clock /
+   #clock label 规则一直是死代码，实际生效的是 window 继承下来的 16px。
+   padding 上下 0：行高被 markup 的 line_height 压紧后，label 盒子已经只剩
+   字本身的墨迹（约 26 逻辑像素），再留 padding 就是看得见的空档。
+   注意此时 bar 高度不再由时钟决定，而是由 #workspaces（28）撑着：
+   标签比别人矮就自动居中，多出的高度会被平均分到上下两边。
+   左右 11px 与其他模块同值（也是 hover 的两侧留白）。 */
+#custom-clock {
+  font-size: 14px;
+  padding: 0 11px;
 }
 #pulseaudio {
   padding: 2px 11px 2px 11px;
@@ -171,7 +182,7 @@ tooltip * {
 }
 
 /* Hover effect for right-side modules + 左侧列指示器 + 中心窗口标题 */
-#clock:hover,
+#custom-clock:hover,
 #pulseaudio:hover,
 #battery:hover,
 #bluetooth:hover,

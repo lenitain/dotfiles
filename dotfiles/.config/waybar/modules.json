@@ -61,15 +61,30 @@
     "spacing": 0
   },
 
-  // Clock
+  // Clock（仿 KDE 数字时钟：上行大号时间，下行小号日期，两行互相居中）
   // 套 popup-wrapper 做「点一下开、再点一下关」。两个模块必须行为一致：
   // gsimplecal 自带 toggle、pavucontrol 只开不关，交给 wrapper 统一按窗口开关。
-  "clock": {
+  // 不用内置 clock 模块的原因：它的 format 必须以 % 开头（chrono-spec 解析器硬要求），
+  // 没法塞自定义 markup 结构。改成 custom/clock 走 date + Pango markup。
+  // - "justify": "center"（waybar 0.15 起 ALabel 支持）：label 宽度取最宽那行，
+  //   短行自动居中 —— 时间正好落在日期上方，不用再拿前导空格凑（那套已删）。
+  // - 两行字号/字重全在 markup 里：时间 span 的 weight=medium 配 CSS 的
+  //   font-size（见 style.css），日期 span size="small" 是 Pango 的 0.83 倍缩放，
+  //   weight="normal" 抵消 CSS 组规则里的 700。
+  // - line_height 是 Pango 行高倍率（1.50+，纯小数不带 %），包住整段（两行都缩）：
+  //   压掉每行基线上下的空白，两行贴得像 KDE 那样紧。只包时间行也行，但那样
+  //   日期行的行高不变、间隙仍偏大。倍率调得过小会让字顶溢出标签上沿被裁，
+  //   0.7 已经接近安全下限（再小就要靠 CSS 的 padding 兜住墨迹）。
+  // - exec 里的 \" 和 \n 原样输出给 jsoncpp：date 不解释它们，JSON 解码后才是
+  //   真引号 + 真换行。
+  "custom/clock": {
+    "exec": "date +'{\"text\": \"<span line_height=\\\"0.7\\\"><span weight=\\\"medium\\\">%H:%M</span>\\n<span size=\\\"small\\\" weight=\\\"normal\\\">%Y-%m-%d</span></span>\"}'",
+    "return-type": "json",
+    "format": "{}",
+    "interval": 1,
     "align": 1,
-    "format": "{:%H:%M}\n<span size='smaller'>{:%d/%m/%Y}</span>",
-    "on-click": "popup-wrapper gsimplecal",
-    "tooltip": true,
-    "tooltip-format": "{:%Y - %m - %d %A}"
+    "justify": "center",
+    "on-click": "popup-wrapper gsimplecal"
   },
 
   // Battery
