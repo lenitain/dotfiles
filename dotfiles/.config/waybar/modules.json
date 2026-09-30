@@ -77,8 +77,12 @@
   //   0.7 已经接近安全下限（再小就要靠 CSS 的 padding 兜住墨迹）。
   // - exec 里的 \" 和 \n 原样输出给 jsoncpp：date 不解释它们，JSON 解码后才是
   //   真引号 + 真换行。
+  // - tooltip 是同一个 JSON 里的另一个字段（custom 模块默认就开 tooltip，不用写
+  //   "tooltip": true）：bar 上已有日期，tooltip 补星期 + ISO 周数。%A 跟随 LC_TIME
+  //   （本机 zh_CN.UTF-8 → 「星期三」）；%V 按 ISO 算，年末/年初偶尔会出现
+  //   「第 1 周」配 12 月，属正常的 ISO 跨年现象。
   "custom/clock": {
-    "exec": "date +'{\"text\": \"<span line_height=\\\"0.7\\\"><span weight=\\\"medium\\\">%H:%M</span>\\n<span size=\\\"small\\\" weight=\\\"normal\\\">%Y-%m-%d</span></span>\"}'",
+    "exec": "date +'{\"text\": \"<span line_height=\\\"0.7\\\"><span weight=\\\"medium\\\">%H:%M</span>\\n<span size=\\\"small\\\" weight=\\\"normal\\\">%Y-%m-%d</span></span>\", \"tooltip\": \"%Y-%m-%d %A · 第 %V 周\"}'",
     "return-type": "json",
     "format": "{}",
     "interval": 1,
@@ -105,7 +109,15 @@
     "format-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
     "format-full": "{capacity}% <span color='#a7c080'>󰂄</span>",
     "format-not-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
-    "format-plugged": "{capacity}% <span color='#a7c080'>󰂄</span>"
+    "format-plugged": "{capacity}% <span color='#a7c080'>󰂄</span>",
+
+    // tooltip 补全：时间/功率 + 循环/健康度。battery.cpp 按 status（小写去空格）
+    // 查 tooltip-format-<status>；只有放电/充电有 Empty in …/Full in … 与实时功率，
+    // 插电停充（TLP 阈值）、满电没有可报的，就落到通用 tooltip-format，免得
+    // 冒出 "0.0 W" 噪音。{health} 在源码里已格式化成 "{:.3}"（三位有效数字）。
+    "tooltip-format-discharging": "{timeTo} · {power:.1f} W\n{cycles} cycles · health {health}%",
+    "tooltip-format-charging": "{timeTo} · {power:.1f} W\n{cycles} cycles · health {health}%",
+    "tooltip-format": "{cycles} cycles · health {health}%"
   },
 
   // Pulseaudio（单模块，FA 大图标，数字在左）
