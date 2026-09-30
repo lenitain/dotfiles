@@ -27,7 +27,12 @@ UV_DEFAULT_INDEX = "https://pypi.tuna.tsinghua.edu.cn/simple"
 # SHASUMS256.txt + .sig 镜像里都有, 校验不受影响。想回直连就注掉这一行。
 node.mirror_url = "https://cdn.npmmirror.com/binaries/node/"
 # pypi 后端的版本查询 (默认 pypi.org/pypi/{}/json)
-pypi.registry_url = "https://pypi.tuna.tsinghua.edu.cn/pypi/{}/json"
+# 只管"定版本", 不管下载(下载走上面的 PIP_INDEX_URL / UV_DEFAULT_INDEX)。
+# 换之前先验新鲜度, 这行坏了不报错, 只会静默把 latest 钉在老版本上:
+#   curl -s <本行URL, 把 {} 换成包名> | grep -o '"version":"[^"]*"' | head -1
+# tuna 的这个 JSON 接口落后很多(ruff 0.5.7 / debugpy 1.8.5, 实际 0.16.9 / 1.8.22),
+# 但它的 simple index 是新鲜的 —— 所以只把定版本挪到 aliyun, 下载仍留 tuna。
+pypi.registry_url = "https://mirrors.aliyun.com/pypi/web/json/{}"
 
 # 按 URL 路由而非按后端: 凡经 mise HTTP 客户端访问 github.com 的后端
 # (aqua / ubi / github / self-update) 都自动走镜像, 不必知道某工具用的哪个后端。

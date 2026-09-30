@@ -5,6 +5,7 @@
 ```
 ~/.config/mise/
 ├── config.toml        # [settings]
+├── .pre-commit-config.yaml  # gitleaks（提交前密钥检查）
 ├── conf.d/            # 片段（字母序自动合并）
 │   ├── tools.toml     #   [tools]
 │   ├── dotfiles.toml  #   [dotfiles]
@@ -29,6 +30,21 @@ mise bootstrap --dry-run        # 模拟 apply，打印将执行的变更，不�
 mise tasks                      # 列任务
 mise ls                         # 已装工具
 ```
+
+## 提交前密钥检查（pre-commit + gitleaks）
+
+`.pre-commit-config.yaml` 只配了 gitleaks 一个 hook。**未安装 git 钩子**（`pre-commit install`
+会在 `.git/hooks/` 写脚本，属于本地状态），改为手动运行：
+
+```bash
+pre-commit run --all-files            # 跑配置里的全部 hook
+pre-commit run gitleaks --all-files   # 只跑 gitleaks
+```
+
+> 当前两者**效果相同**——全量模式就是按配置顺序跑所有 hook，而配置里只有 gitleaks。
+> 等以后加入其他 hook（black、shellcheck 等），`run gitleaks` 才用于只跑密钥扫描。
+
+习惯：`git commit` 前手动跑一次；需要自动拦截时 `pre-commit install` 可恢复钩子。
 
 ## 体检（只读）
 
