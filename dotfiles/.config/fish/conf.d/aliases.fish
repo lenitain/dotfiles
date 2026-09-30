@@ -45,6 +45,7 @@ alias a='aria2c -c'
 
 # ─── App Shortcuts ───
 alias n='nvim'
+alias np='nvim $(pfzf)'
 alias oc='opencode'
 alias wf='wireforge'
 alias zl='zellij'
