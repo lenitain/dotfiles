@@ -318,7 +318,7 @@ binds {
     CTRL+ALT+DELETE {
         quit
     }
-    MOD+O {
+    MOD+O repeat=false {
         toggle-overview
     }
 }
