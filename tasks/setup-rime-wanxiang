@@ -49,18 +49,19 @@ if ! gh_download "$ASSET_URL" "$TMP/$ASSET"; then
 fi
 unzip -qo "$TMP/$ASSET" -d "$TMP/src"
 
-# ── 1. 复制方案 YAML ──
+# ── 1. 复制方案 YAML (整包复制, 不再用白名单) ──
+# 白名单会随上游 zip 布局漂移: v18.0.15 起漏了 custom_phrase.dict.yaml /
+# wanxiang_abbrev* / wanxiang_phrase*, 导致 fcitx5 每次启动报 custom_phrase
+# 表加载失败。这里全量复制顶层 *.yaml, 只跳过 Windows 专用的 weasel.yaml;
+# custom/ 里的 .custom.yaml 是用户按需复制到本目录的键位/模糊音补丁, 不自动铺。
 mkdir -p "$RIME_DIR"
-for f in wanxiang.schema.yaml wanxiang.dict.yaml \
-         wanxiang_algebra.yaml wanxiang_symbols.yaml \
-         wanxiang_english.schema.yaml wanxiang_english.dict.yaml \
-         wanxiang_mixedcode.schema.yaml wanxiang_mixedcode.dict.yaml \
-         wanxiang_reverse.schema.yaml wanxiang_reverse.dict.yaml \
-         wanxiang_t9.schema.yaml wanxiang_t9i.schema.yaml \
-         default.yaml custom_phrase.txt; do
-  [[ -f "$TMP/src/$f" ]] && cp "$TMP/src/$f" "$RIME_DIR/"
+for f in "$TMP/src"/*.yaml; do
+  case "$(basename "$f")" in
+    weasel.yaml) continue ;;
+  esac
+  cp "$f" "$RIME_DIR/"
 done
-echo "  方案 YAML 已复制"
+echo "  方案 YAML 已复制 ($(find "$TMP/src" -maxdepth 1 -name '*.yaml' ! -name 'weasel.yaml' | wc -l) 个)"
 
 # ── 2. 复制词库 ──
 if [[ -d "$TMP/src/dicts" ]]; then
@@ -69,7 +70,14 @@ if [[ -d "$TMP/src/dicts" ]]; then
   echo "  词库: $(find "$RIME_DIR/dicts" -name '*.yaml' | wc -l) 个文件"
 fi
 
-# ── 3. 复制 Lua 扩展 ──
+# ── 3. 复制 OpenCC 数据 (emoji / 简繁转换开关引用 opencc/wanxiang_*.json) ──
+if [[ -d "$TMP/src/opencc" ]]; then
+  mkdir -p "$RIME_DIR/opencc"
+  cp -R "$TMP/src/opencc/." "$RIME_DIR/opencc/"
+  echo "  OpenCC: $(find "$RIME_DIR/opencc" -type f | wc -l) 个文件"
+fi
+
+# ── 4. 复制 Lua 扩展 ──
 if [[ -d "$TMP/src/lua/wanxiang" ]]; then
   mkdir -p "$RIME_DIR/lua/wanxiang"
   cp "$TMP/src/lua/wanxiang/"*.lua "$RIME_DIR/lua/wanxiang/"
@@ -81,7 +89,7 @@ if [[ -d "$TMP/src/lua/data" ]]; then
   echo "  数据: $(find "$RIME_DIR/lua/data" -maxdepth 1 -type f | wc -l) 个文件"
 fi
 
-# ── 4. 部署构建 ──
+# ── 5. 部署构建 ──
 info "正在构建 Rime 数据 ..."
 # 构建失败 → 软处理: 不写版本标记(build 未生成, 下次运行重试), 保留 build/ 现状
 if ! rime_deployer --build "$RIME_DIR" /usr/share/rime-data "$RIME_DIR/build" 2>&1; then
@@ -90,7 +98,7 @@ if ! rime_deployer --build "$RIME_DIR" /usr/share/rime-data "$RIME_DIR/build" 2>
 fi
 echo "$VERSION" > "$MARKER"
 
-# ── 5. 注册 rime 到 fcitx5 profile (新机器首装时 profile 里只有 keyboard) ──
+# ── 6. 注册 rime 到 fcitx5 profile (新机器首装时 profile 里只有 keyboard) ──
 # fcitx5 退出时用内存态覆写 profile, 必须先停 fcitx5 再改文件, 否则改动会被冲掉
 PROFILE="$HOME/.config/fcitx5/profile"
 rime_missing() { [[ ! -f "$PROFILE" ]] || ! grep -q '^Name=rime$' "$PROFILE"; }
@@ -157,7 +165,7 @@ EOF
   fi
 fi
 
-# ── 6. 重启 fcitx5 (此前在运行才拉起; 若已注册成功则新进程读新 profile) ──
+# ── 7. 重启 fcitx5 (此前在运行才拉起; 若已注册成功则新进程读新 profile) ──
 if $was_running; then
   fcitx5 -r -d &>/dev/null &
   echo "已重启 fcitx5"
