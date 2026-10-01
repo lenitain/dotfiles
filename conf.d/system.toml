@@ -101,3 +101,22 @@ notify = ["docker"]
 state = "running"
 enabled = true
 on_change = "restart"
+
+# ── WebHID/hidraw 访问权 (vial.rocks, VIA, QMK 网页配置器) ──
+# 内核默认把 /dev/hidraw* 建成 root:root 0600: 浏览器 WebHID 能枚举设备(走 udev
+# 数据库, 不需要打开节点), 但 open() 被拒 → 页面永远卡在 "connecting to the
+# device"。Windows 无此权限模型, 故同一网页在那边正常。
+# GROUP=input 0660 与本机 /dev/input/event* (root:input 0660) 的现有模型一致 ——
+# 键盘按键事件本来就给了 input 组, hidraw 没理由更严格; 单人桌面不存在 systemd
+# 上游担心的多用户键记录问题。不用 0666: 写权限对配置器无必要。
+# udevd 处理事件前会自动检测规则文件变化并重载, 无需手动 reload; 但规则不回溯
+# 已存在节点 —— 见 conf.d/hooks.toml final hook 的 trigger (给已插着的设备补事件)。
+[bootstrap.files."/etc/udev/rules.d/70-hidraw-access.rules"]
+content = """
+# WebHID configurators (vial.rocks / VIA) open /dev/hidraw* directly.
+# Default 0600 root:root blocks the browser: device is listed but connect hangs.
+KERNEL=="hidraw*", GROUP="input", MODE="0660"
+"""
+owner = "root"
+group = "root"
+mode = "0644"
