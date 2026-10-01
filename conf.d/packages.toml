@@ -17,9 +17,6 @@
 "pacman:grim" = "latest"
 "pacman:slurp" = "latest"
 "pacman:satty" = "latest"
-# 录屏: gpu-screen-recorder 硬编覆盖 NVENC/VAAPI/Vulkan 三家,
-# 且 gsr-kms-server 的 cap_sys_admin 随包分发(pacman 解包时自动恢复),
-# 故纯声明式即可, 无需额外提权步骤。
 "pacman:gpu-screen-recorder" = "latest"
 "pacman:tesseract-data-chi_sim" = "latest"
 "pacman:gsimplecal" = "latest"
@@ -84,7 +81,6 @@
 "pacman:rumdl" = "latest"
 "pacman:c3c" = "latest"
 "pacman:mold" = "latest"
-# setup-just-talk 的 `pkg-config` 检查用 (pkgconf 提供 pkg-config); 不在其它声明包的依赖闭包内
 "pacman:pkgconf" = "latest"
 "pacman:docker" = "latest"
 "pacman:docker-compose" = "latest"
