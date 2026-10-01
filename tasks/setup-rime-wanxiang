@@ -112,7 +112,11 @@ if rime_missing; then
       # 追加到现有组的末尾 (编号取当前最大 Items 索引 +1)
       next=$(grep -oE '^\[Groups/0/Items/[0-9]+\]' "$PROFILE" | grep -oE '[0-9]+' | sort -n | tail -1)
       next=$(( ${next:-0} + 1 ))
+      # 写穿符号链接: profile 是 dotfiles 管理的链接, 直接 mv 到它会替换链接本身;
+      # readlink -f 解析出真实文件 (非链接时原样返回), 在其上原子替换 ——
+      # 与 fcitx5 自己 safeSave 的 symlinkTarget 行为一致。
       tmp="$PROFILE.tmp.$$"
+      target="$(readlink -f -- "$PROFILE")"
       awk -v idx="$next" '
         /^\[GroupOrder\]/ && !inserted {
           printf "[Groups/0/Items/%d]\n# Name\nName=rime\n# Layout\n# Layout=\n\n", idx
@@ -120,7 +124,7 @@ if rime_missing; then
         }
         { print }
         END { if (!inserted) printf "[Groups/0/Items/%d]\n# Name\nName=rime\n# Layout\n# Layout=\n", idx }
-      ' "$PROFILE" > "$tmp" && mv "$tmp" "$PROFILE"
+      ' "$PROFILE" > "$tmp" && mv "$tmp" "$target"
       echo "  profile 已注册 rime 输入法"
     else
       # 无 profile 或结构异常: 直接写最小可用 profile (keyboard-us + rime)

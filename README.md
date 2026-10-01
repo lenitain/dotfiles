@@ -20,12 +20,21 @@
 
 ## 日常
 
-`mise bootstrap` 只负责**声明式收敛**（装缺的、纠正漂移的），不做升级。
-追最新走 `mise run setup-all`（= bootstrap + `pacman -Syu` + `mise upgrade` + 各 sync 任务）。
+`mise bootstrap` = 先全量升级，再声明式收敛：`[bootstrap.hooks.pre-packages]`
+（见 conf.d/hooks.toml）在 packages 阶段前跑 `sudo pacman -Syu --noconfirm`。
+追最新走 `mise run setup-all`（= bootstrap + `mise upgrade` + 各 sync 任务）。
+
+> 为什么 -Syu 必须紧贴 packages 阶段：mise 装缺包只发 `pacman -S --needed`
+>（不刷新同步库），仅在同步库不新于已装版本时才安全；库比系统新时会变成 Arch
+> 不支持的 [partial upgrade](https://wiki.archlinux.org/title/System_maintenance#Partial_upgrades_are_unsupported)。
+> hook 失败会中止 bootstrap，所以 packages 不会在危险状态下执行。
+> 注意 `mise bootstrap packages apply` / `use` 这类分部命令不经过 hooks，只依赖
+> 「库不新于系统」；而 `packages upgrade` 与 `apply --update`（都先 `pacman -Sy`
+> 再只动声明包）不要用，升级统一走 setup-all。
 
 ```bash
 mise run setup-all              # 日常唯一入口：收敛 + 全量升级
-mise bootstrap --yes            # 只收敛声明式资源，不升级
+mise bootstrap --yes            # 收敛 + 全量升级 (pre-packages hook 先 -Syu)
 mise bootstrap --dry-run        # 模拟 apply，打印将执行的变更，不改任何东西
 mise tasks                      # 列任务
 mise ls                         # 已装工具
@@ -93,6 +102,8 @@ mise install / mise upgrade / mise ls
 
 # 系统包
 mise bootstrap packages use pacman:foo@version   # 或编辑 conf.d/packages.toml
+# 分部命令不经过 pre-packages hook, 只在「库不新于系统」时安全, 先跑 setup-all 最稳;
+# 别用 `packages upgrade` / `apply --update`（partial upgrade，见上文「日常」）
 ```
 
 ## 任务
@@ -120,11 +131,12 @@ mise bootstrap packages use pacman:foo@version   # 或编辑 conf.d/packages.tom
 ## 新机器
 
 ```bash
-sudo pacman -S git mise ansible
+sudo pacman -Syu git mise ansible   # -Syu: 先同步库+全量升级, 再装引导工具
+                                     # (裸 -S 用 ISO 上的陈旧库, 可能 404 或留下 partial upgrade)
 git clone <repo> ~/.config/mise
 cd ~/.config/mise
 mise trust
-mise bootstrap --yes
+mise bootstrap --yes                 # 内含 -Syu (hook), 之后 -S 装缺包安全
 ```
 
 ## 远程 VPS（xray，非 mise）

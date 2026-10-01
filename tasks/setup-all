@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 #MISE description="全量 sync+升级 (pacman -Syu 哲学, 单一命令追最新)"
-# 前 2 步是 bootstrap + 升级, 之后每个 setup-* 任务一步 (顺序见下方两个分组)。
+# 前 2 步是 bootstrap(含系统升级) + 工具, 之后每个 setup-* 任务一步 (顺序见下方两个分组)。
 
 # 单一入口: 声明式收敛 + 全量升级, 不分 setup/update。
-# 哲学 = pacman -Syu: 每次执行都同步数据库并升级到最新。
-#   - 声明式 [bootstrap.*]/[dotfiles] 由 mise bootstrap 先行收敛
-#   - 命令式部分: pacman -Syu(系统) → mise upgrade(工具) → setup-* 各 sync 任务
+# 哲学 = pacman -Syu: 每次执行都先全量升级再收敛。
+#   - 系统升级由 mise bootstrap 的 pre-packages hook 执行 (见 conf.d/hooks.toml):
+#     -Syu 恰好插在 packages 阶段前, 且 hook 失败会中止 bootstrap —— packages
+#     只在「同步库不新于系统」时执行, 装缺包等价于 `pacman -Syu <包>`
+#   - 命令式部分: mise upgrade(工具) → setup-* 各 sync 任务
 #   - setup-boot 保持手动(带守卫); setup-desktop 为设置类(无版本语义)
 #
 # 失败规范: "更新/同步"类步骤一律软失败 —— 失败只 warn, 不中断后续步骤,
@@ -24,13 +26,17 @@ set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
 
-# 1) 系统安装缺失包 + 升级 (mise bootstrap → pacman -Syu) — 非交互必须 --noconfirm
-info "[1] 系统安装+升级 (mise bootstrap → sudo pacman -Syu --noconfirm) ..."
+# 1) 声明式收敛 + 系统全量升级。顺序安全由 hook 保证 (见 conf.d/hooks.toml):
+# `-Syu` 就在 packages 阶段前, 失败会中止 bootstrap, 不会出现「库已刷新而系统
+# 未升级」时还发 `pacman -S` —— 所以这里不再自己调 pacman, 避免同一次运行跑两遍。
+# 失败分支补跑 --skip packages: 跳过 packages 同时跳过 hook, 全程不碰 pacman,
+# 尽量把账号/文件/服务/dotfiles 收敛完 (符合"更新类失败不中断收敛"规范)。
+info "[1] 声明式收敛+系统升级 (mise bootstrap → hook: sudo pacman -Syu --noconfirm) ..."
 if ! mise bootstrap; then
-  warn "mise bootstrap 失败，跳过"
-fi
-if ! sudo pacman -Syu --noconfirm; then
-  warn "pacman -Syu 失败，跳过系统升级，继续后续步骤"
+  warn "mise bootstrap 失败 (hook 里的 -Syu 失败会在此中止)，改跑 --skip packages 继续收敛其余部分"
+  if ! mise bootstrap --skip packages; then
+    warn "mise bootstrap --skip packages 失败，跳过"
+  fi
 fi
 
 # 2) [tools] 安装缺失 + 升级到最新

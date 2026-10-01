@@ -3,3 +3,12 @@
 
 [bootstrap.hooks.post-dotfiles]
 run = "command -v bat >/dev/null 2>&1 && bat cache --build || true"
+
+# 包阶段之前全量升级：mise 对 pacman 装缺包只发 `pacman -S --needed`(不刷新同步库),
+# 仅在"同步库不新于已装版本"时才安全; 库比系统新就是 Arch 不支持的 partial upgrade。
+# 这条 hook 把 -Syu 插在 packages 阶段正前方, 且 hook 失败会中止 bootstrap(packages
+# 不执行) —— 任何完整 `mise bootstrap` 都不会在库新于系统时装包。
+# 注意: `mise bootstrap packages apply/use` 这类分部命令不经过 hooks。
+# 代价: bootstrap 从"只收敛"变为"先全量升级"(setup-all 第 1 步, 见 tasks/setup-all)。
+[bootstrap.hooks.pre-packages]
+run = "sudo pacman -Syu --noconfirm"

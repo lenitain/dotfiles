@@ -1,5 +1,11 @@
 # 系统包 [bootstrap.packages]
-# 行为: 声明式, pacman -Q 判缺 → pacman -S --needed 装缺的; 不强制每次 -Syu。
+# 行为: 声明式, pacman -Q 判缺 → pacman -S --needed 装缺的; 不刷新同步库, 也不升级。
+# 安全前提: 同步库不得新于已装版本。完整 `mise bootstrap` 由 pre-packages hook
+#   (conf.d/hooks.toml) 保证: 全量 -Syu 就在装包前, 且失败即中止, 不会在危险
+#   状态下执行。分部命令 `mise bootstrap packages apply` / `use` 不经过 hooks,
+#   只在"库不新于系统"时安全 (先跑 setup-all 最稳)。不要用 `packages upgrade` /
+#   `apply --update`: 两者都先 `pacman -Sy` 再只动声明包, 是 Arch 不支持的
+#   partial upgrade (mise 官方 pacman 文档亦建议滚动发行版自行 -Syu)。
 
 [bootstrap.packages]
 "pacman:niri" = "latest"
@@ -46,6 +52,8 @@
 "pacman:yazi" = "latest"
 "pacman:fzf" = "latest"
 "pacman:7zip" = "latest"
+# setup-fonts / setup-rime-wanxiang 解压用; 不在其它声明包的依赖闭包内
+"pacman:unzip" = "latest"
 "pacman:zathura" = "latest"
 "pacman:zathura-cb" = "latest"
 "pacman:zathura-pdf-mupdf" = "latest"
@@ -76,6 +84,8 @@
 "pacman:rumdl" = "latest"
 "pacman:c3c" = "latest"
 "pacman:mold" = "latest"
+# setup-just-talk 的 `pkg-config` 检查用 (pkgconf 提供 pkg-config); 不在其它声明包的依赖闭包内
+"pacman:pkgconf" = "latest"
 "pacman:docker" = "latest"
 "pacman:docker-compose" = "latest"
 "pacman:docker-buildx" = "latest"
