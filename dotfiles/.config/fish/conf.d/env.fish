@@ -1,20 +1,15 @@
-# ─── Editor ───
 set -gx EDITOR nvim
 set -gx VISUAL nvim
-
-# ─── Browser & Terminal ───
 set -gx BROWSER qutebrowser
 set -gx TERMINAL foot
-
-# ─── Man Pages ───
-set -x MANPAGER 'nvim - +Man!'
+set -gx MANPAGER 'nvim - +Man!'
 
 # ─── PATH ───
 fish_add_path ~/.local/bin
 fish_add_path ~/.local/bin/scripts
 fish_add_path ~/.cargo/bin
 fish_add_path ~/.moon/bin
-fish_add_path ~/.go/bin
+fish_add_path ~/go/bin
 
 # ─── XDG ───
 set -gx QT_QPA_PLATFORMTHEME gtk3
