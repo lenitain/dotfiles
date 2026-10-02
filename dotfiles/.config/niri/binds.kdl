@@ -262,6 +262,9 @@ binds {
     MOD+R hotkey-overlay-title="Reset window height" {
         reset-window-height
     }
+    MOD+F hotkey-overlay-title="Set column width to 100%" {
+        set-column-width "100%"
+    }
     MOD+D hotkey-overlay-title="Set column width to 50%" {
         set-column-width "50%"
     }
@@ -271,13 +274,11 @@ binds {
     MOD+A hotkey-overlay-title="Set column width to 25%" {
         set-column-width "25%"
     }
-    MOD+F {
+
+    MOD+SHIFT+F {
         maximize-window-to-edges
     }
-    // MOD+T {
-    //     toggle-window-floating
-    // }
-    MOD+SHIFT+F {
+    MOD+CTRL+F {
         fullscreen-window
     }
 
