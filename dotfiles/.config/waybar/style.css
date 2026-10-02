@@ -83,7 +83,6 @@ tooltip * {
 /* All system info modules */
 #custom-clock,
 #pulseaudio,
-#bluetooth,
 #battery,
 #tray,
 #window,
@@ -149,9 +148,6 @@ tooltip * {
 #battery {
   padding: 2px 11px 2px 11px;
 }
-#bluetooth {
-  padding: 2px 11px 2px 11px;
-}
 /* 中心：当前聚焦窗口标题（niri/window）。单行 + END 省略号由 modules.json 的
    max-length 打开，长标题在这里被截断，不会把左右两簇挤走。
    悬停显示完整标题（waybar 用 set_tooltip_text，纯文本）。
@@ -185,7 +181,6 @@ tooltip * {
 #custom-clock:hover,
 #pulseaudio:hover,
 #battery:hover,
-#bluetooth:hover,
 #window:hover,
 #custom-idle-inhibit:hover,
 #custom-colpos:hover {
