@@ -20,8 +20,10 @@ layout {
     struts {}
 }
 
+// 新窗口默认铺满列宽，等同于按 Mod+F（set-column-width "100%"），
+// 而不是原来的 open-maximized-to-edges（= Mod+Shift+F 的贴边最大化）
 window-rule {
-    open-maximized-to-edges true
+    default-column-width { proportion 1.0; }
 }
 
 // 全局背景模糊参数，作用于所有 background-effect（窗口与 layer 表面）。
@@ -44,12 +46,6 @@ window-rule {
 }
 
 window-rule {
-    match app-id=r#"qutebrowser$"#
-    open-maximized-to-edges true
-}
-// 必须排在通用 qutebrowser 规则之后：
-// 窗口规则按顺序解析、后到覆盖先到，显式撤销 maximized 才能让 PiP 真正浮动
-window-rule {
     match app-id=r#"qutebrowser$"# title="^Picture-in-Picture$"
     open-floating true
     open-maximized-to-edges false
@@ -61,13 +57,16 @@ window-rule {
     match title="^(Open|Save|Choose|Select|Preferences|About|Properties|File Upload|Create New Folder)"
     open-floating true
     // 浮窗不能同时是 maximized-to-edges（否则会被放进滚动布局并铺满屏幕），
-    // 这里显式撤销上面的全局默认
+    // 这里显式撤销旧的全局默认
     open-maximized-to-edges false
+    // 浮动对话框按自身请求的尺寸打开，不吃全局的铺满列宽
+    default-column-width {}
 }
 window-rule {
     match title="^(打开|保存|选择|另存为|属性|上传)"
     open-floating true
     open-maximized-to-edges false
+    default-column-width {}
 }
 window-rule {
     geometry-corner-radius 12
