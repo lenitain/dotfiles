@@ -8,8 +8,8 @@ the workspace's scrolling layout as
 
 both 1-based (leftmost column = 1, topmost tile in column = 1).
 
-Display: 每列一个**等宽**的色块，只有颜色区分 —— 当前列绿色、其余灰色。
-宽度是唯一个常量（BLOCK_WIDTH），换列 / 增删窗口都不会改变任何块的宽度。
+Display: 每列一个**等距**的圆点，只有颜色区分 —— 当前列绿色、其余灰色。
+间距是唯一个常量（DOT_ADVANCE），换列 / 增删窗口都不会改变任何点的位置。
 无平铺窗口 -> 空文本，由 hide-empty-text 隐藏。
 
 Anchor（"当前"指哪个窗口）：
@@ -29,8 +29,9 @@ import json
 import subprocess
 import time
 
-BLOCK_WIDTH = 24  # 每列的块宽（空格数 = px）——所有列等宽，宽度永不变化
-BLOCK_SIZE = "15%"  # 字号：15% 下每个空格 advance = 1px，所以块宽(px) == 空格数
+DOT = "●"  # BLACK CIRCLE — 实心圆，颜色画在字形墨迹上（不是 background）
+DOT_SIZE = "large"  # 1.2× 父字号 ≈ 13px 直径：清晰但不撑大 32px 高的 bar
+DOT_ADVANCE = " "  # 单个空格同 DOT_SIZE 字号 → 点间距（≈ 5px）是唯一定值
 COLOR_CURRENT = "#a7c080"  # accent green (matches workspaces active bar)
 COLOR_PAST = "#7a8478"  # dim gray (past AND future columns)
 
@@ -120,28 +121,36 @@ def overview_window(state):
 
 
 def render_segments(col, total_cols):
-    """每列一个**等宽**的色块，只有颜色区分：当前列绿色、其余灰色。
+    """每列一个**等距**的圆点，只有颜色区分：当前列绿色、其余灰色。
 
-    宽度是唯一一个常量（BLOCK_WIDTH = 24px），不随列数、不随位置变化。于是：
-      - 换列时**任何块的边缘都不移动**，只有两个块的颜色互换 —— 观感是"标记挪了
-        一格"，而不是"某块胀大吞掉了旁边"（宽度不一时就会读成后者）；
-      - 增删窗口时已有块一动不动，只是多一个或少一个块。
+    间距是唯一一个常量（DOT_ADVANCE = 1 space at DOT_SIZE），不随列数、不随位置变化。
+    于是：
+      - 换列时**任何点的位置都不移动**，只有两个点的颜色互换 —— 观感是"标记挪了
+        一格"，而不是"某点胀大吞掉了旁边"（间距不一时就会读成后者）；
+      - 增删窗口时已有点一动不动，只是多一个或少一个点。
+
+    之前是 background + 空格的「色块」做法（24 个空格 + 背景色 = 24×2.4px 的
+    横杠）。改用 ● 字符 + 前景色：颜色画在字形墨迹上、形状就是字符本身的圆
+    —— Pango 的 background 永远是矩形，做不出真正的圆。`size="large"`（1.2×）
+    让圆点直径约 13px，在 32px 高的 bar 里清晰但不撑边。
 
     也试过并放弃的方案（留个记录，别再走一遍）：
       - 当前列加宽（1.7 倍、1.3 倍都试过）：宽度差本身就会带来"吞并/滑动"观感，
         且未选中块宽一旦随列数变化（早期实现的 bug），加减窗口时满行都在跳；
       - "背景矩形 + 提高字号"做高矮差：Pango 会把同一行里所有 run 的背景矩形
         拉齐到行高，15%/25% 渲染出来一样高（实测像素扫描都是 8px）；
-      - 字形墨迹做粗细差（▂ 细线 vs █ 厚块）：能做出真粗细差，但观感不佳。
+      - 字形墨迹做粗细差（▂ 细线 vs █ 厚块）：能做出真粗细差，但观感不佳；
+      - 用 ○（空心）做未选中、●（实心）做选中：和绿色实心 ● 共存不协调，
+        视觉噪音比单纯「实心 + 颜色差」更大。
 
     不在这里做任何截断：全部列都渲染，可见多少列、在哪截断、
     省略号的位置完全由 waybar/GTK 依实际布局决定（碰撞点省略）。"""
     out = []
     for i in range(1, total_cols + 1):
         color = COLOR_CURRENT if i == col else COLOR_PAST
-        out.append(f"<span background='{color}' size='{BLOCK_SIZE}'>{' ' * BLOCK_WIDTH}</span>")
+        out.append(f"<span color='{color}' size='{DOT_SIZE}'>{DOT}</span>")
 
-    gap = f"<span size='{BLOCK_SIZE}'>   </span>"
+    gap = f"<span size='{DOT_SIZE}'>{DOT_ADVANCE}</span>"
     return gap.join(out)
 
 
@@ -160,7 +169,8 @@ def emit(state):
     text = ""
     tooltip = ""
     if win is not None and col is not None:
-        text = f"<span size='{BLOCK_SIZE}'>{render_segments(col, total_cols)}</span>"
+        # 每个点 span 自带 size/fore-color，外层不再需要 wrap
+        text = render_segments(col, total_cols)
         tooltip = f"{col} / {total_cols}"
 
     if (text, tooltip) == (_last_text, _last_tooltip):
