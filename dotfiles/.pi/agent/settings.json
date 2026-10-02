@@ -6,7 +6,10 @@
     "npm:pi-web-access",
     "npm:pi-repl-py"
   ],
-  "npmCommand": ["npm", "--package-lock=false"],
+  "npmCommand": [
+    "npm",
+    "--package-lock=false"
+  ],
   "lastChangelogVersion": "999.99.99",
   "theme": "everforest-dark-medium",
   "hideThinkingBlock": true,
