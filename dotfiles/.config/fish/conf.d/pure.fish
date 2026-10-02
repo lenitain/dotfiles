@@ -5,3 +5,4 @@
 set -U pure_enable_aws_profile false
 set -U pure_enable_container_detection false
 set -U pure_enable_virtualenv false
+set -g fish_transient_prompt 1
