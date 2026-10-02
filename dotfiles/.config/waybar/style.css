@@ -11,7 +11,7 @@ window#waybar {
   padding: 0;
 }
 
-/* Workspace container */
+/* Workspace container（居中：modules-center） */
 #workspaces {
   background: #343f44;
   font-weight: 700;
@@ -66,10 +66,10 @@ tooltip * {
   border-radius: 8px;
 }
 
-/* 列指示器：左侧簇，紧跟工作区数字右边（原来在正中间）。
-   padding 就是它与工作区数字之间的间距，以及它自己的左右留白。
-   左右各 11px：与最右侧模块 #custom-idle-inhibit 的左侧留白一致
-   （也是 clock/pulseaudio/battery 的值）。hover 背景画在「内容 + padding」
+/* 列指示器：左侧簇，眼睛右边（工作区数字已移到正中间）。
+   padding 就是它自己的左右留白：与眼睛的间距 = 它的 padL + 眼睛的 padR。
+   左右各 11px：与最右侧模块 #custom-clock 的留白一致
+   （也是 pulseaudio/battery/眼睛 的值）。hover 背景画在「内容 + padding」
    这个盒子上，所以 padding 就是 hover 的两侧留白。 */
 #custom-colpos {
   font-size: 16px;
@@ -85,7 +85,6 @@ tooltip * {
 #pulseaudio,
 #battery,
 #tray,
-#window,
 #custom-idle-inhibit {
   background-color: #343f44;
   font-size: 16px;
@@ -94,9 +93,9 @@ tooltip * {
   border-radius: 0 0 8px 8px;
 }
 
-/* 模块间距：由 padding 控制。眼睛→屏幕右缘由 #custom-idle-inhibit 的 padding-right 控制（见下）。
+/* 模块间距：由 padding 控制。眼睛→屏幕左缘由 #custom-idle-inhibit 的 padding-left 控制（见下）。
    托盘例外：它的水平 padding 不属于任何图标，是纯死区（不可点、不 hover），
-   归零后最外侧图标的盒子直接顶到模块边缘，与右侧 #custom-clock 的盒子相邻无缝隙。 */
+   归零后最外侧图标的盒子直接顶到模块边缘，与右侧 #battery 的盒子相邻无缝隙。 */
 #tray {
   padding: 2px 0;
 }
@@ -107,7 +106,7 @@ tooltip * {
      左右各 11px——两图标之间就是 22px，但这段空白算在图标盒子内，因而同样
      可点、同样 hover（实测：padding 加在 EventBox 上会被 GTK 忽略，加在
      image 上才会撑大盒子）。想让图标更近/更远就改这个数值。
-     11px 是为了和最右侧模块 #custom-idle-inhibit 的 hover 留白对齐
+     11px 是为了和最右侧模块 #custom-clock 的 hover 留白对齐
      （与时钟/音量/电池的 11px 同值）。
    - hover 背景画在图标自己的盒子上，与可点击区域（该 EventBox 的输入窗口
      = 整个分配区域）一一对应，圆角除外。 */
@@ -148,66 +147,42 @@ tooltip * {
 #battery {
   padding: 2px 11px 2px 11px;
 }
-/* 中心：当前聚焦窗口标题（niri/window）。单行 + END 省略号由 modules.json 的
-   max-length 打开，长标题在这里被截断，不会把左右两簇挤走。
-   悬停显示完整标题（waybar 用 set_tooltip_text，纯文本）。
-   padding 左右各 11px：与最右侧模块 #custom-idle-inhibit 的左侧留白一致
-   （也是 clock/pulseaudio/battery 的值），也就是 hover 背景的两侧留白；
-   左右同值 → 标题仍在屏幕正中。 */
-#window {
-  padding: 2px 11px;
-}
-/* idle：眼睛到屏幕右缘的距离用 margin-right 精确控制。
-   （box 的 padding-right 对 layout 不生效，margin 生效；margin 区域仍在
-   可点击的模块内，光标放最右也能触发 on-click。）
-   改这里的数值即可：每 +1px 眼睛就离右缘远 1px。当前 12px。 */
+/* idle（眼睛）：位于整条 bar 的最左端（modules-left 第一项）。
+   字形固定：Maple 的 fa-eye(f06e) / fa-eye_slash(f070)，字体仍是全 bar 的
+   Noto Sans + Maple，不引入第三字体。
+   实测 Maple Bold 16px：两字形 advance 均 10；ink 睁眼 [-1,17]（宽18）、
+   闭眼 [-1,19]（宽20）—— 字形自带 2px 宽度差。
+   padding 和 margin 在这里是同一个自由度（都只改变「盒宽」与「ink 位置」
+   两个量），所以 2px 只能被分配、不能凭空消掉：眼睛左缘、右空缺、colpos
+   三者必有一个吃掉这 2px（三选二，可证）。
+   取「极小化最大偏差」的对称居中方案 —— 每态都把 ink 摆在盒正中：
+     关（base） padL 9  / padR 17 → 盒 9+10+17=36，ink [8,28]，左右空缺 8/8
+     开（active）padL 10 / padR 16 → 盒 10+10+16=36，ink [9,27]，左右空缺 9/9
+   → 盒宽、colpos、眼睛中心（恒 18）三项零偏差；残差被对称劈开，
+     眼睛边缘与空缺各只差 1px（任何单点误差 ≤1px，padding 的极限）。
+   改动时守住两条恒等式：padL+padR = 26（盒恒 36 → colpos 不动）、
+   ink 中心 = padL-1+w/2 = 18（关 w20 → padL 9；开 w18 → padL 10）。 */
 #custom-idle-inhibit {
-  padding: 2px 17px 2px 11px;
+  padding: 2px 17px 2px 9px;
 }
 
-/* Idle Inhibit active (抑制中 - 不会锁屏) */
+/* Idle Inhibit active (抑制中 - 不会锁屏)。
+   padding 按上面的居中公式覆盖（10/16）：字形差 2px 由两态 padding
+   各吃 1px，眼睛中心与 colpos 零位移；此规则本身只负责绿色。 */
 #custom-idle-inhibit.active {
   font-size: 16px;
   color: #a7c080;
-  /* 睁眼( )比闭眼( )窄 2px → 中心偏左 1px。
-       margin-right 减 1px：眼睛右移 1px 补偿中心（不位移）。
-       padding-left 加 1px：补回盒宽，抵消 margin 变化，左边模块不位移。
-       （眼睛左锚定：padL 变化不影响眼睛位置，只影响盒宽。） */
-  padding-left: 12px;
-  padding-right: 16px;
+  padding: 2px 16px 2px 10px;
 }
 
-/* Hover effect for right-side modules + 左侧列指示器 + 中心窗口标题 */
+/* Hover effect for right-side modules + 左侧（眼睛/列指示器） */
 #custom-clock:hover,
 #pulseaudio:hover,
 #battery:hover,
-#window:hover,
 #custom-idle-inhibit:hover,
 #custom-colpos:hover {
   background: #475258;
   border-radius: 0 0 8px 8px;
-}
-
-/* 没有聚焦窗口时，niri/window 默认只 label_.hide()，**不隐藏整个模块**：
-   带 padding 的盒子留在布局里，于是屏幕正中常驻一块约 24x27 的死区（实测：
-   逻辑 24px 宽，高就是一行文字的高度）—— 鼠标扫过会亮起上面的 :hover 背景
-   （这就是要修的 bug），它还白占着中心宽度。
-   对照：custom 模块（如 custom/colpos）走的是 event_box_.hide()，空的时候整块消失，
-   所以列指示器从来没有这个问题。
-   waybar 会把 .empty 类加在整条 bar 上（man waybar-niri-window 的 STYLE 段：
-   window#waybar.empty），于是这里能在「无窗口」状态下把盒子收干净：
-     padding: 0 → 盒子塌成 1px（GTK 盒子有 1px 下限，min-width: 0 也压不掉），
-     死区从 24px 变 1px，鼠标基本不可能停在上面；
-     hover 覆盖是因为 #window:hover 的优先级 (1,1,0) 低于本选择器 (1,2,0) 会漏出来，
-     剩下的那 1px 仍会闪高亮色，所以显式按掉。
-   有窗口时 .empty 自动摘掉，上面那条 padding 立即恢复，标题布局完全不受影响。 */
-window#waybar.empty #window {
-  padding: 0;
-  margin: 0;
-  background: transparent;
-}
-window#waybar.empty #window:hover {
-  background: transparent;
 }
 
 /* Battery critical warning */

@@ -10,20 +10,19 @@
     ],
 
     "modules-left": [
-        "niri/workspaces",
+        "custom/idle-inhibit",
         "custom/colpos"
     ],
 
     "modules-center": [
-        "niri/window"
+        "niri/workspaces"
     ],
 
     "modules-right": [
         "tray",
-        "custom/clock",
-        "pulseaudio",
         "battery",
-        "custom/idle-inhibit"
+        "pulseaudio",
+        "custom/clock"
     ]
 }
 

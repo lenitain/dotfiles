@@ -13,7 +13,9 @@
     "on-click": "~/.config/waybar/scripts/idle-inhibit.sh toggle"
   },
 
-  // 左侧模块（紧跟工作区数字右边）：列指示器（colpos.py 事件驱动常驻进程）
+  // 列指示器（colpos.py 事件驱动常驻进程）：左侧簇，眼睛右边
+  // （工作区已居中，见 config 的 modules-center）。
+  // padding 就是它自己的左右留白：左侧与眼睛的间距 = 它的 padL + 眼睛的 padR。
   // 这里不能要 expand：expand 是给 center 盒子撑满用的，放在左簇会吃掉剩余空间、
   // 把中心模块顶偏。max-length 保留：它是启用 GTK label ellipsize 的唯一开关
   // （waybar 没有布尔选项），999999 不会被任何文本触及，实际截断点 100% 由 GTK
@@ -30,26 +32,6 @@
     "exec": "~/.config/waybar/scripts/colpos.py",
     "hide-empty-text": true,
     "tooltip": true,
-    "max-length": 999999
-  },
-
-  // 中心模块：当前聚焦窗口标题
-  // 用 waybar 内置的 niri/window（直接读 niri IPC，不再多起一个常驻脚本）：
-  //   - 没有聚焦窗口时它自己 label_.hide()，不需要 hide-empty-text。
-  //   - max-length 同上：开启 GTK 单行 + END 省略号（ALabel 会顺带设
-  //     single-line-mode）。长标题由布局在碰撞点截断，不会把左右两簇挤走。
-  //   - tooltip 必须显式写 false：waybar 的默认是 true（AModule.cpp 里 isTooltip
-  //     缺省 true），而 niri/window 每次更新（换焦点、改标题 —— 浏览器换标签就是
-  //     几秒一次）都会跑 label_.set_tooltip_text(title)，于是光标停在标题上就会冒出
-  //     显示完整标题的悬浮窗，并随标题刷新。代价：标题被省略号截断时没地方看全文，
-  //     要恢复就改回 true。
-  //     注意 tooltip 只管「悬浮文字窗」，管不了悬停高亮背景 —— 无窗口时那条 hover
-  //     死区（模块只藏 label、盒子还占着中心）在 style.css 里用
-  //     `window#waybar.empty #window` 收掉。
-  //   - 应用图标默认关闭（AIconLabel.iconEnabled 默认 false）；要图标加 "icon": true。
-  "niri/window": {
-    "format": "{title}",
-    "tooltip": false,
     "max-length": 999999
   },
 
