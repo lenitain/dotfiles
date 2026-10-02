@@ -6,6 +6,7 @@
    * [Dark](#dark)
    * [Light](#light)
 1. [Highlights](#highlights)
+1. [Neovim: resolved highlight groups (generated, nvim-specific)](everforest-nvim-groups.md)
 
 ## Palette Variants
 

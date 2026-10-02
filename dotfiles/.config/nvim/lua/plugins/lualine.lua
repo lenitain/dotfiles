@@ -3,6 +3,9 @@ return {
   "nvim-lualine/lualine.nvim",
   opts = {
     options = {
+      -- 用主题自带的 lualine 配色：移植版 lua/lualine/themes/everforest.lua 与上游
+      -- sainnhe 的 lua/lualine/themes/everforest.lua **内容完全一致**（逐行对过），
+      -- 所以这里直接用 auto，不做任何二次定制。
       theme = "auto",
       -- 其他 lualine 配置...
     },
