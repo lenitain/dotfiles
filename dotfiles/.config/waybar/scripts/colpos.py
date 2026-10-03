@@ -30,7 +30,7 @@ import subprocess
 import time
 
 DOT = "●"  # BLACK CIRCLE — 实心圆，颜色画在字形墨迹上（不是 background）
-DOT_SIZE = "large"  # 1.2× 父字号 ≈ 13px 直径：清晰但不撑大 32px 高的 bar
+DOT_SIZE = "large"  # 1.2× 父字号 ≈ 13px 直径：清晰但不撑大 28px 高的 bar
 DOT_ADVANCE = " "  # 单个空格同 DOT_SIZE 字号 → 点间距（≈ 5px）是唯一定值
 COLOR_CURRENT = "#a7c080"  # accent green (matches workspaces active bar)
 COLOR_PAST = "#7a8478"  # dim gray (past AND future columns)

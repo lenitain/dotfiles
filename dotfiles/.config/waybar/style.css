@@ -5,7 +5,11 @@
 window#waybar {
   background-color: #343f44;
   font-size: 16px;
-  min-height: 32px;
+  /* 高度地板：各模块自然高度的实测最大值（逐个移除模块截图量得）——
+     眼睛(31) > 列指示器(30) > workspaces(28) > 其余(≈27)。时钟不是决定者
+     （墨迹最高但盒子只 ≈25.5）。改任何模块的字号/垂直 padding 后，此值
+     应跟着实测最大值走。 */
+  min-height: 28px;
   border-radius: 0;
   margin: 0px;
   padding: 0;
@@ -70,14 +74,17 @@ tooltip * {
    padding 就是它自己的左右留白：与眼睛的间距 = 它的 padL + 眼睛的 padR。
    左右各 11px：与最右侧模块 #custom-clock 的留白一致
    （也是 pulseaudio/battery/眼睛 的值）。hover 背景画在「内容 + padding」
-   这个盒子上，所以 padding 就是 hover 的两侧留白。 */
+   这个盒子上，所以 padding 就是 hover 的两侧留白。
+   上下 padding 取 0：点是 size="large"（1.2×16≈19.2px），行盒 ≈ 26，
+   上下各留 2px 就变成 30 —— 实测是把 bar 顶到 32 的第二高模块；
+   归零后让位给 workspaces 的 28 地板。 */
 #custom-colpos {
   font-size: 16px;
   font-weight: 700;
   color: #d3c6aa;
   background-color: #343f44;
   border-radius: 0 0 8px 8px;
-  padding: 2px 11px;
+  padding: 0 11px;
 }
 
 /* All system info modules */
@@ -166,21 +173,24 @@ tooltip * {
    要么让盒宽涨到 46（colpos 右移 10px，更明显）。
    字号放大但 bar 不许变高：GTK CSS 不支持 line-height（之前试过被 GTK
    拒绝），用 Pango markup line_height 才能压，但眼睛只是单字，没法塞
-   markup。落到默认行高 ≈1.2：20×1.2=24 行高 + 4 padding = 28，仍 <32，
-   bar 不撑高。给将来加字号的安全上限：font-size × 1.2 + 4 ≤ 32
-   → font-size ≤ 23.3px。 */
+   markup。实测行盒 ≈ font-size × 1.36（Noto Sans 的 ascent+descent，
+   不是想当然的 1.2）：20×1.36 ≈ 27.2，垂直 padding 留 2px 就是 31，
+   实测正是把 bar 顶到 32 的最高模块 —— 故上下 padding 归零。
+   给将来加字号的安全上限（bar 28、无垂直 padding）：
+   font-size × 1.36 ≤ 28 → font-size ≤ 20.5px，当前 20px 已贴近上限。 */
 #custom-idle-inhibit {
   font-size: 20px;
-  padding: 2px 22px 2px 9px;
+  padding: 0 22px 0 9px;
 }
 
 /* Idle Inhibit active (抑制中 - 不会锁屏)。
    padding 按上面的 22px 右距公式覆盖（10/21）：字形差 2.5px 由两态 padR
-   各吃 1px，盒宽仍 44px，colpos 与 base 态同位置；此规则本身只负责绿色。 */
+   各吃 1px，盒宽仍 44px，colpos 与 base 态同位置；上下 0 与 base 态一致
+   （bar 高度约束，见窗口规则里的 min-height 注释）；此规则本身只负责绿色。 */
 #custom-idle-inhibit.active {
   font-size: 20px;
   color: #a7c080;
-  padding: 2px 21px 2px 10px;
+  padding: 0 21px 0 10px;
 }
 
 /* Hover effect for right-side modules + 左侧（眼睛/列指示器） */
