@@ -23,6 +23,10 @@ layout {
 // 新窗口默认铺满列宽，等同于按 Mod+F（set-column-width "100%"），
 // 而不是原来的 open-maximized-to-edges（= Mod+Shift+F 的贴边最大化）
 window-rule {
+    match app-id=r#"qutebrowser$"#
+    open-maximized-to-edges true
+}
+window-rule {
     default-column-width { proportion 1.0; }
 }
 
