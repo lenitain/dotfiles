@@ -30,6 +30,7 @@ apps=(
   org.kicad.KiCad
   org.freecad.FreeCAD
   org.gimp.GIMP
+  com.usebottles.bottles
 )
 
 # 确保 apps 已装 (缺则装; 安装失败属真实错误 → 硬失败)
@@ -46,6 +47,14 @@ for app in "${apps[@]}"; do
     fi
   fi
 done
+
+# Bottles 沙盒授权: 整个家目录
+# flathub 的 manifest 只给了 ~/Games/umu 两条空授权, 默认看不到家目录 →
+# 外部 .exe 同目录的程序文件/数据读不到, 存档也写不进自己目录。
+# override 对未安装的应用同样生效, 重复执行幂等(未提及的选项不会被清掉)。
+info "授权 com.usebottles.bottles 访问整个家目录 ..."
+flatpak override --user --filesystem=home com.usebottles.bottles
+ok "com.usebottles.bottles 已获得 home 授权"
 
 # -Syu 哲学: 有更新就更新到最新 (用户级 flathub 应用); 更新失败软处理
 info "更新 flathub 应用到最新 (flatpak update) ..."
