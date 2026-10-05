@@ -2,8 +2,14 @@
   "defaultProvider": "minimax-cn",
   "defaultModel": "MiniMax-M3",
   "defaultThinkingLevel": "max",
-  "packages": ["npm:pi-web-access", "npm:pi-repl-py"],
-  "npmCommand": ["npm", "--package-lock=false"],
+  "packages": [
+    "npm:pi-web-access",
+    "npm:pi-repl-py"
+  ],
+  "npmCommand": [
+    "npm",
+    "--package-lock=false"
+  ],
   "lastChangelogVersion": "999.99.99",
   "theme": "everforest-dark-medium",
   "hideThinkingBlock": true,
