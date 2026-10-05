@@ -8,7 +8,7 @@
 -- bbox 居中的专用资产（assets/toilet-logo.wrfm，`wrfm transform --to-origin`
 -- 从参考模型生成），画布中心即模型中心，画布即模型区。
 -- 图标用 \u{} 码点转义（Font Awesome BMP 区，Maple Mono NF 全覆盖）
-local logo_path = vim.fs.normalize(vim.fn.stdpath("config") .. "/assets/toilet-logo.wrfm")
+local logo_path = vim.fs.normalize(vim.fn.stdpath("config") .. "/assets/utah-teapot-logo.wrfm")
 local logo_id = "dashboard-logo"
 
 local center = {
