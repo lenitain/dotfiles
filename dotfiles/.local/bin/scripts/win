@@ -1,0 +1,72 @@
+#!/bin/bash
+# 用 umu-run + proton-cachyos 跑任意 Windows 程序, 每个程序一个独立前缀。
+#
+# 用法:
+#   win <exe> [参数...]     按 exe 名自动建前缀: ~/.wine/apps/<名字>
+#   win -n <名字> <exe> ... 手动指定前缀名(几个 exe 共用一套环境时)
+#   win -l <exe> ...        打开 Proton 日志, 落在 ~/proton.log
+#   win -h                  显示本帮助
+#
+# 每个前缀可放一个同名 .env 覆盖环境变量, 例如 ~/.wine/apps/dusk-city.env:
+#   GAMEID=umu-xxx    套用 protonfixes 里针对该程序的补丁
+#   DXVK=0            关掉 DXVK, 改走 Wine 自带的 d3d11
+#
+# 覆盖 Proton 位置: WIN_PROTON=/path/to/proton-dir win ...
+#
+# protonfixes 会给每个前缀无条件装 FSR4 的 amdxcffx64.dll (首次要下 14MB)。
+# 默认通过 PYTHONPATH 注入 FSR4_SHIM, 把它改回"显式要求才装"(上游语义)。
+# 覆盖/禁用: WIN_FSR4_SHIM=... win ... 或 WIN_FSR4_SHIM= win ...
+
+set -euo pipefail
+
+PROTON="${WIN_PROTON:-/usr/share/steam/compatibilitytools.d/proton-cachyos-native}"
+APPS_DIR="${WIN_APPS:-$HOME/.wine/apps}"
+FSR4_SHIM="${WIN_FSR4_SHIM-$HOME/.local/share/protonfixes-nofsr4}"
+
+usage() {
+  sed -n '2,/^$/{s/^# \{0,1\}//p;}' "$0"
+  exit "${1:-1}"
+}
+
+die() { echo "win: $*" >&2; exit 1; }
+
+name="" log=0
+while getopts "n:lh" opt; do
+  case $opt in
+    n) name=$OPTARG ;;
+    l) log=1 ;;
+    h) usage 0 ;;
+    *) usage ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+[ $# -ge 1 ] || usage
+command -v umu-run >/dev/null || die "找不到 umu-run (pacman -S umu-launcher)"
+[ -d "$PROTON" ] || die "找不到 Proton: $PROTON (pacman -S proton-cachyos-native)"
+
+exe=$(realpath -e -- "$1") || die "文件不存在: $1"
+shift
+
+# 前缀名: 去掉 .exe、转小写、非字母数字折叠成 -
+if [ -z "$name" ]; then
+  name=$(basename "$exe" | sed 's/\.[Ee][Xx][Ee]$//' | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-//;s/-$//')
+  [ -n "$name" ] || name="app"
+fi
+
+mkdir -p "$APPS_DIR"
+env_file="$APPS_DIR/$name.env"
+if [ -f "$env_file" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$env_file"
+  set +a
+fi
+
+env_args=(WINEPREFIX="$APPS_DIR/$name" PROTONPATH="$PROTON")
+if [ -d "$FSR4_SHIM" ]; then
+  env_args+=(PYTHONPATH="$FSR4_SHIM${PYTHONPATH:+:$PYTHONPATH}")
+fi
+if [ "$log" = 1 ]; then env_args+=(PROTON_LOG=1); fi
+
+exec env "${env_args[@]}" umu-run "$exe" "$@"

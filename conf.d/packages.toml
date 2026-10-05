@@ -107,3 +107,5 @@
 "pacman:sing-box" = "latest"
 "pacman:calcurse" = "latest"
 "pacman:qemu" = "latest"
+"pacman:proton-cachyos-native" = "latest"
+"pacman:umu-launcher" = "latest"
