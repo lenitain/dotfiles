@@ -21,6 +21,7 @@ ruff = "latest"
 "aqua:LuaLS/lua-language-server" = "latest"
 "cargo:stylua" = "latest"
 "cargo:prek" = "latest"
+"cargo:typos-cli" = "latest"
 
 # ── 预发布白名单: 上游只发预发布版的工具在这里逐个打开 prerelease ──
 # 全局 prereleases 是关的, 原因见 config.toml。
