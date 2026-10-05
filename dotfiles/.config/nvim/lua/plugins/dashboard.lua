@@ -17,17 +17,23 @@ local center = {
 	{ icon = "\u{F011} ", desc = "Quit", key = "q", action = "qa" },
 }
 
--- 画布 = 终端全部可用行，相机距离是唯一控制旋钮：
--- camera_zoom 越小模型越大，0.42 是不裁掉模型上下沿的极限。
+-- 文字位置不变的前提:画布高沿用 0.85 启发式(doom 的 vertical_center 会按
+-- 缓冲行数自动补顶部填充,画布一高文字就被推下去)。模型与文字之间的留白
+-- 由 camera_zoom 吃掉:zoom 越小模型越大,在画布里越贴近下沿。
 local gap = 2 -- 画布与按钮之间的空行
-local n_content = #center * 2 + 1 -- 按钮区 + 页脚
-local camera_zoom = 0.45 -- ← 唯一可调值
+local n_content = #center * 2 + 1 -- 按钮区 + 页脚（每按钮 2 行 + 页脚 1 行）
+local camera_zoom = 0.37 -- ← 模型贴近文字的唯一可调值(全相位扫描:0.37 不裁且留白最小)
 local function canvas_size()
 	local usable = vim.o.lines - vim.o.cmdheight - n_content - gap
 	local h = math.max(math.floor(usable * 0.85), 8)
-	return math.min(h * 2, vim.o.columns - 2), h
+	-- 宽度拉满终端:模型是宽扁形状(宽高比约 2:1),拉近相机后横向先撑满画布
+	-- 被裁掉;画布透明看不见,宽度只用来给 spout/handle 留横向余量。
+	return vim.o.columns - 2, h
 end
 local logo_w, logo_h = canvas_size()
+-- 横向防裁自适应:模型最宽姿态约占 1.1*h/zoom 个字符(实测常数),窄终端上
+-- 把 zoom 抬高到刚好放得下;宽终端用 camera_zoom 本身。
+local camera_zoom_eff = math.max(camera_zoom, 1.1 * logo_h / logo_w)
 
 local function place_logo(dashboard_buf)
 	local wrfm = require("wrfm")
@@ -74,9 +80,8 @@ local function place_logo(dashboard_buf)
 	if not ok then
 		return -- 资产缺失时静默跳过，不影响 dashboard
 	end
-	-- 画布大小 ≠ 模型大小：auto-fit 只占画布高约 40%，拉近放大。
-	-- 裁剪极限 ≈ 0.42，再近就会切掉模型上下沿。
-	model:set_distance(model.fit_dist * camera_zoom)
+	-- 画布大小 ≠ 模型大小:auto-fit 只占画布一部分,拉近放大。
+	model:set_distance(model.fit_dist * camera_zoom_eff)
 	model:render()
 	model:move(math.floor((vim.o.columns - (model.width or logo_w)) / 2), row)
 	-- 透明浮窗：背景透明，braille 点用主题标题色，文字从模型空隙透出
