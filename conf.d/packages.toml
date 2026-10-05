@@ -115,3 +115,4 @@
 "pacman:fastfetch" = "latest"
 "pacman:sing-box" = "latest"
 "pacman:calcurse" = "latest"
+"pacman:qemu" = "latest"
