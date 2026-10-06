@@ -2,10 +2,14 @@
 # 用 umu-run + proton-cachyos 跑任意 Windows 程序, 每个程序一个独立前缀。
 #
 # 用法:
-#   win <exe> [参数...]     按 exe 名自动建前缀: ~/.wine/apps/<名字>
+#   win <exe> [参数...]     自动建前缀: ~/.wine/apps/<exe名>
 #   win -n <名字> <exe> ... 手动指定前缀名(几个 exe 共用一套环境时)
 #   win -l <exe> ...        打开 Proton 日志, 落在 ~/proton.log
 #   win -h                  显示本帮助
+#
+# 自动前缀名依次取: <exe名> → <有意义的上级目录名>-<exe名> → <exe名>-<路径哈希>,
+# 挑第一个没被别的 exe 占用的(否则不同目录下的 game.exe 会挤进同一个前缀)。
+# 选定后写 <前缀>.source 记住 exe 真实路径, 下次据此认回同一个前缀。
 #
 # 每个前缀可放一个同名 .env 覆盖环境变量, 例如 ~/.wine/apps/dusk-city.env:
 #   GAMEID=umu-xxx    套用 protonfixes 里针对该程序的补丁
@@ -48,13 +52,62 @@ command -v umu-run >/dev/null || die "找不到 umu-run (pacman -S umu-launcher)
 exe=$(realpath -e -- "$1") || die "文件不存在: $1"
 shift
 
-# 前缀名: 去掉 .exe、转小写、非字母数字折叠成 -
+mkdir -p "$APPS_DIR"
+
+# 去掉 .exe、转小写、非字母数字折叠成 -
+slug() {
+  printf '%s' "$1" | sed 's/\.[Ee][Xx][Ee]$//' | tr '[:upper:]' '[:lower:]' \
+    | tr -cs 'a-z0-9' '-' | sed 's/^-//;s/-$//'
+}
+
+# <前缀>.source 记录这个前缀绑定的 exe 真实路径, 用于认回同一个前缀
+source_of() { if [ -f "$1.source" ]; then cat "$1.source"; fi; }
+
 if [ -z "$name" ]; then
-  name=$(basename "$exe" | sed 's/\.[Ee][Xx][Ee]$//' | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-//;s/-$//')
-  [ -n "$name" ] || name="app"
+  base=$(slug "$(basename "$exe")")
+  [ -n "$base" ] || base=app
+
+  # 上级目录名: 跳过 bin/win64/x64 之类没有辨识度的壳目录
+  dir=$(dirname "$exe")
+  parent=""
+  while [ -n "$dir" ] && [ "$dir" != "/" ]; do
+    d=$(slug "$(basename "$dir")")
+    case $d in
+      ""|bin|bin32|bin64|win32|win64|x86|x64|data|files|app|release|debug|game|games|common|steam|steamapps) ;;
+      *) parent=$d; break ;;
+    esac
+    dir=$(dirname "$dir")
+  done
+
+  hash=""
+  if command -v md5sum >/dev/null; then
+    hash=$(printf '%s' "$exe" | md5sum | cut -c1-6)
+  fi
+
+  candidates=("$base")
+  if [ -n "$parent" ] && [ "$parent" != "$base" ]; then candidates+=("$parent-$base"); fi
+  if [ -n "$hash" ]; then candidates+=("$base-$hash"); fi
+
+  for cand in "${candidates[@]}"; do
+    p="$APPS_DIR/$cand"
+    src=$(source_of "$p")
+    if [ -z "$src" ]; then
+      # 没有来源记录: 目录已存在说明是老版脚本建的, 认领它并补上记录,
+      # 免得以后被同名 exe 抢走
+      if [ -e "$p" ]; then
+        printf '%s\n' "$exe" >"$p.source"
+        echo "win: 前缀 $cand 没有来源记录, 认领为 $exe (不对就用 -n 指定)" >&2
+      fi
+      name=$cand; break
+    fi
+    if [ "$src" = "$exe" ]; then name=$cand; break; fi
+  done
+  [ -n "$name" ] || die "前缀名 $base 已被同名的其它 exe 占住, 用 -n <名字> 指定"
+  [ "$name" = "$base" ] || echo "win: $base 已被占用, 改用前缀 $name" >&2
 fi
 
-mkdir -p "$APPS_DIR"
+printf '%s\n' "$exe" >"$APPS_DIR/$name.source"
+
 env_file="$APPS_DIR/$name.env"
 if [ -f "$env_file" ]; then
   set -a
