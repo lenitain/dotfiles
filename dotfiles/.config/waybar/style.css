@@ -75,7 +75,8 @@ tooltip * {
    左右各 11px：与最右侧模块 #custom-clock 的留白一致
    （也是 pulseaudio/battery/眼睛 的值）。hover 背景画在「内容 + padding」
    这个盒子上，所以 padding 就是 hover 的两侧留白。
-   上下 padding 取 0：点是 size="large"（1.2×16≈19.2px），行盒 ≈ 26，
+   上下 padding 取 0：点字号写死在 scripts/colpos.py（未选中 19px、选中 23px，都是
+   整数 px），行盒由 markup 的 line_height=0.85 压回 ≈ 26，
    上下各留 2px 就变成 30 —— 实测是把 bar 顶到 32 的第二高模块；
    归零后让位给 workspaces 的 28 地板。 */
 #custom-colpos {
@@ -134,8 +135,8 @@ tooltip * {
 #tray > .needs-attention:hover {
   background: #475258;
 }
-/* 时钟：字号基准 14px，两行的相对大小/字重由 modules.json 的 markup 决定
-   （时间 = 14px medium，日期 = 14×0.83 normal）。
+/* 时钟：字号基准 14px，两行的具体字号/字重写在 modules.json 的 markup 里
+   （时间 = 14px weight=500，日期 = 12px weight=400，见那边注释）。
    注意选择器：#clock 匹配不到自定义模块 —— label 的节点名是 custom-clock
    （AModule 里 event_box_ 无名，名字加在 label_ 上），原来的 #clock /
    #clock label 规则一直是死代码，实际生效的是 window 继承下来的 16px。

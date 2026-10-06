@@ -8,8 +8,9 @@ the workspace's scrolling layout as
 
 both 1-based (leftmost column = 1, topmost tile in column = 1).
 
-Display: 每列一个**等距**的圆点，只有颜色区分 —— 当前列绿色、其余灰色。
-间距是唯一个常量（DOT_ADVANCE），换列 / 增删窗口都不会改变任何点的位置。
+Display: 每列一个圆点，当前列**绿色且大一号**（23px，其余 19px，见 DOT_PX 一组
+常量，字号全部写死为整数 px），小点另上移半个字号差与大点纵向居中。间距是唯一个常量
+（DOT_ADVANCE），增删窗口不会改变任何点的位置；换列只有标记挪一格并变大/变小。
 无平铺窗口 -> 空文本，由 hide-empty-text 隐藏。
 
 Anchor（"当前"指哪个窗口）：
@@ -30,10 +31,43 @@ import subprocess
 import time
 
 DOT = "●"  # BLACK CIRCLE — 实心圆，颜色画在字形墨迹上（不是 background）
-DOT_SIZE = "large"  # 1.2× 父字号 ≈ 13px 直径：清晰但不撑大 28px 高的 bar
-DOT_ADVANCE = " "  # 单个空格同 DOT_SIZE 字号 → 点间距（≈ 5px）是唯一定值
+
+# ── 字号：全部写死成整数 px，不用 Pango 的 large/x-large 关键字（那俩是隐式 ×1.2 阶梯，
+#    定义在 pango-font.h:308，容易看迷糊）。改 style.css 的 font-size 时要同步改下面两个。
+FONT_PX = 16  # 基准字号 = style.css:82 #custom-colpos 的 font-size（必须与它一致）
+DOT_PX = 20  # 未选中列字号（16 × 1.2 = 19.2 → 取整 19）；● 墨迹直径 ≈ 13px（不撑大 28px 的 bar）
+DOT_ACTIVE_PX = (
+    20  # 选中列字号（16 × 1.44 = 23.04 → 取整 23）；墨迹 ≈ 16px，比其余大一号
+)
+DOT_RISE_PX = 0  # 小点上移 px：两种字号共基线、小点中心偏低，上移约半个字号差
+# （理论 (23 − 19)/2 = 2；实测 1.6~2 都在 ±0.5px 内，取整数 2）
+LINE_HEIGHT = 0.85  # 行高倍率（无量纲，只能是小数）：压住 23px 大点撑高的行盒，bar 才停在 28px 地板
+
+GAP_PX = 7  # 点与点之间的空隙再额外加多少 px（加在空格的 letter_spacing 上）。
+# 空格自身 ≈ 6px，所以现在点间净空 ≈ 6 + GAP_PX ≈ 12px；嫌太挤就调这一个数。
+
+DOT_ADVANCE = " "  # 单个空格（字号同 DOT_PX）→ 点间距是唯一定值
 COLOR_CURRENT = "#a7c080"  # accent green (matches workspaces active bar)
 COLOR_PAST = "#7a8478"  # dim gray (past AND future columns)
+
+
+def _size(px):
+    """px → Pango markup 的 size 值。size 单位是 1/1024 pt，96dpi 下 1px = 0.75pt = 768。
+
+    例：19px → 14592，23px → 17664（等价于旧写法 size='large' / 'x-large'）。
+    """
+    return int(round(px * 768))
+
+
+def _letter_spacing(px):
+    """px → Pango markup 的 letter_spacing 值。
+
+    注意它和 size 的单位**不一致**：size/rise 是 768 单位/px，letter_spacing 实测是
+    1024 单位/px（本机 Pango 1.58 + GTK3，标定见注释：0/768/1024/2048/6144 → 位移
+    0/0/1/2/6px）。以实测为准，别套 _size 的系数。
+    """
+    return int(round(px * 1024))
+
 
 # 已输出的内容。初值 = 模块在 waybar 里的初始显示状态（空文本、被 hide-empty-text 藏着），
 # 于是启动时那次"算出来是空"的结果会被去重掉，不会白打一行 JSON。
@@ -121,18 +155,19 @@ def overview_window(state):
 
 
 def render_segments(col, total_cols):
-    """每列一个**等距**的圆点，只有颜色区分：当前列绿色、其余灰色。
+    """每列一个圆点，当前列**绿色且大一号**（DOT_ACTIVE_PX=23px），其余灰色
+    （DOT_PX=19px）；小点另加 rise 上移半个字号差，与大点纵向居中共线（DOT_RISE_PX）。
 
-    间距是唯一一个常量（DOT_ADVANCE = 1 space at DOT_SIZE），不随列数、不随位置变化。
-    于是：
-      - 换列时**任何点的位置都不移动**，只有两个点的颜色互换 —— 观感是"标记挪了
-        一格"，而不是"某点胀大吞掉了旁边"（间距不一时就会读成后者）；
-      - 增删窗口时已有点一动不动，只是多一个或少一个点。
+    间距是唯一一个常量（DOT_ADVANCE = 1 个空格，字号同 DOT_PX），不随列数、不随
+    位置变化。于是：
+      - 增删窗口时已有点一动不动，只是多一个或少一个点；
+      - 换列 = 标记挪一格并变大/变小（大点比小点宽约 4px，它旁边的点会跟着挪这点
+        宽度差，这是"选中要大一号"的必然代价，换列时才发生）。
 
     之前是 background + 空格的「色块」做法（24 个空格 + 背景色 = 24×2.4px 的
     横杠）。改用 ● 字符 + 前景色：颜色画在字形墨迹上、形状就是字符本身的圆
-    —— Pango 的 background 永远是矩形，做不出真正的圆。`size="large"`（1.2×）
-    让圆点直径约 13px，在 32px 高的 bar 里清晰但不撑边。
+    —— Pango 的 background 永远是矩形，做不出真正的圆。19px 字号的墨迹直径
+    约 13px，在 28px 地板的 bar 里清晰但不撑边。
 
     也试过并放弃的方案（留个记录，别再走一遍）：
       - 当前列加宽（1.7 倍、1.3 倍都试过）：宽度差本身就会带来"吞并/滑动"观感，
@@ -148,10 +183,15 @@ def render_segments(col, total_cols):
     out = []
     for i in range(1, total_cols + 1):
         color = COLOR_CURRENT if i == col else COLOR_PAST
-        out.append(f"<span color='{color}' size='{DOT_SIZE}'>{DOT}</span>")
+        px = DOT_ACTIVE_PX if i == col else DOT_PX
+        # rise 单位同 size：1/1024 pt，96dpi 下 1px = 768
+        rise = 0 if i == col else int(round(DOT_RISE_PX * 768))
+        out.append(
+            f"<span color='{color}' size='{_size(px)}' rise='{rise}'>{DOT}</span>"
+        )
 
-    gap = f"<span size='{DOT_SIZE}'>{DOT_ADVANCE}</span>"
-    return gap.join(out)
+    gap = f"<span size='{_size(DOT_PX)}' letter_spacing='{_letter_spacing(GAP_PX)}'>{DOT_ADVANCE}</span>"
+    return f"<span line_height='{LINE_HEIGHT}'>{gap.join(out)}</span>"
 
 
 def emit(state):
@@ -161,7 +201,11 @@ def emit(state):
     （见 overview_window）。
     """
     global _last_text, _last_tooltip
-    win = overview_window(state) if state["overview_open"] else focused_window(state["windows"])
+    win = (
+        overview_window(state)
+        if state["overview_open"]
+        else focused_window(state["windows"])
+    )
     col = pos_of(win)
     ws_id = win.get("workspace_id") if win else None
     total_cols = workspace_column_count(state["windows"], ws_id) or 1
@@ -198,7 +242,9 @@ def handle_niri_event(ev, state):
         state["overview_open"] = ev["OverviewOpenedOrClosed"]["is_open"]
     elif "WorkspacesChanged" in ev:
         # 连上 event-stream 时 niri 会重放完整状态，含工作区表的 active_window_id
-        state["workspaces"] = {ws["id"]: ws for ws in ev["WorkspacesChanged"]["workspaces"]}
+        state["workspaces"] = {
+            ws["id"]: ws for ws in ev["WorkspacesChanged"]["workspaces"]
+        }
     elif "WorkspaceActivated" in ev:
         # 激活工作区，overview 里换高亮（鼠标点、硬编码方向键、IPC）走的就是这个事件。
         # 只维护 is_focused —— 本模块唯一的判定依据。is_active 是「某个输出上的活动

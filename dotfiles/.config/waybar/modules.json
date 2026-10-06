@@ -50,9 +50,12 @@
   // 没法塞自定义 markup 结构。改成 custom/clock 走 date + Pango markup。
   // - "justify": "center"（waybar 0.15 起 ALabel 支持）：label 宽度取最宽那行，
   //   短行自动居中 —— 时间正好落在日期上方，不用再拿前导空格凑（那套已删）。
-  // - 两行字号/字重全在 markup 里：时间 span 的 weight=medium 配 CSS 的
-  //   font-size（见 style.css），日期 span size="small" 是 Pango 的 0.83 倍缩放，
-  //   weight="normal" 抵消 CSS 组规则里的 700。
+  // - 两行字号全写死成整数 px，不用 Pango 的 small/large 关键字（那是隐式倍数表）：
+  //     时间 = 14px（= style.css:148 #custom-clock 的 font-size，weight=medium=500）
+  //     日期 = 12px，写成 Pango size 的 1/1024pt 单位：12 × 768 = 9216
+  //           （96dpi 下 1px = 0.75pt = 768 单位；旧写法 size="small" 是 14÷1.2 =
+  //            11.67px，取整 12 只大 0.33px）
+  //     weight="normal"=400 抵消 CSS 组规则里的 700。
   // - line_height 是 Pango 行高倍率（1.50+，纯小数不带 %），包住整段（两行都缩）：
   //   压掉每行基线上下的空白，两行贴得像 KDE 那样紧。只包时间行也行，但那样
   //   日期行的行高不变、间隙仍偏大。倍率调得过小会让字顶溢出标签上沿被裁，
@@ -64,7 +67,7 @@
   //   （本机 zh_CN.UTF-8 → 「星期三」）；%V 按 ISO 算，年末/年初偶尔会出现
   //   「第 1 周」配 12 月，属正常的 ISO 跨年现象。
   "custom/clock": {
-    "exec": "date +'{\"text\": \"<span line_height=\\\"0.7\\\"><span weight=\\\"medium\\\">%H:%M</span>\\n<span size=\\\"small\\\" weight=\\\"normal\\\">%Y-%m-%d</span></span>\", \"tooltip\": \"%Y-%m-%d %A · 第 %V 周\"}'",
+    "exec": "date +'{\"text\": \"<span line_height=\\\"0.7\\\"><span weight=\\\"medium\\\">%H:%M</span>\\n<span size=\\\"9216\\\" weight=\\\"normal\\\">%Y-%m-%d</span></span>\", \"tooltip\": \"%Y-%m-%d %A · 第 %V 周\"}'",
     "return-type": "json",
     "format": "{}",
     "interval": 1,
