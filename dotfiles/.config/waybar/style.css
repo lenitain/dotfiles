@@ -75,8 +75,8 @@ tooltip * {
    左右各 11px：与最右侧模块 #custom-clock 的留白一致
    （也是 pulseaudio/battery/眼睛 的值）。hover 背景画在「内容 + padding」
    这个盒子上，所以 padding 就是 hover 的两侧留白。
-   上下 padding 取 0：点字号写死在 scripts/colpos.py（未选中 19px、选中 23px，都是
-   整数 px），行盒由 markup 的 line_height=0.85 压回 ≈ 26，
+   上下 padding 取 0：点字号写死在 scripts/colpos.py（22px，选中/未选中同值，整数
+   px），行盒由 markup 的 line_height=0.85 压回 ≈ 26，
    上下各留 2px 就变成 30 —— 实测是把 bar 顶到 32 的第二高模块；
    归零后让位给 workspaces 的 28 地板。 */
 #custom-colpos {
