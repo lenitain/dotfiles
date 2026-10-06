@@ -35,7 +35,7 @@ DOT = "●"  # BLACK CIRCLE — 实心圆，颜色画在字形墨迹上（不是
 #    定义在 pango-font.h:308，容易看迷糊）。DOT_PX 由 markup 直接盖掉 CSS 字号，与 style.css
 #    无关；FONT_PX 只是记着 CSS 基准字号，改 style.css 时同步改它。
 FONT_PX = 16  # 基准字号 = style.css:82 #custom-colpos 的 font-size（必须与它一致）
-DOT_PX = 22  # 圆点字号，选中/未选中同值（选中只换颜色）；● 墨迹直径 ≈ 15px（不撑大 28px 的 bar）
+DOT_PX = 20  # 圆点字号，选中/未选中同值（选中只换颜色）；● 墨迹直径 ≈ 15px（不撑大 28px 的 bar）
 LINE_HEIGHT = 0.85  # 行高倍率（无量纲，只能是小数）：压住 22px 圆点撑高的行盒，bar 才停在 28px 地板
 
 GAP_PX = 4  # 点与点之间的空隙再额外加多少 px（加在空格的 letter_spacing 上）。

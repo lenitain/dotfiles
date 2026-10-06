@@ -44,7 +44,7 @@ window#waybar {
   background: #343f44;
   padding: 0px 6px 2px 6px;
   /* 激活：较宽 */
-  min-width: 24px;
+  min-width: 20px;
   /* 底部扩散指示条：下面宽上面窄，2px 高度 */
   border: none;
   border-bottom: 2px solid #a7c080;
