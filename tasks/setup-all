@@ -19,7 +19,7 @@
 #   判定依据: 任务里用了 gh_api / gh_download, 或产物本身就来自 GitHub
 #   (ya pkg 的插件/配色, package.toml 里是 owner/repo)。
 #   例外: mise install/upgrade 里的 aqua 工具 (zls/gofumpt/golangci-lint/lua-ls/
-#   stylua/ruff) 也走 GitHub, 但它同时是 setup-pi 等步骤的工具前置 (pi 由 mise
+#   stylua/ruff) 也走 GitHub, 但它同时是 setup-pig 等步骤的工具前置 (pig 由 mise
 #   提供), 挪到末尾会顺序倒挂, 故留在第 2 步。
 
 set -euo pipefail
@@ -66,7 +66,7 @@ run_step setup-desktop        "dconf/XDG"
 run_step setup-rust           "rustup+rust-analyzer"
 run_step setup-moonbit        "MoonBit"
 run_step setup-flatpak        "flathub+apps"
-run_step setup-pi             "Pi agent + 扩展"
+run_step setup-pig            "PiG agent + 扩展"
 
 # ── GitHub 组: 全部经 gh-proxy 拉取, 统一放最后 ──
 run_step setup-fonts          "Maple Mono"
