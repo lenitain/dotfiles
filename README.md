@@ -25,7 +25,7 @@
 追最新走 `mise run setup-all`（= bootstrap + `mise upgrade` + 各 sync 任务）。
 
 > 为什么 -Syu 必须紧贴 packages 阶段：mise 装缺包只发 `pacman -S --needed`
->（不刷新同步库），仅在同步库不新于已装版本时才安全；库比系统新时会变成 Arch
+> （不刷新同步库），仅在同步库不新于已装版本时才安全；库比系统新时会变成 Arch
 > 不支持的 [partial upgrade](https://wiki.archlinux.org/title/System_maintenance#Partial_upgrades_are_unsupported)。
 > hook 失败会中止 bootstrap，所以 packages 不会在危险状态下执行。
 > 注意 `mise bootstrap packages apply` / `use` 这类分部命令不经过 hooks，只依赖
@@ -122,7 +122,7 @@ mise bootstrap packages use pacman:foo@version   # 或编辑 conf.d/packages.tom
 | `setup-moonbit`       | MoonBit 工具链                                                 | 用户 |
 | `setup-yazi`          | yazi 插件/配色（安装+更新）                                    | 用户 |
 | `setup-just-talk`     | 二进制 → ~/.local/bin                                          | 用户 |
-| `setup-pi`            | Pi agent + 扩展                                                | 用户 |
+| `setup-pig`           | PiG agent + 扩展                                               | 用户 |
 | `setup-rime-wanxiang` | 万象拼音 → fcitx5                                              | 用户 |
 | `uninstall-help`      | 卸载命令（仅文档，不删任何东西）                               | —    |
 
