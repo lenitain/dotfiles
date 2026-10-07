@@ -12,12 +12,27 @@ __pycache__/
 xray/host_vars/*.yml
 !xray/host_vars/_template.yml
 
-# pi npm auth & sessions (含 API 密钥和会话数据)
-dotfiles/.pi/agent/auth.json
-dotfiles/.pi/agent/models-store.json
-dotfiles/.pi/agent/sessions/
-dotfiles/.pi/agent/npm/
-dotfiles/.pi/agent/web-search-cache/
+# pig 运行时 (全部默认不入库, 只 agent/ 下用户显式维护的配置入库)
+dotfiles/.pig/.docs-stage.lock
+
+# pig 根目录自动生成/下载的目录
+dotfiles/.pig/cache/
+dotfiles/.pig/docs/
+dotfiles/.pig/state/
+
+# pig 未来可能产生的目录 (piglets/artifacts/receipts), 先列在这里防漏网
+dotfiles/.pig/piglets/
+dotfiles/.pig/artifacts/
+dotfiles/.pig/receipts/
+
+# pig agent 运行时 (API 密钥、会话、包缓存、子代理日志、Python venv)
+dotfiles/.pig/agent/auth.json
+dotfiles/.pig/agent/models-store.json
+dotfiles/.pig/agent/sessions/
+dotfiles/.pig/agent/npm/
+dotfiles/.pig/agent/pi-repl/
+dotfiles/.pig/agent/web-search-cache/
+dotfiles/.pig/agent/subagent-workflow/
 
 # fish shell 变量文件 (自动生成)
 dotfiles/.config/fish/fish_variables
