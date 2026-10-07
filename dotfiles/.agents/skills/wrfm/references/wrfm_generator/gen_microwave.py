@@ -158,7 +158,7 @@ def generate_microwave():
 
     # =================== write ===================
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "..", "wrfm_assests", "microwave.wrfm")
+                       "..", "wrfm_assets", "microwave.wrfm")
     model.write(out, comment="naviga model: microwave")
 
 

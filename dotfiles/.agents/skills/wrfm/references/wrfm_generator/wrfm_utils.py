@@ -102,6 +102,14 @@ class WrfmModel:
         """写入.wrfm文件"""
         self.end_group()  # 关闭最后一个组
 
+        # 未入组的顶点不会被写出（文件头的 vertices 计数与实际 v 行数不符、
+        # 边索引整体错位），这里直接断言报错，不兜底塞进默认组。
+        grouped = sum(cnt for _, _, cnt in self.groups)
+        assert grouped == len(self.verts), (
+            f"{len(self.verts) - grouped} vertex/vertices not in any group "
+            f"(grouped {grouped} of {len(self.verts)}) — call begin_group()/"
+            "end_group() for every vertex before write()")
+
         # 去除重复边
         seen = set()
         unique_edges = []
@@ -123,7 +131,10 @@ class WrfmModel:
         for name, start, cnt in self.groups:
             lines.append(f"group {name}")
             for x, y, z in self.verts[start:start + cnt]:
-                lines.append(f"v {x:.3f} {y:.3f} {z:.3f}")
+                # repr(float) = 最短往返小数（Py3.1+），符合 `wrfm format` 的
+                # "COORDS write the shortest decimal that round-trips"；
+                # .3f 会在大尺度坐标上丢精度（合并不同的点 / 把该重合的点舍开）。
+                lines.append(f"v {repr(x)} {repr(y)} {repr(z)}")
             lines.append("")
         
         for i, j in self.edges:

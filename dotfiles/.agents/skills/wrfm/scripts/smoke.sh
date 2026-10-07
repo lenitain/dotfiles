@@ -12,7 +12,7 @@ echo "== 2. ImageMagick =="
 command -v magick >/dev/null || { echo "FAIL: magick not on PATH" >&2; exit 1; }
 
 echo "== 3. reference samples check (broken fails; warnings allowed) =="
-for f in "$REPO"/references/wrfm_assests/*.wrfm; do
+for f in "$REPO"/references/wrfm_assets/*.wrfm; do
   ec=0
   out="$(wrfm check "$f" 2>&1)" || ec=$?
   verdict="$(printf '%s\n' "$out" | grep -oE '^(ok|warn|broken):' | head -1)"
@@ -25,12 +25,12 @@ for f in "$REPO"/references/wrfm_assests/*.wrfm; do
 done
 
 echo "== 4. image pipeline: six-view montage =="
-"$REPO/scripts/wrfm-shot.sh" "$REPO/references/wrfm_assests/anvil.wrfm" /tmp/wrfm-smoke.png
+"$REPO/scripts/wrfm-shot.sh" "$REPO/references/wrfm_assets/anvil.wrfm" /tmp/wrfm-smoke.png
 [ -s /tmp/wrfm-smoke.png ] || { echo "FAIL: montage PNG is empty" >&2; exit 1; }
 magick identify /tmp/wrfm-smoke.png
 
 echo "== 5. image pipeline: single-view close-up =="
-"$REPO/scripts/wrfm-shot.sh" "$REPO/references/wrfm_assests/anvil.wrfm" /tmp/wrfm-smoke-zoom.png --views front
+"$REPO/scripts/wrfm-shot.sh" "$REPO/references/wrfm_assets/anvil.wrfm" /tmp/wrfm-smoke-zoom.png --views front
 [ -s /tmp/wrfm-smoke-zoom.png ] || { echo "FAIL: zoom PNG is empty" >&2; exit 1; }
 
 echo "== 6. image content is non-blank (objective check) =="

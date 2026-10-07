@@ -101,7 +101,7 @@ def generate_anvil():
 
     # =================== write ===================
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "..", "wrfm_assests", "anvil.wrfm")
+                       "..", "wrfm_assets", "anvil.wrfm")
     model.write(out, comment="naviga model: anvil")
 
 

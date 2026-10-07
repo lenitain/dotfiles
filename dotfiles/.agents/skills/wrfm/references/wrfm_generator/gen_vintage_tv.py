@@ -293,7 +293,7 @@ def generate_vintage_tv():
 
     # =================== write ===================
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "..", "wrfm_assests", "vintage_tv.wrfm")
+                       "..", "wrfm_assets", "vintage_tv.wrfm")
     model.write(out, comment="naviga model: vintage_tv")
 
 

@@ -152,7 +152,7 @@ def generate_washing_machine():
 
     # =================== write ===================
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "..", "wrfm_assests", "washing_machine.wrfm")
+                       "..", "wrfm_assets", "washing_machine.wrfm")
     model.write(out, comment="naviga model: washing_machine")
 
 

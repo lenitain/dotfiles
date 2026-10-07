@@ -28,7 +28,7 @@ the file): write your edits to the watched file so they see them in real time.
 | :--- | :--- | :--- |
 | wrfm CLI | `wrfm format > /dev/null` | not installed, or a stale binary (build the wrfm-cli crate from the wireforge repo) |
 | ImageMagick | `magick -version` | install imagemagick |
-| multimodal vision | open a PNG with the read tool and describe it | do NOT drive the main loop — use the Text-mode fallback |
+| multimodal vision | open a PNG with the read tool and describe it | do NOT drive the main loop — use "Fallback when the image channel degrades" below |
 
 Everything else comes from the CLI itself: `wrfm <sub> --help` per command,
 and `wrfm format` for the complete file-format spec.
@@ -49,6 +49,44 @@ wrfm-shot.sh <model.wrfm> iso.png --views "" --yaw 30 --pitch 20           # any
 **After every shot, READ the produced PNG with the read tool.** If the image
 is empty-looking or tiny, zoom (a single view, or a region). Re-shoot after
 every edit — that is the feedback loop of this skill.
+
+### Camera quick reference
+
+| Want | Do |
+| :--- | :--- |
+| Default 6-view montage | `wrfm-shot.sh m.wrfm shot.png` — `auto_dist` on; framing follows the model's geometric-mean extent, so a thin axis fills only ~15–25% of the canvas width (a long axis can reach ~50–65%). Fine for orientation, not for detail. |
+| Fill the canvas | add `--fit content` — the CLI auto-frames each view from the silhouette (padded 2%, clamped). Passes straight through `wrfm-shot.sh`. |
+| Magnify a detail | shoot one view large, then `magick shot.png -trim` — **do not guess `--region`** (normalized coordinates have no reliable source; an explicit `--region` also overrides `--fit`). |
+| Any camera | `--yaw 30 --pitch 20` (plus `--views ""` for a single frame); `--dist` is extremely sensitive — prefer `--fit` over hand-tuning it. |
+| Text-mode preview | `--format grid --grid-w 32 --grid-h 16` (density numbers) or `--format ascii --width 40 --height 16` (fine text) — **text mode only**, never a PNG-shot preset |
+
+## Image-channel integrity
+
+The image channel's most expensive failure is *stale* output: `read` returns
+a PNG, but it is an OLDER render than the file you just wrote — you then
+judge the model from a picture that no longer describes it. Three rules make
+that failure detectable instead of invisible:
+
+1. **Every shot gets a NEW filename.** `wrfm-shot.py` (the implementation
+   behind `wrfm-shot.sh`) refuses to overwrite an existing PNG, so a fresh
+   file can never be confused with a cached one. Never reuse a shot name;
+   never re-read an old file after an edit.
+2. **Verify identity after every read.** Each shot stamps `# shot=<id>`
+   INSIDE the image and prints the same id plus the model identity on
+   stdout:
+
+   ```text
+     shot=<id>  name=<model>  vertices=<n>  edges=<m>
+     VERIFY: read shot.png — its header must show name=... vertices=... shot=...
+   ```
+
+   After reading the PNG, compare three things: the `# shot=` line inside
+   the image, the `name=`/`vertices=` header inside the image, and this
+   stdout line. All three must agree (and agree with `wrfm info`).
+3. **Mismatch = stale image.** Do not trust it, do not reason from it. Take a
+   NEW filename and re-shoot; read the new file. If the mismatch persists,
+   the image channel is degraded — escalate through the stackable fallback
+   below ("Fallback when the image channel degrades").
 
 ## The iterate loop (do this, in this order)
 
@@ -85,6 +123,10 @@ Then decide:
   open line, a plain ring) → **keep it**. Real objects are full of parts that
   are open by nature; closing them makes the model look worse, not better.
 - **Accidental gap** (a line that should connect but does not) → **fix it**.
+- **Near-duplicate vertices** (the `near_duplicate_vertices` list: two
+  points closer than 1e-6) → **always fix** with
+  `wrfm edit m.wrfm --weld 1e-6`. Two points that close are one point, and
+  `--dedupe` is bit-exact, so it cannot see them.
 
 ## Edit a model (CLI, never by hand)
 
@@ -118,12 +160,12 @@ library BEFORE writing anything:
 
 | Object | Sample asset | Generator script |
 | :--- | :--- | :--- |
-| anvil | `references/wrfm_assests/anvil.wrfm` | `references/wrfm_generator/gen_anvil.py` |
-| bicycle | `references/wrfm_assests/bicycle.wrfm` | `references/wrfm_generator/gen_bicycle.py` |
-| microwave | `references/wrfm_assests/microwave.wrfm` | `references/wrfm_generator/gen_microwave.py` |
-| toilet | `references/wrfm_assests/toilet.wrfm` | `references/wrfm_generator/gen_toilet.py` |
-| vintage TV | `references/wrfm_assests/vintage_tv.wrfm` | `references/wrfm_generator/gen_vintage_tv.py` |
-| washing machine | `references/wrfm_assests/washing_machine.wrfm` | `references/wrfm_generator/gen_washing_machine.py` |
+| anvil | `references/wrfm_assets/anvil.wrfm` | `references/wrfm_generator/gen_anvil.py` |
+| bicycle | `references/wrfm_assets/bicycle.wrfm` | `references/wrfm_generator/gen_bicycle.py` |
+| microwave | `references/wrfm_assets/microwave.wrfm` | `references/wrfm_generator/gen_microwave.py` |
+| toilet | `references/wrfm_assets/toilet.wrfm` | `references/wrfm_generator/gen_toilet.py` |
+| vintage TV | `references/wrfm_assets/vintage_tv.wrfm` | `references/wrfm_generator/gen_vintage_tv.py` |
+| washing machine | `references/wrfm_assets/washing_machine.wrfm` | `references/wrfm_generator/gen_washing_machine.py` |
 
 Rules:
 
@@ -175,9 +217,61 @@ verdict"). Only accidental gaps must be repaired before finishing.
 
 **Generation chain**: consult the reference library first (§Reference
 library) — a matching sample or generator is copied/adapted, not reinvented
-→ write the file or run a generator script → `wrfm check` → `wrfm geometry`
+→ write the file or run a generator script → **`--clean | --dedupe`
+(mandatory for generated output)** → `wrfm check` → `wrfm geometry`
 → `wrfm-shot.sh` + read the PNG → iterate. Always build standing on Y
 (below).
+
+Fixed recipe for the clean/dedupe step:
+
+```bash
+wrfm edit gen.wrfm --clean | wrfm edit - --dedupe > final.wrfm
+wrfm check final.wrfm
+```
+
+**Always `--clean | --dedupe` before `check`.** Anything generated —
+especially data sampled onto a surface — carries degree-1 sampling stubs
+(vertices left at parameterization folds, e.g. 23 of them on the Utah
+teapot), which are sampling residue, not model geometry. If you skip this
+step, a good part of the dangling vertices `check` reports are stubs your own
+script created, and you will chase them (or hand-write pruning loops with
+index remapping) for nothing. `wrfm edit --clean` exists precisely for this;
+`--dedupe` removes the coincident points the sampling also produces.
+
+## Model from real data (external datasets)
+
+When the target comes from real data (OBJ meshes, Bezier patch files like
+`.bpt`, point dumps) instead of the reference library, there is **no
+`wrfm import`** — parsing and sampling stay in a skill-side Python script.
+What the CLI *does* provide is the hard part: welding sampled coordinates
+together. Pipeline:
+
+1. **Parse the source format in Python** (one-off script; Bernstein-basis
+   evaluation for Bezier patches, plain reader for OBJ/points).
+2. **Sample into wireframe vertices + edges** (grid lines on curves/surfaces).
+   Emit one `.wrfm` with everything in a group.
+3. **Weld the seams**: adjacent patches share boundaries mathematically, but
+   independently sampled coordinates differ (~1e-15). Exact `--dedupe` cannot
+   see those:
+
+   ```bash
+   wrfm edit raw.wrfm --weld 1e-6 > welded.wrfm
+   ```
+
+   `--weld <tol>` merges vertices strictly closer than `tol` (first-touch
+   group assignment — a vertex lives in exactly one group) and runs the same
+   duplicate/zero-length cleanup as `--dedupe`. `--weld 1e-6` is the repair
+   for what `wrfm check` reports as near-duplicate vertices (same 1e-6
+   threshold as the CLI's point identity).
+4. **Clean sampling residue**: `wrfm edit welded.wrfm --clean | wrfm edit - --dedupe`
+   (degree-1 stubs at parameterization folds; see the generation chain above).
+5. **Normalize for the consumer**: ground at y=0 or bbox-centered via
+   `wrfm transform`, then `wrfm check` and declare intent +
+   `wrfm verify`.
+
+Degenerate points that are *inherent to the data* (e.g. whole control rows
+collapsing to a pinch point on Bezier tips) will surface as `warn` — judge
+them with "Judging a `warn` verdict"; do not "fix" correct geometry.
 
 ## Conventions
 
@@ -195,22 +289,39 @@ library) — a matching sample or generator is copied/adapted, not reinvented
 | Facts (scale/topology/symmetry) | `wrfm info m.wrfm` · `wrfm geometry m.wrfm` |
 | Parts (groups) | `wrfm group m.wrfm` |
 | See the shape | `wrfm-shot.sh m.wrfm shot.png` + read the PNG |
-| Reference library | `references/wrfm_assests/` (sample assets) · `references/wrfm_generator/` (their generators) — copy, never invent |
+| Fill the canvas / frame | `wrfm-shot.sh m.wrfm shot.png --fit content` (see "Camera quick reference") |
+| Reference library | `references/wrfm_assets/` (sample assets) · `references/wrfm_generator/` (their generators) — copy, never invent |
 | Exact occlusion/outline numbers | `wrfm view m.wrfm --pitch 30 --yaw 45` |
 | Health | `wrfm check m.wrfm` (add `--strict` for zero tolerance) |
 | Intent | `wrfm verify m.wrfm --expect-size 2,2,2` |
 | Transform / topology edit | `wrfm transform ...` · `wrfm edit ...` (their `--help`) |
+| Weld near-duplicate vertices | `wrfm edit m.wrfm --weld 1e-6` (tolerance merge, then dedupe cleanup) |
 | Diff | `wrfm diff a.wrfm b.wrfm --format json` |
-| Safe queries | `wrfm query m.wrfm extents` (also topology, edge_stats, profile, cross_section, vertices, distance, connectivity) |
+| Safe queries | `wrfm query m.wrfm profile` (also cross_section, vertices, distance, connectivity) · summaries: `wrfm geometry m.wrfm` (.bounds / .topology / .edge_lengths) |
 | Format spec | `wrfm format` |
 
-## Text-mode fallback (ONLY if you cannot see images)
+## Fallback when the image channel degrades (stackable)
 
-If you cannot read images, the main loop is unavailable — say so to the user,
-then use the cheapest text forms: `wrfm render m.wrfm --format grid` (digit
-density grid — numbers are the LLM's native language) and `--format ascii`
-for small canvases; reason from `wrfm view` / `wrfm query` facts instead of
-render text. This is a degraded mode: the image loop is strictly better.
+Degradation is not only "I cannot see images" — the common and expensive
+form is **half-working**: `read` returns a picture, but it is an older one
+(see "Image-channel integrity"). Escalate through three steps; they stack
+(stop as soon as one works):
+
+1. **Re-shoot under a NEW filename** and check the `shot=` identity inside
+   the image against the stdout line. A single mismatch is not yet a verdict
+   — a fresh name usually clears it.
+2. **Still mismatched → run text mode IN PARALLEL with the image**:
+   `wrfm render m.wrfm --format grid` (digit density — numbers are the LLM's
+   native language) and `--format ascii` for small canvases, plus facts from
+   `wrfm view` / `wrfm query` instead of render text. Keep shooting and
+   reading images if they help, but DECIDE from the text: text output is not
+   stale. Where image and text disagree, the text conclusion wins.
+3. **Tell the user explicitly that the image channel is abnormal** — which
+   shots mismatched, what you fell back to, and that this skill's image-first
+   loop is currently degraded for you.
+
+If you cannot see images at all (no multimodal vision), start at step 2 and
+say so. This is a degraded mode: the image loop is strictly better.
 
 ## Common mistakes
 

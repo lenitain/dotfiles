@@ -142,7 +142,7 @@ def generate_bicycle():
 
     # =================== write ===================
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       "..", "wrfm_assests", "bicycle.wrfm")
+                       "..", "wrfm_assets", "bicycle.wrfm")
     model.write(out, comment="naviga model: bicycle")
 
 

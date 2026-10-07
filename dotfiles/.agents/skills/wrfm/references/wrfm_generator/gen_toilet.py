@@ -2,7 +2,7 @@ import math
 
 # ============================================================
 # Toilet (马桶) generator — reverse-engineered from
-#   wrfm_assests/toilet.wrfm  (182 vertices, 193 edges, no groups)
+#   wrfm_assets/toilet.wrfm  (182 vertices, 193 edges, no groups)
 #
 # Anatomy (Y-up; the bowl faces +Z, the tank sits at -Z / top):
 #   tank  : two stacked boxes (0-7, 8-15) + flush button octagon
@@ -212,7 +212,7 @@ print(f"vertices={len(verts)} edges={len(edges)} "
       f"min_degree={min(deg)} max_degree={max(deg)}")
 
 # ---------------- write (edges sorted -> matches original order) ----------------
-out = "/home/lenitain/.models/wrfm-demo/wrfm_assests/toilet.wrfm"
+out = "/home/lenitain/.models/wrfm-demo/wrfm_assets/toilet.wrfm"
 lines = ["wrfm 1", f"vertices {len(verts)}   edges {len(edges)}", "",
          "# naviga model: toilet"]
 for (x, y, z) in verts:
