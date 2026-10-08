@@ -22,6 +22,7 @@ ruff = "latest"
 "cargo:stylua" = "latest"
 "cargo:prek" = "latest"
 "cargo:typos-cli" = "latest"
+"cargo:wireforge" = "latest"
 # aqua 未收录的 GitHub Release 包走 github: 后端（资产自动选择 + API digest 校验）
 "github:whoamihappyhacking/just-talk-go" = "latest"
 
