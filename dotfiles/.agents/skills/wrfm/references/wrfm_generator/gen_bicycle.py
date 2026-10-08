@@ -141,6 +141,9 @@ def generate_bicycle():
     model.end_group()
 
     # =================== write ===================
+    # 正视朝向：文档声明 "facing +Z"，但建模时前轮/车把落在 +X ——
+    # 绕 Y 轴旋转 -90°（右手法则）把前轮转到 +Z，对齐 front=+Z 约定。
+    model.rotate_y(-90)
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        "..", "wrfm_assets", "bicycle.wrfm")
     model.write(out, comment="naviga model: bicycle")

@@ -58,6 +58,7 @@ every edit — that is the feedback loop of this skill.
 | Fill the canvas | add `--fit content` — the CLI auto-frames each view from the silhouette (padded 2%, clamped). Passes straight through `wrfm-shot.sh`. |
 | Magnify a detail | shoot one view large, then `magick shot.png -trim` — **do not guess `--region`** (normalized coordinates have no reliable source; an explicit `--region` also overrides `--fit`). |
 | Any camera | `--yaw 30 --pitch 20` (plus `--views ""` for a single frame); `--dist` is extremely sensitive — prefer `--fit` over hand-tuning it. |
+| Angle signs / view names | One convention everywhere (CLI = wireforge TUI HUD: same signed angle = same picture). `--yaw` positive = the object turns to its **own left** (right-hand turn about +Y); `--pitch` positive = seen from above (top toward the camera). Named views promise the **object side facing the camera** (drafting): `left` = its own left side, `top` = its own top (+Y). |
 | Text-mode preview | `--format grid --grid-w 32 --grid-h 16` (density numbers) or `--format ascii --width 40 --height 16` (fine text) — **text mode only**, never a PNG-shot preset |
 
 ## Image-channel integrity
@@ -172,8 +173,9 @@ Rules:
 - **Sample matches your object, or shares parts with it? READ both the asset
   and its generator, and COPY the structure** — named groups per part
   (`base`/`body`/`face`/`horn`/`holes`, `wheels`/`frame`/`saddle`, ...),
-  Y-up, ground at y=0, ring/hub/spoke and box/connect-ring topology
-  patterns. Pattern-match the samples instead of free-inventing topology.
+  Y-up, ground at y=0, front facing +Z, ring/hub/spoke and box/connect-ring
+  topology patterns. Pattern-match the samples instead of free-inventing
+  topology.
 - **Complex models are scripted, not hand-written.** Anything with more than
   ~50 vertices or several parts belongs in a generator script like the
   `gen_*.py` samples — a `WrfmModel` helper (`add` / `edge` / `cycle` /
@@ -220,7 +222,7 @@ library) — a matching sample or generator is copied/adapted, not reinvented
 → write the file or run a generator script → **`--clean | --dedupe`
 (mandatory for generated output)** → `wrfm check` → `wrfm geometry`
 → `wrfm-shot.sh` + read the PNG → iterate. Always build standing on Y
-(below).
+with the semantic front on +Z (Conventions below).
 
 Fixed recipe for the clean/dedupe step:
 
@@ -278,6 +280,12 @@ them with "Judging a `warn` verdict"; do not "fix" correct geometry.
 - **Y-UP**: +Y is vertical (height); X and Z form the ground. Build standing
   models. If the geometry report shows a lying-down model, REWRITE it — never
   rotate it afterwards.
+- **FRONT = +Z**: the object's semantic face — appliance door, TV screen,
+  nose, spout, horn, front wheel — must face +Z, so the `front` view shows
+  that face and the left–right extent lives on X (every
+  `references/wrfm_assets/` sample follows this). A front built on ±X or −Z
+  is fixed with `wrfm transform --rotate-y` — Y-up and the ground are
+  preserved.
 - Ground at y=0 unless the intent says otherwise.
 - **Declare intent before editing** (size, center, symmetry, closedness), then
   `wrfm verify` against it.
@@ -330,6 +338,9 @@ say so. This is a degraded mode: the image loop is strictly better.
 - **Rendering but never reading the PNG** → a render you don't look at is a
   test you don't read.
 - **Building lying-down models** → Y-UP: rewrite, don't rotate.
+- **Front on the wrong axis** (door/screen/nose built on ±X or −Z) → the
+  `front` view must show the object's face: rebuild facing +Z or fix with
+  `wrfm transform --rotate-y`.
 - **Parsing render text instead of looking at the image** → you are
   multimodal; the image IS the render.
 - **Guessing flags** → `wrfm render --help` (or any `wrfm <sub> --help`)

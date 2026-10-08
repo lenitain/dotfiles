@@ -151,6 +151,9 @@ def generate_washing_machine():
     model.end_group()
 
     # =================== write ===================
+    # 地面：箱体建在 y=-0.4..5.0（底座沉到地面以下）。
+    # 整体上移 0.4，让底部精确落在 y=0（Y-UP: ground at y=0）。
+    model.translate(0, 0.4, 0)
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        "..", "wrfm_assets", "washing_machine.wrfm")
     model.write(out, comment="naviga model: washing_machine")

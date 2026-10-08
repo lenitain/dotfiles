@@ -1,7 +1,7 @@
 """
 gen_anvil.py — 铁砧 (Anvil) wireframe model generator.
 
-Anvil structure (Y-up):
+Anvil structure (Y-up, horn at +Z):
   - base  : wide bottom plate
   - body  : tapered waist
   - face  : top work surface
@@ -100,6 +100,9 @@ def generate_anvil():
     model.end_group()
 
     # =================== write ===================
+    # 正视朝向：铁砧的"鼻子"是角 —— 绕 Y 轴旋转 -90°（右手法则）
+    # 让角指向 +Z（front=+Z 约定，与茶壶壶嘴的处理一致）。
+    model.rotate_y(-90)
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        "..", "wrfm_assets", "anvil.wrfm")
     model.write(out, comment="naviga model: anvil")

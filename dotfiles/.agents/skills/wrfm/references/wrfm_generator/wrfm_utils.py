@@ -85,6 +85,24 @@ class WrfmModel:
 
     _cycle = cycle
 
+    def translate(self, dx, dy, dz):
+        """平移所有顶点（边和组是索引结构，不受影响）
+
+        结果取 12 位小数并归一 -0.0，顺带吸收原有坐标里的浮点尘埃
+        （如 4.6+0.5=5.1000000000000005 -> 5.1）。
+        """
+        self.verts = [tuple(round(c, 12) + 0.0 for c in (x + dx, y + dy, z + dz))
+                      for x, y, z in self.verts]
+
+    def rotate_y(self, deg):
+        """绕世界 Y 轴旋转所有顶点（右手法则，绕原点）
+
+        结果取 12 位小数吸收三角函数尘埃（如 cos(90°)=6.1e-17）
+        并把 -0.0 归一成 0.0；组和边是索引结构，不受旋转影响。
+        """
+        self.verts = [tuple(round(c, 12) + 0.0 for c in rot_y(v, deg))
+                      for v in self.verts]
+
     def sanity_check(self):
         """检查模型的健康度（最小/最大度数）"""
         deg = [0] * len(self.verts)

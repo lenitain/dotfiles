@@ -292,6 +292,9 @@ def generate_vintage_tv():
     model.end_group()
 
     # =================== write ===================
+    # 地面：柜体建在 y=0..4.6，四条腿却建在 y=-0.5..0（沉到地面以下）。
+    # 整体上移 0.5，让脚底精确落在 y=0（Y-UP: ground at y=0）。
+    model.translate(0, 0.5, 0)
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        "..", "wrfm_assets", "vintage_tv.wrfm")
     model.write(out, comment="naviga model: vintage_tv")
