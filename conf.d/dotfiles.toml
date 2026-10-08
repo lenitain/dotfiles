@@ -1,6 +1,5 @@
 [dotfiles]
 "~/.agents" = {}
-"~/.cargo/config.toml" = {}
 "~/.config/bat" = {}
 "~/.config/btop" = {}
 "~/.config/cliphist" = {}
@@ -40,6 +39,7 @@
 "~/.config/zathura" = {}
 "~/.config/zellij" = {}
 "~/.local/bin/scripts" = {}
+"~/.local/share/cargo/config.toml" = {}
 "~/.local/share/fcitx5/themes" = {}
 "~/.npmrc" = {}
 "~/.palette" = {}

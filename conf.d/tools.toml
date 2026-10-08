@@ -19,10 +19,18 @@ bun = "latest"
 ruff = "latest"
 "pipx:debugpy" = "latest"
 "aqua:LuaLS/lua-language-server" = "latest"
+# Rust 工具链: stable + nightly 双装; rust-analyzer 走组件形式 (跟工具链走, 避免与项目 rustc 错位)
+# 同名 tool 的多版本用数组: 数组里每项都是独立安装的 toolchain, 互不影响。
+rust = [
+  { version = "stable",  profile = "default", components = ["rust-analyzer", "rust-src"] },
+  { version = "nightly", profile = "default", components = ["rust-analyzer", "rust-src", "miri"] },
+]
 "cargo:stylua" = "latest"
 "cargo:prek" = "latest"
 "cargo:typos-cli" = "latest"
 "cargo:wireforge" = "latest"
+"cargo:cargo-fuzz" = "latest"
+"cargo:cargo-public-api" = "latest"
 # aqua 未收录的 GitHub Release 包走 github: 后端（资产自动选择 + API digest 校验）
 "github:whoamihappyhacking/just-talk-go" = "latest"
 
