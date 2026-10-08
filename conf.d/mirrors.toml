@@ -7,13 +7,12 @@
 [env]
 # Go 模块 (go 后端装 gopls / dlv 等)
 GOPROXY = "https://goproxy.cn,direct"
-# Rust 工具链 (rustup)。两个层面:
-#   RUSTUP_DIST_SERVER / RUSTUP_UPDATE_ROOT  控制 rustup 装哪的镜像
-#   MISE_RUSTUP_HOME  /  MISE_CARGO_HOME     控制 rustup / cargo 装在哪
-# 不复用默认的 ~/.rustup / ~/.cargo, 一律走 mise 规范的 ~/.local/share/{rustup,cargo}
-# (其它工具也走 ~/.local/share: 与 XDG 一致, 不污染 home)。
-MISE_RUSTUP_HOME = "{{env.HOME}}/.local/share/rustup"
-MISE_CARGO_HOME = "{{env.HOME}}/.local/share/cargo"
+# Rust 工具链 (rustup) —— 这里只配镜像地址, 不配"装在哪"。
+# rustup/cargo 用它们自己的默认位置 ~/.rustup / ~/.cargo (与 go 的 ~/go 同理)。
+# 那两个位置只能靠 RUSTUP_HOME/CARGO_HOME 环境变量改, 而它们的 settings.toml /
+# config.toml 又住在 store 里(鸡生蛋) —— 所以"搬去 XDG 目录"的代价是每条启动路径
+# 都要分发变量(登录 shell / 图形会话 / systemd / IDE / launcher, 漏一处就坏)。
+# 结论: 不搬, 用默认值, 全机零环境变量。
 RUSTUP_DIST_SERVER = "https://mirrors.ustc.edu.cn/rust-static"
 RUSTUP_UPDATE_ROOT = "https://mirrors.ustc.edu.cn/rust-static/rustup"
 # node-gyp 构建原生模块时的 header 下载。mise 自己装 node 不读它, 见下方 node.mirror_url
@@ -49,7 +48,7 @@ pypi.registry_url = "https://mirrors.aliyun.com/pypi/web/json/{}"
 #
 # crates 稀疏索引: cargo 后端的版本解析由 mise 自己发 HTTP 请求, 不经 cargo,
 # 因此不受 cargo config 的 source 替换影响, 只能在这里路由到 USTC。
-# (cargo config 部署在 ~/.local/share/cargo/config.toml, 见 conf.d/dotfiles.toml)
+# (cargo config 部署在 ~/.cargo/config.toml, 见 conf.d/dotfiles.toml)
 # 与 cargo 侧各配一份(那条管构建, 这条管版本查询), 换镜像时两处同改。
 [settings.url_replacements]
 "https://github.com/" = "https://gh-proxy.com/https://github.com/"
