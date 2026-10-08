@@ -72,6 +72,5 @@ run_step setup-pig            "PiG agent + 扩展"
 run_step setup-fonts          "Maple Mono"
 run_step setup-rime-wanxiang  "万象拼音"
 run_step setup-yazi           "yazi 插件/配色"
-run_step setup-just-talk      "just-talk"
 
 ok "bootstrap 完成: 系统+工具+配置已同步到最新 (失败项见上方 warn)"
