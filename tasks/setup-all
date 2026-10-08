@@ -63,8 +63,6 @@ run_step() {  # run_step <任务名> <说明>
 
 # ── 非 GitHub 组: 本机设置 / 国内镜像 ──
 run_step setup-desktop        "dconf/XDG"
-run_step setup-rust           "rustup+rust-analyzer"
-run_step setup-moonbit        "MoonBit"
 run_step setup-flatpak        "flathub+apps"
 run_step setup-pig            "PiG agent + 扩展"
 
