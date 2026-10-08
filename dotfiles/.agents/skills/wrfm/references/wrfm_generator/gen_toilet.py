@@ -1,4 +1,5 @@
 import math
+import os
 
 # ============================================================
 # Toilet (马桶) generator — reverse-engineered from
@@ -212,7 +213,8 @@ print(f"vertices={len(verts)} edges={len(edges)} "
       f"min_degree={min(deg)} max_degree={max(deg)}")
 
 # ---------------- write (edges sorted -> matches original order) ----------------
-out = "/home/lenitain/.models/wrfm-demo/wrfm_assets/toilet.wrfm"
+out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                   "..", "wrfm_assets", "toilet.wrfm")
 lines = ["wrfm 1", f"vertices {len(verts)}   edges {len(edges)}", "",
          "# naviga model: toilet"]
 for (x, y, z) in verts:
