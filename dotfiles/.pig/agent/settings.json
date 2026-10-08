@@ -1,34 +1,34 @@
 {
-  "defaultProvider": "minimax-cn",
+  "collapseChangelog": true,
   "defaultModel": "MiniMax-M3",
+  "defaultProjectTrust": "always",
+  "defaultProvider": "minimax-cn",
   "defaultThinkingLevel": "max",
-  "packages": [
-    "npm:pi-web-access",
-    "npm:pi-repl-py"
-  ],
+  "enableInstallTelemetry": false,
+  "followUpMode": "all",
+  "hideThinkingBlock": true,
+  "httpIdleTimeoutMs": 0,
+  "lastChangelogVersion": "999.99.99",
+  "markdown": {
+    "mermaid": "streaming"
+  },
   "npmCommand": [
     "npm",
     "--package-lock=false"
   ],
-  "lastChangelogVersion": "999.99.99",
-  "theme": "everforest-dark-medium",
-  "hideThinkingBlock": true,
-  "defaultProjectTrust": "always",
-  "collapseChangelog": true,
+  "packages": [
+    "npm:pi-web-access",
+    "npm:pi-repl-py"
+  ],
+  "showCacheMissNotices": false,
   "showHardwareCursor": true,
+  "steeringMode": "all",
   "terminal": {
     "clearOnShrink": false
   },
-  "steeringMode": "all",
-  "followUpMode": "all",
-  "httpIdleTimeoutMs": 0,
-  "markdown": {
-    "mermaid": "streaming"
-  },
-  "showCacheMissNotices": false,
+  "theme": "everforest-dark-medium",
   "treeFilterMode": "no-tools",
   "warnings": {
     "anthropicExtraUsage": true
-  },
-  "enableInstallTelemetry": false
+  }
 }
