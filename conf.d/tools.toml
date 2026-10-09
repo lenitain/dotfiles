@@ -25,6 +25,7 @@ rust = { version = "stable", profile = "default", components = ["rust-analyzer",
 "cargo:prek" = "latest"
 "cargo:typos-cli" = "latest"
 "cargo:wireforge" = "latest"
+"cargo:wrfm-cli" = "latest"
 "cargo:cargo-fuzz" = "latest"
 "cargo:cargo-public-api" = "latest"
 # aqua 未收录的 GitHub Release 包走 github: 后端（资产自动选择 + API digest 校验）
