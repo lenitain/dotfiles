@@ -14,8 +14,6 @@ info "安装扩展 ..."
 
 extensions=(
   "npm:pi-web-access"
-  # 持久 Python REPL (ipykernel), 用 `pig --repl` 启用
-  "npm:pi-repl-py"
 )
 
 for ext in "${extensions[@]}"; do

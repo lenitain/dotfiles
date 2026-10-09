@@ -4,6 +4,9 @@
   "defaultProjectTrust": "always",
   "defaultProvider": "minimax-cn",
   "defaultThinkingLevel": "max",
+  "defaultTools": [
+    "+codemode"
+  ],
   "enableInstallTelemetry": false,
   "followUpMode": "all",
   "hideThinkingBlock": true,
@@ -17,8 +20,7 @@
     "--package-lock=false"
   ],
   "packages": [
-    "npm:pi-web-access",
-    "npm:pi-repl-py"
+    "npm:pi-web-access"
   ],
   "showCacheMissNotices": false,
   "showHardwareCursor": true,
@@ -27,6 +29,7 @@
     "clearOnShrink": false
   },
   "theme": "everforest-dark-medium",
+  "transport": "auto",
   "treeFilterMode": "no-tools",
   "warnings": {
     "anthropicExtraUsage": true
