@@ -19,12 +19,8 @@ bun = "latest"
 ruff = "latest"
 "pipx:debugpy" = "latest"
 "aqua:LuaLS/lua-language-server" = "latest"
-# Rust 工具链: stable + nightly 双装; rust-analyzer 走组件形式 (跟工具链走, 避免与项目 rustc 错位)
-# 同名 tool 的多版本用数组: 数组里每项都是独立安装的 toolchain, 互不影响。
-rust = [
-  { version = "stable",  profile = "default", components = ["rust-analyzer", "rust-src"] },
-  { version = "nightly", profile = "default", components = ["rust-analyzer", "rust-src", "miri"] },
-]
+# Rust 工具链: 仅 stable; rust-analyzer 走组件形式 (跟工具链走, 避免与项目 rustc 错位)
+rust = { version = "stable", profile = "default", components = ["rust-analyzer", "rust-src"] }
 "cargo:stylua" = "latest"
 "cargo:prek" = "latest"
 "cargo:typos-cli" = "latest"
