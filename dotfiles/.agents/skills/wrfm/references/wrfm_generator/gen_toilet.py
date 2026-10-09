@@ -215,7 +215,7 @@ print(f"vertices={len(verts)} edges={len(edges)} "
 # ---------------- write (edges sorted -> matches original order) ----------------
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                    "..", "wrfm_assets", "toilet.wrfm")
-lines = ["wrfm 1", f"vertices {len(verts)}   edges {len(edges)}", "",
+lines = ["wrfm 2", f"vertices {len(verts)}   edges {len(edges)}", "",
          "# naviga model: toilet"]
 for (x, y, z) in verts:
     lines.append(f"v {x:.3f} {y:.3f} {z:.3f}")

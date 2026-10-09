@@ -145,6 +145,7 @@ wrfm transform m.wrfm --to-origin --normalize 2 > m_norm.wrfm # recentre + resca
 Compose with pipes: `wrfm edit m.wrfm --extract-group body | wrfm transform - --scale 2`.
 
 Rules:
+
 - **Small edits (rotate/scale/translate/mirror) → `wrfm transform`** (reliable
   math, keeps groups).
 - **Structure changes (vertex/edge counts) → `wrfm edit`** (delete vertices,
@@ -187,16 +188,35 @@ Rules:
 
 ## Generate a model (from scratch)
 
-Get the exact spec from the CLI: `wrfm format`. Minimal example (unit box):
+Get the exact spec from the CLI: `wrfm format`. Minimal example (unit box,
+one directive per line — several `v` directives on one line are NOT the
+same model: each line contributes exactly one element):
 
-```
-wrfm 1
+```text
+wrfm 2
 vertices 8   edges 12
-v 0 0 0    v 1 0 0    v 1 0 1    v 0 0 1
-v 0 1 0    v 1 1 0    v 1 1 1    v 0 1 1
-e 0 1   e 1 2   e 2 3   e 3 0
-e 4 5   e 5 6   e 6 7   e 7 4
-e 0 4   e 1 5   e 2 6   e 3 7
+
+v 0 0 0
+v 1 0 0
+v 1 0 1
+v 0 0 1
+v 0 1 0
+v 1 1 0
+v 1 1 1
+v 0 1 1
+
+e 0 1
+e 1 2
+e 2 3
+e 3 0
+e 4 5
+e 5 6
+e 6 7
+e 7 4
+e 0 4
+e 1 5
+e 2 6
+e 3 7
 ```
 
 Archetypes — copy these structures, never free-invent topology (`.wrfm` has

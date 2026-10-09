@@ -138,7 +138,7 @@ class WrfmModel:
                 unique_edges.append((i, j))
         self.edges = unique_edges
 
-        lines = ["wrfm 1"]
+        lines = ["wrfm 2"]
         lines.append(f"vertices {len(self.verts)}   edges {len(self.edges)}")
         lines.append("")
         
