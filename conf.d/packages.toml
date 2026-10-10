@@ -107,8 +107,6 @@
 "pacman:sing-box" = "latest"
 "pacman:calcurse" = "latest"
 "pacman:qemu" = "latest"
-"pacman:proton-cachyos-native" = "latest"
-"pacman:umu-launcher" = "latest"
 "pacman:tesseract-data-chi_sim" = "latest"
 "pacman:tesseract-data-eng" = "latest"
 "pacman:zathura" = "latest"
