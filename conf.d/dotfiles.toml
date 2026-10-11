@@ -44,6 +44,10 @@
 # 必须叫 wanxiang.custom.yaml 且放在 rime 用户根目录: 万象更新脚本只覆盖顶层
 # *.yaml, 而上游刻意不在顶层发布这个文件名, 所以不会被更新冲掉 (见文件内注释)。
 "~/.local/share/fcitx5/rime/wanxiang.custom.yaml" = {}
+# 万象拼音「关闭英文模式」补丁 (ascii_composer/switch_key 全设 noop → Shift/
+# CapsLock 不再切中英)。同上，靠 default.custom.yaml 这个上游不发布的文件名
+# 避开万象更新脚本的顶层 *.yaml 覆盖 (实测 v18.1.2 的 zip 顶层无此文件)。
+"~/.local/share/fcitx5/rime/default.custom.yaml" = {}
 "~/.local/share/fcitx5/themes" = {}
 "~/.npmrc" = {}
 "~/.palette" = {}
