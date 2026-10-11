@@ -40,6 +40,10 @@
 "~/.config/zathura" = {}
 "~/.config/zellij" = {}
 "~/.local/bin/scripts" = {}
+# 万象拼音「按下 i 直出英文字母 i」补丁 (i 不作编码首字母 → 按键直通应用)。
+# 必须叫 wanxiang.custom.yaml 且放在 rime 用户根目录: 万象更新脚本只覆盖顶层
+# *.yaml, 而上游刻意不在顶层发布这个文件名, 所以不会被更新冲掉 (见文件内注释)。
+"~/.local/share/fcitx5/rime/wanxiang.custom.yaml" = {}
 "~/.local/share/fcitx5/themes" = {}
 "~/.npmrc" = {}
 "~/.palette" = {}
