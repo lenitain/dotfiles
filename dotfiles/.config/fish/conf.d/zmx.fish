@@ -1,5 +1,8 @@
 # zmx 集成: 完成 + 提示符前缀 + zmx-select (fzf 会话面板)
 
+# 在 fish 提示符上 alt-n 直接开 zmx-select (与 zs 别名同价)
+bind alt-n zl
+
 if type -q zmx
     zmx completions fish | source
 end
