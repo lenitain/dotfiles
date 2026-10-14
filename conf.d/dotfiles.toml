@@ -46,7 +46,6 @@
 "~/.config/xdg-desktop-portal" = {}
 "~/.config/yazi" = {}
 "~/.config/zathura" = {}
-"~/.config/zellij" = {}
 "~/.local/bin/scripts" = {}
 # 万象拼音「关闭英文模式」补丁 (ascii_composer/switch_key 全设 noop → Shift/
 # CapsLock 不再切中英)。同上，靠 default.custom.yaml 这个上游不发布的文件名

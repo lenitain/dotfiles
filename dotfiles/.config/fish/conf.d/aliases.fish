@@ -49,9 +49,11 @@ alias p='pig'
 alias np='nvim $(pfzf)'
 alias oc='opencode'
 alias wf='wireforge'
-alias zl='zellij'
 alias lg='lazygit'
 alias mc='cd ~/.config/mise'
 alias mh='mise hook-env -s fish | source'
 alias ms='mise run setup-all'
 alias ap='ansible-playbook'
+# zmx 会话选择器: zs 调 zmx-select 函数 (由 conf.d/zmx.fish 提供, 走 fzf 模糊选会话).
+# 别名先挂上; zmx-select 函数本体另在 zmx.fish 里, 装了 fzf 后才生效.
+alias zl='zmx-select'

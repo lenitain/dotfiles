@@ -37,7 +37,6 @@
 "pacman:optipng" = "latest"
 "pacman:foot" = "latest"
 "pacman:neovim" = "latest"
-"pacman:zellij" = "latest"
 "pacman:bat" = "latest"
 "pacman:eza" = "latest"
 "pacman:fish-autopair" = "latest"
