@@ -22,6 +22,7 @@ ruff = "latest"
 rust = { version = "stable", profile = "default", components = ["rust-analyzer", "rust-src"] }
 "cargo:stylua" = "latest"
 "cargo:prek" = "latest"
+"cargo:jj-gh" = "latest"
 "cargo:typos-cli" = "latest"
 "cargo:wireforge" = "latest"
 "cargo:wrfm-cli" = "latest"
