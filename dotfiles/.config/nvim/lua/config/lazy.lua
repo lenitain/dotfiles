@@ -1,24 +1,12 @@
--- 0. 子进程（curl/wget）对 github.com 的直链下载统一改走 gh-proxy 镜像
---    覆盖 treesitter 解析器 tarball 等插件自带的网络下载（本机直连大文件会卡死）
-local raw_system = vim.system
-local GITHUB_PREFIX = "https://github.com/"
-vim.system = function(cmd, opts, on_exit)
-  if type(cmd) == "table" and (cmd[1] == "curl" or cmd[1] == "wget") then
-    for i, arg in ipairs(cmd) do
-      if type(arg) == "string" and arg:sub(1, #GITHUB_PREFIX) == GITHUB_PREFIX then
-        cmd[i] = "https://gh-proxy.com/" .. arg
-      end
-    end
-  end
-  return raw_system(cmd, opts, on_exit)
-end
+-- 0. 镜像钩子统一在 config.proxy, 这里只需要 require, 后续不再各自拼前缀
+local proxy = require("config.proxy")
 
--- 1. 安装 lazy.nvim（使用代理）
+-- 1. 安装 lazy.nvim (使用代理)
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
   vim.fn.system({
     "git", "clone", "--filter=blob:none", "--branch=stable",
-    "https://gh-proxy.com/https://github.com/folke/lazy.nvim.git",
+    proxy.PROXY_PREFIX .. "https://github.com/folke/lazy.nvim.git",
     lazypath,
   })
 end
@@ -32,7 +20,8 @@ require("lazy").setup({
 
   -- 3. 其他配置
   git = {
-    url_format = "https://gh-proxy.com/https://github.com/%s.git",
+    -- 与 config.proxy.PROXY_PREFIX / .GITHUB_PREFIX 同源; 换镜像改 proxy.lua 即可
+    url_format = proxy.PROXY_PREFIX .. proxy.GITHUB_PREFIX .. "%s.git",
   },
   checker = {
     enabled = true,

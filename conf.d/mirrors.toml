@@ -51,7 +51,7 @@ pypi.registry_url = "https://mirrors.aliyun.com/pypi/web/json/{}"
 # (cargo config 部署在 ~/.cargo/config.toml, 见 conf.d/dotfiles.toml)
 # 与 cargo 侧各配一份(那条管构建, 这条管版本查询), 换镜像时两处同改。
 [settings.url_replacements]
-"https://github.com/" = "https://gh-proxy.com/https://github.com/"
+"https://github.com/" = "https://gh-proxy.org/https://github.com/"
 "https://index.crates.io/" = "https://mirrors.ustc.edu.cn/crates.io-index/"
 
 # 已确认不需要配(免得日后重查):

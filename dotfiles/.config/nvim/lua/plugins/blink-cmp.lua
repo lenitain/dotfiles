@@ -4,14 +4,13 @@ return {
   dependencies = { "rafamadriz/friendly-snippets" },
   -- use a release tag to download pre-built binaries
   version = "1.*",
-  -- 借道 gh-proxy 镜像预下载模糊匹配库（GitHub 直链大文件在本机会卡死）
   build = function(plugin)
     local tag = vim.trim(vim.fn.system({ "git", "describe", "--tags", "--exact-match" }))
     if vim.v.shell_error ~= 0 or tag == "" then return end
     local rel = plugin.dir .. "/target/release/"
     local ok, ver = pcall(vim.fn.readfile, rel .. "version")
     if ok and ver[1] == tag and vim.uv.fs_stat(rel .. "libblink_cmp_fuzzy.so") then return end
-    local url = "https://gh-proxy.com/https://github.com/saghen/blink.cmp/releases/download/" .. tag
+    local url = "https://github.com/saghen/blink.cmp/releases/download/" .. tag
     vim.fn.mkdir(rel, "p")
     vim.fn.system({ "wget", "-qT", "60", "-O", rel .. "libblink_cmp_fuzzy.so", url .. "/x86_64-unknown-linux-gnu.so" })
     assert(vim.v.shell_error == 0, "libblink_cmp_fuzzy.so 下载失败")

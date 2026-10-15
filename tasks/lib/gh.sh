@@ -7,7 +7,6 @@
 #   gh_git_url <repo_url>       — Git 克隆/拉取（输出代理后 URL）
 
 GH_MIRRORS=(
-  "gh-proxy.com"
   "gh-proxy.org"
   "ghfast.top"
 )
