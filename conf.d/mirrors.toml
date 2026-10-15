@@ -23,6 +23,20 @@ NPM_CONFIG_REGISTRY = "https://registry.npmmirror.com"
 PIP_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
 UV_DEFAULT_INDEX = "https://pypi.tuna.tsinghua.edu.cn/simple"
 
+# Go 运行时下载源 —— 默认 dl.google.com 在本机不是每次都快, 切到 aliyun。
+# aliyun /golang 不发 <tarball>.sha256, 而 mise 的 Go 后端在 src/plugins/core/
+# go.rs:127 用 format!("{url}.sha256") 单独拉校验, 缺则挂。配 MISE_GO_SKIP_CHECKSUM
+# 跳过这一步; 该功能在引入 go.skip_checksum 之前不可用, 现在 OK。
+MISE_GO_DOWNLOAD_MIRROR = "https://mirrors.aliyun.com/golang"
+MISE_GO_SKIP_CHECKSUM = "1"
+
+# 全局 HTTP 行为: 默认 30s 读超时 / 30m 下载全生命都不够, 慢链路经常误触。
+# 跟其它镜像变量写在同一个 [env] 块, 而非 [settings], 风格上保持一致。
+# 作用域: 一经设置对所有 mise 后端 (aqua / ubi / github / npm / pip / ...)
+# 都生效, 不止 Go。
+MISE_HTTP_TIMEOUT = "5m"
+MISE_HTTP_DOWNLOAD_TIMEOUT = "10m"
+
 [settings]
 # node 二进制下载 (默认 nodejs.org)。两个坑:
 #   1. 不能写 npmmirror.com/mirrors/node —— mise 对它有特判, 会拼出缺 /node/ 和
@@ -55,6 +69,9 @@ pypi.registry_url = "https://mirrors.aliyun.com/pypi/web/json/{}"
 "https://index.crates.io/" = "https://mirrors.ustc.edu.cn/crates.io-index/"
 
 # 已确认不需要配(免得日后重查):
-#   go 运行时  默认 dl.google.com 够快; 阿里云 /golang 虽托管 tarball 但缺 .sha256,
-#              而 mise 要下 <tarball>.sha256 校验 → 改过去直接装不上
 #   zig        zig.use_community_mirrors 默认已生效, 会读上游 community-mirrors.txt
+#   go 运行时  不需要单独的 mirror_url 设置 —— mise 没给 go 准备
+#              node.mirror_url 那样的开关, 运行时下载走 dl.google.com 也走 MISE_
+#              GO_DOWNLOAD_MIRROR, 配置点在上方 [env] 块 (aliyun + skip_checksum)。
+#              旧版注释 (dl.google.com 不镜像 aliyun 缺 .sha256 → 装不上) 是因为
+#              当时 mise 没有 go.skip_checksum; 现在跳过校验即可, 详见上方 env。
