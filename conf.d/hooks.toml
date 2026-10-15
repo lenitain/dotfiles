@@ -4,11 +4,31 @@
 [bootstrap.hooks.post-dotfiles]
 run = "command -v bat >/dev/null 2>&1 && bat cache --build || true"
 
-# 包阶段之前全量升级：mise 对 pacman 装缺包只发 `pacman -S --needed`(不刷新同步库),
-# 仅在"同步库不新于已装版本"时才安全; 库比系统新就是 Arch 不支持的 partial upgrade。
-# 这条 hook 把 -Syu 插在 packages 阶段正前方, 且 hook 失败会中止 bootstrap(packages
-# 不执行) —— 任何完整 `mise bootstrap` 都不会在库新于系统时装包。
-# 注意: `mise bootstrap packages apply/use` 这类分部命令不经过 hooks。
-# 代价: bootstrap 从"只收敛"变为"先全量升级"(setup-all 第 1 步, 见 tasks/setup-all)。
+# pre-packages (数组, mise 按数组下标顺序执行):
+#   [1] sudo pacman -Syu — 同原本: 装缺包只发 `pacman -S --needed` 不刷同步库,
+#       库比系统新 = Arch 不支持的 partial upgrade。这步失败会中止 bootstrap,
+#       packages 不会在危险态下执行。注意 `packages apply/use` 等分部命令不经过 hooks。
+#   [2] `command -v flatpak || sudo pacman -S --needed --noconfirm flatpak` —
+#       时序兜底。pre-packages 跑在 packages apply 之前, 步骤 3 要 flatpak CLI。
+#       后续 packages apply 仍按本文件 `pacman:flatpak` --needed 声明再 install 一次
+#       (no-op, 已装即跳过)。声明单一来源在 conf.d/packages.toml, 这条只为首次 bootstrap
+#       让 CLI 在 hook 期间可用, 不是重复定义。
+#   [3] flathub 用户源 + GPG — sjtu 镜像, --gpg-import 必带 (flatpak 的"每 remote
+#       自带 trust root"模型无像 archlinux-keyring 那种 keyring 包可走, 详见项目内
+#       相关对照讨论)。失败硬中止 packages; 等同于原 tasks/setup-flatpak "硬失败" 语义。
 [bootstrap.hooks.pre-packages]
-run = "sudo pacman -Syu --noconfirm"
+run = [
+  "sudo pacman -Syu --noconfirm",
+  "command -v flatpak >/dev/null 2>&1 || sudo pacman -S --needed --noconfirm flatpak",
+  """
+    set -euo pipefail
+    tmp_key="$(mktemp)"
+    trap 'rm -f "$tmp_key"' EXIT
+    curl -fsSL -o "$tmp_key" https://mirror.sjtu.edu.cn/flathub/flathub.gpg
+    if ! flatpak remote-list --user | grep -q '^flathub'; then
+      flatpak remote-add --user flathub https://mirror.sjtu.edu.cn/flathub --gpg-import="$tmp_key"
+    else
+      flatpak remote-modify --user flathub --gpg-import="$tmp_key"
+    fi
+  """,
+]

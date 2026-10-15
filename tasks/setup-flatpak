@@ -1,54 +1,28 @@
 #!/usr/bin/env bash
-#MISE description="注册 flathub 并安装 Flatpak 应用"
+#MISE description="兜底跑 flatpak update --user (覆盖 packages.toml 声明外的手动应用)"
 
 set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
 
-FLATHUB_URL="https://mirror.sjtu.edu.cn/flathub"
+# 责任拆分 (单一来源原则):
+#   - conf.d/packages.toml 的 6 条 flatpak-user:  → bootstrap packages apply 收敛 (声明式)
+#   - conf.d/hooks.toml pre-packages 的步骤 3      → flathub 用户源 + GPG 密钥 (-Syu 之后, 硬失败)
+#   - 本任务脚本                                     → 兜底 flatpak update --user, 软失败覆盖
+#                                                     用户在 packages.toml 之外手动装的应用。
+# 原 setup-flatpak 的「注册源 + GPG refresh + 安装循环 + 全量 update」已迁出去。
+#
+# 失败语义: 仍保留「flatpak 未安装 = 硬退出」的强提示, 与原脚本一致 (硬失败信号 >> 软 warn)。
+# update 抽风时仅 warn, 与 setup-all 「更新/同步类步骤一律软失败」一致。
 
 if ! command -v flatpak &>/dev/null; then
-  err "flatpak 未安装，请先运行: mise bootstrap --yes"
+  err "flatpak 未安装 — pacman:flatpak 应由 bootstrap 装入; 若刚跑过 --skip packages, 请跑完整 mise bootstrap --yes"
   exit 1
 fi
 
-tmp_key="$(mktemp)"
-trap 'rm -f "$tmp_key"' EXIT
-curl -fsSL -o "$tmp_key" https://mirror.sjtu.edu.cn/flathub/flathub.gpg
-if ! flatpak remote-list --user | grep -q '^flathub'; then
-  info "注册 flathub 源 ($FLATHUB_URL) ..."
-  flatpak remote-add --user flathub "$FLATHUB_URL" --gpg-import="$tmp_key"
-else
-  info "flathub 源已存在，更新 GPG 密钥 ..."
-  flatpak remote-modify --user flathub --gpg-import="$tmp_key"
-fi
-
-apps=(
-  com.tencent.WeChat
-  com.qq.QQ
-  org.inkscape.Inkscape
-  org.kicad.KiCad
-  org.freecad.FreeCAD
-  org.gimp.GIMP
-)
-
-# 确保 apps 已装 (缺则装; 安装失败属真实错误 → 硬失败)
-for app in "${apps[@]}"; do
-  if flatpak list --app --columns=application | grep -q "^${app}$"; then
-    ok "$app 已存在"
-  else
-    info "安装 $app ..."
-    if flatpak install -y --user flathub "$app"; then
-      ok "$app 已安装"
-    else
-      err "$app 安装失败"
-      exit 1
-    fi
-  fi
-done
-
-# -Syu 哲学: 有更新就更新到最新 (用户级 flathub 应用); 更新失败软处理
-info "更新 flathub 应用到最新 (flatpak update) ..."
+# -Syu 哲学: 有更新就更新到最新 (用户级 flathub 应用); 更新失败软处理。
+# 仅覆盖声明外的应用; 声明内的 6 个会由 mise 自己 declare-update 路径管。
+info "更新 flathub 应用到最新 (flatpak update --user) ..."
 if flatpak update --user -y 2>&1 | tail -3; then
   ok "flathub 应用已更新"
 else
@@ -56,4 +30,4 @@ else
 fi
 
 echo ""
-ok "安装完成！重启后图标会出现在 fuzzel 中"
+ok "完成！重启后图标会出现在 fuzzel 中"

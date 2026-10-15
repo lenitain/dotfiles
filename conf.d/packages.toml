@@ -79,6 +79,16 @@
 "pacman:qutebrowser" = "latest"
 "pacman:chromium" = "latest"
 "pacman:flatpak" = "latest"
+# flathub 用户应用 — 走 mise 的 flatpak-user: 后端, 由 packages apply 收敛。
+# 用户源 + GPG 密钥由 conf.d/hooks.toml pre-packages 钩子写到位 (失败 → 中止 packages,
+# 等同于原脚本 "安装失败硬退出" 语义); 本条目在 bootstrap 阶段 install, 不再走 setup-*
+# 任务脚本。tasks/setup-flatpak 现只剩兜底 `flatpak update --user` (含用户在声明外手动装的)。
+"flatpak-user:com.tencent.WeChat" = "latest"
+"flatpak-user:com.qq.QQ" = "latest"
+"flatpak-user:org.inkscape.Inkscape" = "latest"
+"flatpak-user:org.kicad.KiCad" = "latest"
+"flatpak-user:org.freecad.FreeCAD" = "latest"
+"flatpak-user:org.gimp.GIMP" = "latest"
 "pacman:gtk3" = "latest"
 "pacman:gtk4" = "latest"
 "pacman:qt5-base" = "latest"
