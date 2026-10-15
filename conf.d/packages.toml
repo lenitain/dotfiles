@@ -80,9 +80,9 @@
 "pacman:chromium" = "latest"
 "pacman:flatpak" = "latest"
 # flathub 用户应用 — 走 mise 的 flatpak-user: 后端, 由 packages apply 收敛。
-# 用户源 + GPG 密钥由 conf.d/hooks.toml pre-packages 钩子写到位 (失败 → 中止 packages,
-# 等同于原脚本 "安装失败硬退出" 语义); 本条目在 bootstrap 阶段 install, 不再走 setup-*
-# 任务脚本。tasks/setup-flatpak 现只剩兜底 `flatpak update --user` (含用户在声明外手动装的)。
+# 用户源 + GPG 密钥由 conf.d/hooks.toml pre-packages [3] 写到位; 用户手动装的非声明
+# flatpak 由 conf.d/hooks.toml final (`flatpak update --user -y`) 兼管。原 tasks/setup-flatpak
+# 现已删除 (拆分: 6 个 app 走声明式, 远程 + GPG 走 pre-packages hook, update 走 final hook)。
 "flatpak-user:com.tencent.WeChat" = "latest"
 "flatpak-user:com.qq.QQ" = "latest"
 "flatpak-user:org.inkscape.Inkscape" = "latest"

@@ -15,7 +15,30 @@ run = "command -v bat >/dev/null 2>&1 && bat cache --build || true"
 #       让 CLI 在 hook 期间可用, 不是重复定义。
 #   [3] flathub 用户源 + GPG — sjtu 镜像, --gpg-import 必带 (flatpak 的"每 remote
 #       自带 trust root"模型无像 archlinux-keyring 那种 keyring 包可走, 详见项目内
-#       相关对照讨论)。失败硬中止 packages; 等同于原 tasks/setup-flatpak "硬失败" 语义。
+#       相关对照讨论)。失败硬中止 packages; 与原 tasks/setup-flatpak "硬失败" 语义一致
+#       (该脚本现已被拆分: 安装列表迁到 conf.d/packages.toml, GPG 与远程源迁到本 hook,
+#       `flatpak update --user` 迁到下面的 [bootstrap.hooks.final])。
+# final (bootstrap 最末阶段, 步 20) — 全量扫用户级 flatpak (`flatpak update --user -y`)
+# 覆盖 conf.d/packages.toml 之外手动装的应用, 与 packages apply 的 declare-update
+# 是两个独立 update 路径 (后者只动声明 ID)。
+# 放在 final 而非 post-packages: 语义是「bootstrap 完事的最后清扫」, 与本文件中其他
+# 钩子的「事后充值」对齐 (post-dotfiles 是 dotfiles 收敛后重建缓存, final 是全部
+# 收敛后扫一遍 flatpak)。
+[bootstrap.hooks.final]
+run = """
+  set -euo pipefail
+  if ! command -v flatpak >/dev/null 2>&1; then
+    exit 0
+  fi
+  . "{{ config_root }}/.config/mise/tasks/lib/log.sh"
+  info "更新 flathub 用户应用 (hook: final) ..."
+  if flatpak update --user -y 2>&1 | tail -3; then
+    ok "flathub 应用已更新"
+  else
+    warn "flatpak update 失败 (网络/远端不可达), 保留当前版本"
+  fi
+"""
+
 [bootstrap.hooks.pre-packages]
 run = [
   "sudo pacman -Syu --noconfirm",
