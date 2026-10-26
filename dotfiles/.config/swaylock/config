@@ -1,6 +1,7 @@
 # Background
 # 与 niri startup.kdl 里 swaybg 使用的壁纸保持一致
-image=/usr/share/wallpapers/Mountain/contents/images_dark/5120x2880.png
+# swaylock 用 wordexp 展开路径，$HOME 可用
+image=$HOME/Pictures/wallpaper/starry-night-sky.png
 scaling=fill
 
 # Everforest Dark Medium colors
