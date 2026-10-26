@@ -98,7 +98,7 @@ layer-rule {
 // 注意 niri 文档的两条语义：
 //   1. opacity 叠加在「表面自身透明度」之上，半透明的表面会变得更透。
 //      下面这些程序的底色都是不透明纯色，所以这里是净效果，不会双重变淡：
-//        waybar style.css #2b3339 / fuzzel 3D484Dff / mako #3d484d
+//        fuzzel 3D484Dff / mako #3d484d
 //   2. opacity 逐个作用于表面的每个 child，所以子表面和弹出菜单也会各自变透明
 //      （能透出后面的内容）。要给弹出菜单单独设值就写 popups { opacity ... }。
 //
@@ -114,7 +114,8 @@ layer-rule {
 //     opacity 0.93
 // }
 
-// waybar 当前保持不透明。想让它一起透明，把 waybar 并进上面那条正则；
+// waybar 的外壳是透明的（只有胶囊有不透明底色 bg2 #3d484d），
+// 想让它一起透明，把 waybar 并进上面那条正则；
 // 想给它单独的值，就取消下面的注释。
 // layer-rule {
 //     match namespace="^waybar$"

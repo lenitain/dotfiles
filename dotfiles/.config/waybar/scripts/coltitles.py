@@ -18,7 +18,9 @@ INACTIVE_COLOR = "#859289"
 # 所以读不出「这里换列了」。竖线取自 niri 的列概念，颜色在暗盘上刚好可见。
 # 竖线字形 advance 16px，两侧各留一枚 en space（8px）：列间总 32px，
 # 竖线本身两边各 8px 空白，比普通空格（4px）松一档。
-TITLE_GAP = "<span foreground='#4f5b58'>\u2002│\u2002</span>"
+# 色值取自 .palette/everforest.md 的 dark medium：bg4 #4f585e
+# （Everforest 里正好是「窗口分隔线」那一档）。
+TITLE_GAP = "<span foreground='#4f585e'>\u2002│\u2002</span>"
 MAX_TITLE_PX = 400
 FONT = "Noto Sans,Maple Mono NL NF CN"
 FONT_SIZE_PX = 16

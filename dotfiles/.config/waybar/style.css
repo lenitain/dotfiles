@@ -6,8 +6,9 @@
      3. 每一组内容（图标组也好、文字组也好）都套一枚胶囊，
         整条 bar 只有一种胶囊材质；
      4. 整条 bar 没有大面积的高饱和色块。
-   配色沿用 Everforest dark medium：
-     胶囊底   #3a464c (bg2)  ← 浮在壁纸上的那块实体
+   配色沿用 Everforest dark medium，色值全部照抄 .palette/everforest.md
+   的 dark / medium 一组，不做微调：
+     胶囊底   #3d484d (bg2)  ← 浮在壁纸上的那块实体
      hover    #475258 (bg3)  ← 再浅一档
      文字     #d3c6aa (fg)
      强调     #a7c080 (green)
@@ -33,8 +34,9 @@ window#waybar {
 }
 
 /* ---------- 胶囊的统一材质 ----------
-   凡是「带内容的一组」都套同一枚胶囊：底色 bg2（Everforest 中比 bg0 浅两档的
-   灰绿），衬在壁纸上也有一块明确的实体，不会糊成半透明的一抹。
+   凡是「带内容的一组」都套同一枚胶囊：底色 bg2 #3d484d（Everforest dark
+   medium 里比 bg0 浅两档的灰绿），衬在壁纸上也有一块明确的实体，
+   不会糊成半透明的一抹。
    圆角 = 高/2（29px 的胶囊 → 14px 即完整药丸）、
    上下 margin 4px 是胶囊与 bar 上沿（也就是屏幕边缘）的留白，
    也是 bar 高度的来源。 */
@@ -43,7 +45,7 @@ window#waybar {
 #pulseaudio,
 #battery,
 #custom-clock {
-  background-color: #3a464c;
+  background-color: #3d484d;
   border-radius: 14px;
   margin: 4px;
   font-size: 18px;
@@ -58,7 +60,7 @@ window#waybar {
    横向 padding 去掉：胶囊内部不再额外补空位，数字只由各自 40px
    格子居中，首个数字到胶囊左沿会短于数字间距（先这样，要补再补）。 */
 #workspaces {
-  background-color: #3a464c;
+  background-color: #3d484d;
   font-weight: 700;
   border-radius: 14px;
   padding: 0;
@@ -109,7 +111,7 @@ window#waybar {
 #custom-coltitles {
   font-weight: 500;
   color: #d3c6aa;
-  background-color: #3a464c;
+  background-color: #3d484d;
   border-radius: 14px;
   margin: 4px;
   padding: 1px 16px;
@@ -120,7 +122,7 @@ window#waybar {
    组内图标透明 —— 和工作区胶囊同一个模式：底色只画在组上，
    单个格子的 hover 由下面各自的 EventBox 负责。 */
 #tray {
-  background-color: #3a464c;
+  background-color: #3d484d;
   border-radius: 14px;
   padding: 0;
   margin: 4px;
@@ -186,7 +188,7 @@ window#waybar {
   font-family: "FontAwesome";
   font-size: 22px;
   color: #d3c6aa;
-  background-color: #3a464c;
+  background-color: #3d484d;
   margin: 4px;
   padding: 3px 11px;
   border-radius: 14px;
@@ -209,6 +211,7 @@ window#waybar {
 }
 
 /* ---------- Tooltips ---------- */
+/* tooltip 底色沿用 bg2 #3d484d，和胶囊同一块实体色。 */
 tooltip {
   border-radius: 8px;
   background-color: #3d484d;
@@ -223,15 +226,16 @@ tooltip * {
 }
 
 /* ---------- Battery critical warning ---------- */
+/* 红底 #e67e80 上用 bg0 #2d353b 写字（GTK 主题的 destructive_fg 同值）。 */
 #battery.critical:not(.charging) {
   background-color: #e67e80;
-  color: #2b3339;
+  color: #2d353b;
   animation: blink 0.5s linear infinite alternate;
 }
 
 @keyframes blink {
   to {
-    background-color: #3a464c;
+    background-color: #3d484d;
     color: #d3c6aa;
   }
 }
