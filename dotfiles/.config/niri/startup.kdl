@@ -10,5 +10,7 @@ spawn-at-startup "waybar"
 spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
 spawn-at-startup "foot" "--server"
 spawn-at-startup "systemctl" "--user" "start" "qb-server"
-spawn-at-startup "swaybg" "-i" "~/Pictures/wallpaper/starry-night-sky.png"
+// 用 spawn-sh：niri 不经 shell 启动，只展开程序名里的 ~，参数里的 ~ 原样传给
+// swaybg，导致开机壁纸加载失败（进程还活着但没图）。走 shell 才有 $HOME 展开。
+spawn-sh-at-startup "swaybg -i \"$HOME/Pictures/wallpaper/starry-night-sky.png\""
 prefer-no-csd
