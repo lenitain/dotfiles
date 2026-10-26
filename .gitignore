@@ -6,6 +6,8 @@ dotfiles/.config/nvim/lazy-lock.json
 *.swp
 *.tmp
 *.log
+*.svg
+*.png
 __pycache__/
 
 # xray-setup 私有密钥 (并入 xray/ 后不入库)
