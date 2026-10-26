@@ -143,7 +143,9 @@ python3 scripts/gen-keys.py <VPS_IP>        # 写 host_vars/<IP>.yml（gitignore
 ansible-playbook deploy-xray.yml --limit <VPS_IP>
 ```
 
-## 笔记本电池续航保护
+## 后续动作
+
+### 笔记本电池续航保护
 
 > 不同厂商/型号的电池养护接口各异，无法统一命令。以下为本机（联想 81YN）的 udev 方案作为参考：
 
@@ -157,3 +159,9 @@ ACTION=="add", SUBSYSTEM=="power_supply", ATTR{type}=="Battery", ATTR{charge_typ
 cat /sys/class/power_supply/BAT1/charge_types
 # Fast / Standard / Long_Life   ← Long_Life 约 60% 上限
 ```
+
+### 壁纸导出
+
+### niri output
+
+### qb-open.c 编译
