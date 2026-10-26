@@ -3,8 +3,8 @@
    参考图（Nord 顶栏）的要点：
      1. bar 是一条平涂的底色，不做浮岛、不留外边距；
      2. 胶囊两端是完整的半圆（stadium），半径 = 高/2；
-     3. 小图标直接落在 bar 上（不套胶囊），只有「带文字的信息」
-        才配一枚胶囊；
+     3. 每一组内容（图标组也好、文字组也好）都套一枚胶囊，
+        整条 bar 只有一种胶囊材质；
      4. 整条 bar 没有大面积的高饱和色块。
    配色沿用 Everforest dark medium：
      bar 底   #2b3339 (bg0)
@@ -117,11 +117,12 @@ window#waybar > box {
 }
 
 /* ---------- 托盘 ----------
-   参考图里的小图标直接落在 bar 上，不套胶囊；只有带文字的
-   信息块才配胶囊。托盘图标因此保持「裸」的一排，
-   hover 时各自亮起一枚小圆角底。 */
+   托盘是「一组图标」，和其他组一样整组套一枚胶囊（bg2 + 14px 圆角），
+   组内图标透明 —— 和工作区胶囊同一个模式：底色只画在组上，
+   单个格子的 hover 由下面各自的 EventBox 负责。 */
 #tray {
-  background: transparent;
+  background-color: #3a464c;
+  border-radius: 14px;
   padding: 0;
   margin: 4px;
 }
@@ -129,20 +130,25 @@ window#waybar > box {
 /* 图标间距不用 GTKBox 的 spacing（modules.json 里 spacing: 0，
    因为它不属于任何图标、点不中）；改由 image 自身 padding
    撑开左右各 11px，这段空白算在图标盒子里，同样可点、同样 hover。
+   首尾图标的 11px 也就是胶囊的内沿留白，和文字胶囊 12px 横向
+   padding 同一节奏。
    （实测 padding 加在 EventBox 上会被 GTK 忽略，加在 image 上才撑大盒子。）
-   垂直 3px：图标 23px + 6 = 29，与文字胶囊同高，整排图标才和胶囊齐平。 */
+   垂直 3px：图标 23px + 6 = 29，与文字胶囊同高。 */
 #tray > .passive image,
 #tray > .active image,
 #tray > .needs-attention image {
   padding: 3px 11px;
 }
 
-/* hover 底画在图标自己的 EventBox（29px 高）上：裸图标落在 bar 上，
-   hover 底要比 bar 底亮一档才看得见（bg3）。 */
+/* hover 底画在图标自己的 EventBox（45×29）上，圆角同样是 14px：
+   首尾格因此和胶囊两端完全重合，中间格就是胶囊里浮起的一枚药丸，
+   和工作区里 hover 的格子观感一致。
+   （hover 必须挂在每枚图标上：托盘图标各有自己的 GdkWindow，
+   指针停在图标上时 #tray 本身收不到 enter，整组提亮不会触发。） */
 #tray > .passive,
 #tray > .active,
 #tray > .needs-attention {
-  border-radius: 8px;
+  border-radius: 14px;
 }
 
 #tray > .passive:hover,
@@ -169,10 +175,9 @@ window#waybar > box {
 }
 
 /* ---------- idle（desktop / 显示器图标）----------
-   与托盘同样的处理：裸在 bar 上，不套胶囊。
-   盒子尺寸、padding、hover 底都与托盘图标一致（image 的 3px 11px
-   → 23px 字形 + 22px 水平 padding = 45px 宽、29px 高），
-   这样一排图标是同一套尺寸和节奏，hover 底也不会一小一大。
+   单图标版胶囊：盒子和托盘图标那一格一模一样
+   （3px 11px → 23px 字形 + 22px 水平 padding = 45px 宽、29px 高），
+   所以它站在托盘胶囊旁边时同高、同内沿节奏。
    两态共用同一张字形（见 scripts/idle-inhibit.sh），CSS 只负责颜色：
    绿色 = 抑制中，米色 = 正常；单字形切换，零位移。
    字形是 U+F108（Font Awesome 的 desktop）。字体栈换成 FontAwesome 后，
@@ -182,9 +187,10 @@ window#waybar > box {
   font-family: "FontAwesome";
   font-size: 22px;
   color: #d3c6aa;
+  background-color: #3a464c;
   margin: 4px;
   padding: 3px 11px;
-  border-radius: 8px;
+  border-radius: 14px;
 }
 
 /* Idle Inhibit active（抑制中）：只换绿色，字形和盒子不变，状态切换零位移。 */
@@ -193,8 +199,8 @@ window#waybar > box {
 }
 
 /* ---------- hover ----------
-   胶囊从下沉底色浮起一档；裸图标从 bar 底色亮起一档。
-   两种都是「变亮」，方向一致，手感统一。 */
+   胶囊从 bg2 浮起一档到 bg3。托盘内部格子的 hover 单独写在上面，
+   因为它挂在每枚图标的 EventBox 上而不是整组。 */
 #custom-coltitles:hover,
 #custom-clock:hover,
 #pulseaudio:hover,

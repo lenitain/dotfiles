@@ -35,7 +35,7 @@
   // spacing 必须是 0：图标间距改由 style.css 给 image 加 padding 提供，
   // 这样间距属于图标自己（可点、可 hover），整条 tray 没有点不中的空档。
   // icon-size 23：跟字号 18px 配套 —— 图标 23 + CSS 的上下 3px padding = 29，
-  // 与文字胶囊同高，裸图标和胶囊才齐平（16px 字号时是 21 + 2 = 25）。
+  // 与文字胶囊同高，整组图标胶囊和文字胶囊才齐平（16px 字号时是 21 + 2 = 25）。
   "tray": {
     "icon-size": 23,
     "spacing": 0
