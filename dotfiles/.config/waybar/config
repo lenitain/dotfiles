@@ -1,8 +1,9 @@
 {
     "layer": "top",
-    /* 整条 bar 贴住屏幕边缘：四周不留 margin，壁纸不再从上下左右透出，
-       bar 不再是浮岛。外壳圆角已一并删掉（style.css 的 window#waybar > box），
-       方角的外壳贴边才不显得是浮起来的方块。 */
+    /* 外壳不画任何底色：window 与根盒子全部透明（见 style.css），
+       整条 bar 只有胶囊有材质，胶囊之间的空隙与上下留白直接透出壁纸。
+       margin 仍为 0：bar 贴住屏幕边缘，胶囊自己的 4px margin
+       就是它与屏幕边缘的留白。 */
     "margin-top": 0,
     "margin-bottom": 0,
     "margin-left": 0,
