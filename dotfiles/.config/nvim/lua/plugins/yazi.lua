@@ -25,8 +25,8 @@ return {
 
     -- 浮动窗口 100% 占满屏幕（默认 0.9 四周留 5% 空隙）
     floating_window_scaling_factor = 1,
-    -- 圆角边框（single=方角单线 | rounded=圆角 | none=无边框）
-    yazi_floating_window_border = "rounded",
+    -- 边框样式（single=方角单线 | rounded=圆角 | none=无边框）
+    yazi_floating_window_border = "none",
 
     -- 修复：从 yazi 打开的第一个文件可能没有高亮
     -- 原则：正常路径零开销，只在确实缺失时才补救。
