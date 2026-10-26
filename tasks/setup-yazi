@@ -16,36 +16,45 @@ PLUGINS=(
   "yazi-rs/plugins:smart-enter"
 )
 
-PACKAGE_TOML="${XDG_CONFIG_HOME:-$HOME/.config}/yazi/package.toml"
+YAZI_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/yazi"
+PACKAGE_TOML="$YAZI_DIR/package.toml"
+PLUGINS_DIR="$YAZI_DIR/plugins"
 
 # package.toml 不入库 (见 .gitignore), 由本任务登记 + 锁定版本
 is_registered() {
   grep -qF "use = \"$1\"" "$PACKAGE_TOML" 2>/dev/null
 }
 
+# yazi 的插件目录名: owner/repo → repo.yazi, owner/repo:child → child.yazi
+plugin_dir() {
+  local name="${1##*/}"
+  echo "$PLUGINS_DIR/${name##*:}.yazi"
+}
+
 ensure_plugin() {
-  local plugin="$1"
-  if is_registered "$plugin"; then
-    info "插件已登记: $plugin"
+  local use="$1"
+  if is_registered "$use"; then
+    info "插件已登记: $use"
     return 0
   fi
-  info "登记并安装 yazi 插件: $plugin"
-  if ya pkg add "$plugin"; then
+
+  # 未登记但目录已存在时, ya pkg add 拿空 hash 比对磁盘内容, 必然误报
+  # "modified the contents" 中止; 且它在抛错前先把 package.toml 写空, 重跑仍失败。
+  # 目录内容来自上游, 先删掉让 add 重新部署 (走本地 clone 缓存)。
+  rm -rf "$(plugin_dir "$use")"
+
+  info "登记并安装 yazi 插件: $use"
+  if ya pkg add "$use"; then
     return 0
   fi
-  # ya pkg add 对已登记的插件报 "already exists" (exit 1), 不是真失败
-  if is_registered "$plugin"; then
-    warn "$plugin 已登记, 跳过"
-    return 0
-  fi
-  err "ya pkg add $plugin 失败"
+  err "ya pkg add $use 失败"
   return 1
 }
 
 # 1) 登记插件 (package.toml 不入库, 新机器上不存在, 由这里补齐)
 #    ya pkg add 登记的同时就把插件拉下来部署了, 锁到当前上游最新
-for plugin in "${PLUGINS[@]}"; do
-  ensure_plugin "$plugin"
+for use in "${PLUGINS[@]}"; do
+  ensure_plugin "$use"
 done
 
 # 2) 追最新 (pacman -Syu 哲学): 升到上游最新提交, 重新部署 (目录被删也会重拉),
