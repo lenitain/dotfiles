@@ -36,9 +36,15 @@
   // 这样间距属于图标自己（可点、可 hover），整条 tray 没有点不中的空档。
   // icon-size 23：跟字号 18px 配套 —— 图标 23 + CSS 的上下 3px padding = 29，
   // 与文字胶囊同高，整组图标胶囊和文字胶囊才齐平（16px 字号时是 21 + 2 = 25）。
+  // cursor: true 是必须的：tray 的点击挂在每个图标的 EventBox 上（SNI::Item），
+  // 不在模块自己的 event_box 上，AModule 的「有交互事件就显示手型」那条规则
+  // 因此不会触发，箭头会一直留在图标上。显式设成 HAND2 后光标画在模块盒上，
+  // GDK 沿 event parent 向上继承，图标盒子没自己的光标就沿用这把（见
+  // gdkwindow.c 的 update_cursor），整组托盘都能出小手。
   "tray": {
     "icon-size": 23,
-    "spacing": 0
+    "spacing": 0,
+    "cursor": true
   },
 
   // Clock（单行、英文：数字月-日 星期 时:分，例如 "10-24 Sat 15:55"）
