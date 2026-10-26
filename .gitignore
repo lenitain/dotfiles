@@ -35,8 +35,9 @@ dotfiles/.config/fish/fish_variables
 # fish conf.d 中的 API 密钥 (按 *KEY.fish 命名约定自动忽略)
 dotfiles/.config/fish/conf.d/*KEY.fish
 
-# yazi 插件目录
+# yazi 插件目录与依赖锁文件 (package.toml 由 setup-yazi 生成/更新, 不入库)
 dotfiles/.config/yazi/plugins/
+dotfiles/.config/yazi/package.toml
 
 # psd 自动生成的配置快照
 dotfiles/.config/psd/.psd.conf
