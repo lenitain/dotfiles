@@ -1,19 +1,47 @@
 #!/usr/bin/env python3
 """Build the clean star-field wallpaper that sits behind the dashboard.
 
-Same palette as starry-night-dashboard.svg, but with no UI: a deep slate sky,
-a soft galactic dusting and a few hot stars.
+Same palette as starry-night-dashboard.svg, but with no UI: a slate sky whose
+base tone is held at SKY_BASE (#2b3339), a soft galactic dusting and a few hot
+stars. Every background tint is mixed from SKY_BASE so the rendered backdrop
+stays as close to that colour as possible.
 """
 
 from __future__ import annotations
 
-import math
 import random
 from pathlib import Path
 
 W, H = 1920, 1080
 OUT = Path(__file__).with_name("starry-night-sky.svg")
+SKY_BASE = (0x2B, 0x33, 0x39)
+WHITE = (0xFF, 0xFF, 0xFF)
+BLACK = (0x00, 0x00, 0x00)
+COOL = (0x86, 0xA6, 0xA2)
 random.seed(21101984)
+
+
+def mix(color, toward, t):
+    return tuple(round(a + (b - a) * t) for a, b in zip(color, toward))
+
+
+def hexof(color):
+    return "#%02x%02x%02x" % color
+
+
+def tinted(toward, t):
+    return hexof(mix(SKY_BASE, toward, t))
+
+
+def shifted(step):
+    return hexof(tuple(min(255, max(0, v + step)) for v in SKY_BASE))
+
+
+def grain_channel(tag, value):
+    """Grain channel centered on the sky base so the noise neither lifts nor drops it."""
+    slope = 0.25
+    intercept = value / 255 - slope * 0.5
+    return f'<feFunc{tag} type="linear" slope="{slope}" intercept="{intercept:.4f}"/>'
 
 
 def fmt(v):
@@ -78,38 +106,43 @@ def build():
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"
      preserveAspectRatio="xMidYMid meet" shape-rendering="geometricPrecision">
 <title>Nightfall — pure starry sky wallpaper</title>
-<desc>A dark-slate vector night sky with thousands of stars and a faint galactic dusting.
-No UI, just the wallpaper.</desc>
+<desc>A slate vector night sky on a #2b3339 base with thousands of stars and a faint
+galactic dusting. No UI, just the wallpaper.</desc>
 <defs>
 <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-  <stop offset="0" stop-color="#131d24"/>
-  <stop offset="0.5" stop-color="#0e171d"/>
-  <stop offset="1" stop-color="#091015"/>
+  <stop offset="0" stop-color="{shifted(3)}"/>
+  <stop offset="0.5" stop-color="{hexof(SKY_BASE)}"/>
+  <stop offset="1" stop-color="{shifted(-3)}"/>
 </linearGradient>
 <radialGradient id="hazeIndigo" cx="0.5" cy="0.5" r="0.55">
-  <stop offset="0" stop-color="#5b6c7b" stop-opacity="0.32"/>
-  <stop offset="0.6" stop-color="#35414c" stop-opacity="0.1"/>
-  <stop offset="1" stop-color="#35414c" stop-opacity="0"/>
+  <stop offset="0" stop-color="{tinted(WHITE, 0.16)}" stop-opacity="0.05"/>
+  <stop offset="0.6" stop-color="{tinted(WHITE, 0.07)}" stop-opacity="0.03"/>
+  <stop offset="1" stop-color="{tinted(WHITE, 0.07)}" stop-opacity="0"/>
 </radialGradient>
 <radialGradient id="hazeTeal" cx="0.5" cy="0.5" r="0.55">
-  <stop offset="0" stop-color="#426b66" stop-opacity="0.22"/>
-  <stop offset="0.65" stop-color="#2a4441" stop-opacity="0.07"/>
-  <stop offset="1" stop-color="#2a4441" stop-opacity="0"/>
+  <stop offset="0" stop-color="{tinted(COOL, 0.14)}" stop-opacity="0.05"/>
+  <stop offset="0.65" stop-color="{tinted(COOL, 0.06)}" stop-opacity="0.02"/>
+  <stop offset="1" stop-color="{tinted(COOL, 0.06)}" stop-opacity="0"/>
 </radialGradient>
 <radialGradient id="hazeCool" cx="0.5" cy="0.5" r="0.55">
-  <stop offset="0" stop-color="#66727f" stop-opacity="0.15"/>
-  <stop offset="0.65" stop-color="#404a54" stop-opacity="0.04"/>
-  <stop offset="1" stop-color="#404a54" stop-opacity="0"/>
+  <stop offset="0" stop-color="{tinted(WHITE, 0.13)}" stop-opacity="0.04"/>
+  <stop offset="0.65" stop-color="{tinted(WHITE, 0.05)}" stop-opacity="0.02"/>
+  <stop offset="1" stop-color="{tinted(WHITE, 0.05)}" stop-opacity="0"/>
 </radialGradient>
 <radialGradient id="vignette" cx="0.5" cy="0.46" r="0.75">
-  <stop offset="0.45" stop-color="#03080b" stop-opacity="0"/>
-  <stop offset="0.8" stop-color="#03080b" stop-opacity="0.15"/>
-  <stop offset="1" stop-color="#03080b" stop-opacity="0.5"/>
+  <stop offset="0.45" stop-color="{tinted(BLACK, 0.45)}" stop-opacity="0"/>
+  <stop offset="0.8" stop-color="{tinted(BLACK, 0.45)}" stop-opacity="0.03"/>
+  <stop offset="1" stop-color="{tinted(BLACK, 0.45)}" stop-opacity="0.1"/>
 </radialGradient>
 <filter id="grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
   <feTurbulence type="fractalNoise" baseFrequency="0.78" numOctaves="3" stitchTiles="stitch"/>
   <feColorMatrix type="saturate" values="0"/>
-  <feComponentTransfer><feFuncA type="linear" slope="0.11"/></feComponentTransfer>
+  <feComponentTransfer>
+    {grain_channel("R", SKY_BASE[0])}
+    {grain_channel("G", SKY_BASE[1])}
+    {grain_channel("B", SKY_BASE[2])}
+    <feFuncA type="linear" slope="0.11"/>
+  </feComponentTransfer>
 </filter>
 </defs>
 <rect width="1920" height="1080" fill="url(#sky)"/>

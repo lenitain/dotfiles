@@ -2,38 +2,43 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"
      preserveAspectRatio="xMidYMid meet" shape-rendering="geometricPrecision">
 <title>Nightfall — pure starry sky wallpaper</title>
-<desc>A dark-slate vector night sky with thousands of stars and a faint galactic dusting.
-No UI, just the wallpaper.</desc>
+<desc>A slate vector night sky on a #2b3339 base with thousands of stars and a faint
+galactic dusting. No UI, just the wallpaper.</desc>
 <defs>
 <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-  <stop offset="0" stop-color="#131d24"/>
-  <stop offset="0.5" stop-color="#0e171d"/>
-  <stop offset="1" stop-color="#091015"/>
+  <stop offset="0" stop-color="#2e363c"/>
+  <stop offset="0.5" stop-color="#2b3339"/>
+  <stop offset="1" stop-color="#283036"/>
 </linearGradient>
 <radialGradient id="hazeIndigo" cx="0.5" cy="0.5" r="0.55">
-  <stop offset="0" stop-color="#5b6c7b" stop-opacity="0.32"/>
-  <stop offset="0.6" stop-color="#35414c" stop-opacity="0.1"/>
-  <stop offset="1" stop-color="#35414c" stop-opacity="0"/>
+  <stop offset="0" stop-color="#4d5459" stop-opacity="0.05"/>
+  <stop offset="0.6" stop-color="#3a4147" stop-opacity="0.03"/>
+  <stop offset="1" stop-color="#3a4147" stop-opacity="0"/>
 </radialGradient>
 <radialGradient id="hazeTeal" cx="0.5" cy="0.5" r="0.55">
-  <stop offset="0" stop-color="#426b66" stop-opacity="0.22"/>
-  <stop offset="0.65" stop-color="#2a4441" stop-opacity="0.07"/>
-  <stop offset="1" stop-color="#2a4441" stop-opacity="0"/>
+  <stop offset="0" stop-color="#384348" stop-opacity="0.05"/>
+  <stop offset="0.65" stop-color="#303a3f" stop-opacity="0.02"/>
+  <stop offset="1" stop-color="#303a3f" stop-opacity="0"/>
 </radialGradient>
 <radialGradient id="hazeCool" cx="0.5" cy="0.5" r="0.55">
-  <stop offset="0" stop-color="#66727f" stop-opacity="0.15"/>
-  <stop offset="0.65" stop-color="#404a54" stop-opacity="0.04"/>
-  <stop offset="1" stop-color="#404a54" stop-opacity="0"/>
+  <stop offset="0" stop-color="#474e53" stop-opacity="0.04"/>
+  <stop offset="0.65" stop-color="#363d43" stop-opacity="0.02"/>
+  <stop offset="1" stop-color="#363d43" stop-opacity="0"/>
 </radialGradient>
 <radialGradient id="vignette" cx="0.5" cy="0.46" r="0.75">
-  <stop offset="0.45" stop-color="#03080b" stop-opacity="0"/>
-  <stop offset="0.8" stop-color="#03080b" stop-opacity="0.15"/>
-  <stop offset="1" stop-color="#03080b" stop-opacity="0.5"/>
+  <stop offset="0.45" stop-color="#181c1f" stop-opacity="0"/>
+  <stop offset="0.8" stop-color="#181c1f" stop-opacity="0.03"/>
+  <stop offset="1" stop-color="#181c1f" stop-opacity="0.1"/>
 </radialGradient>
 <filter id="grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
   <feTurbulence type="fractalNoise" baseFrequency="0.78" numOctaves="3" stitchTiles="stitch"/>
   <feColorMatrix type="saturate" values="0"/>
-  <feComponentTransfer><feFuncA type="linear" slope="0.11"/></feComponentTransfer>
+  <feComponentTransfer>
+    <feFuncR type="linear" slope="0.25" intercept="0.0436"/>
+    <feFuncG type="linear" slope="0.25" intercept="0.0750"/>
+    <feFuncB type="linear" slope="0.25" intercept="0.0985"/>
+    <feFuncA type="linear" slope="0.11"/>
+  </feComponentTransfer>
 </filter>
 </defs>
 <rect width="1920" height="1080" fill="url(#sky)"/>
