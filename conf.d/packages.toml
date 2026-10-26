@@ -34,7 +34,7 @@
 "pacman:swayimg" = "latest"
 "pacman:mpv" = "latest"
 "pacman:evemu" = "latest"
-"pacman:optipng" = "latest"
+"pacman:oxipng" = "latest"
 "pacman:foot" = "latest"
 "pacman:neovim" = "latest"
 "pacman:bat" = "latest"
@@ -131,3 +131,4 @@
 "pacman:croc" = "latest"
 "pacman:ast-grep" = "latest"
 "pacman:yt-dlp" = "latest"
+"pacman:resvg" = "latest"
