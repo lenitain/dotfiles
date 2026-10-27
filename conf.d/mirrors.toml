@@ -64,8 +64,15 @@ pypi.registry_url = "https://mirrors.aliyun.com/pypi/web/json/{}"
 # 因此不受 cargo config 的 source 替换影响, 只能在这里路由到 USTC。
 # (cargo config 部署在 ~/.cargo/config.toml, 见 conf.d/dotfiles.toml)
 # 与 cargo 侧各配一份(那条管构建, 这条管版本查询), 换镜像时两处同改。
+#
+# raw.githubusercontent.com 是独立域名, 上面那条 github.com/ 规则盖不到它。
+# packslip 后端读版本清单走的就是这个域名(<repo>/HEAD/.well-known/packslip.json),
+# 裸连在本机会挂到超时, 而超时是致命错误 —— mise 不会退到备用的 github: 后端,
+# 整个 packslip 工具链(mbx / mr-boxington / hk / helmfile / dagu ...) 都装不上。
+# 补上这条: 走同一个 gh-proxy, 探不到文件时快速 404, 后端链才能正常回退。
 [settings.url_replacements]
 "https://github.com/" = "https://gh-proxy.org/https://github.com/"
+"https://raw.githubusercontent.com/" = "https://gh-proxy.org/https://raw.githubusercontent.com/"
 "https://index.crates.io/" = "https://mirrors.ustc.edu.cn/crates.io-index/"
 
 # 已确认不需要配(免得日后重查):

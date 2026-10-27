@@ -20,12 +20,22 @@ ruff = "latest"
 "aqua:LuaLS/lua-language-server" = "latest"
 # Rust 工具链: stable 是默认 (数组第一项), rust-analyzer 走组件形式 (跟工具链走, 避免与项目 rustc 错位)
 # nightly 只为 miri 保留: 它没有 stable 版本, 且 rust-src 是 miri 编译标准库的前置组件。
+# mr_boxington = true: mise 原生把 cargo 代理到 mbx(共享编译缓存), 不用再跑 mbx setup。
+# 前提是 [tools] 里有 mr-boxington, 且 mise >= 2026.9.2。
+# 两条 rust 条目都要写: mise 只取数组里第一条 rust 请求来判断这个 option,
+# 只写在 nightly 上则 stable 项目不会走缓存。
 rust = [
-  { version = "stable", profile = "default", components = ["rust-analyzer", "rust-src"] },
-  { version = "nightly", profile = "minimal", components = ["miri", "rust-src"] },
+  { version = "stable", profile = "default", components = ["rust-analyzer", "rust-src"], mr_boxington = true },
+  { version = "nightly", profile = "minimal", components = ["miri", "rust-src"], mr_boxington = true },
 ]
+# mbx 走 registry 纯名, 不能写 cargo:mbx / github: 前缀:
+# mise 的 mr_boxington option 和 mbx 自身都按名字 "mr-boxington" 匹配 [tools],
+# 写成 cargo:mbx 或 github:jdx/mr-boxington 都匹配不上(前者名字是 mbx, 后者 full() 带前缀)。
+# registry 里 mr-boxington 的后端链是 packslip → github:jdx/mr-boxington;
+# 上游没有 packslip.json, 靠 mirrors.toml 里 raw.githubusercontent.com 的镜像让探测
+# 快速 404, 回退到 github: 后端(下预编译二进制, 不需要本地编译)。
+"mr-boxington" = "latest"
 "cargo:stylua" = "latest"
-"cargo:mbx" = "latest"
 "cargo:prek" = "latest"
 "cargo:jj-gh" = "latest"
 "cargo:typos-cli" = "latest"
