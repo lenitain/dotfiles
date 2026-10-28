@@ -132,3 +132,5 @@
 "pacman:ast-grep" = "latest"
 "pacman:yt-dlp" = "latest"
 "pacman:resvg" = "latest"
+"pacman:stylua" = "latest"
+"pacman:prek" = "latest"

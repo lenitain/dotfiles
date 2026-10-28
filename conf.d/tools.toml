@@ -35,8 +35,6 @@ rust = [
 # 上游没有 packslip.json, 靠 mirrors.toml 里 raw.githubusercontent.com 的镜像让探测
 # 快速 404, 回退到 github: 后端(下预编译二进制, 不需要本地编译)。
 "mr-boxington" = "latest"
-"cargo:stylua" = "latest"
-"cargo:prek" = "latest"
 "cargo:jj-gh" = "latest"
 "cargo:typos-cli" = "latest"
 "cargo:wireforge" = "latest"
