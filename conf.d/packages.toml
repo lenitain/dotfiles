@@ -47,7 +47,6 @@
 "pacman:fzf" = "latest"
 "pacman:7zip" = "latest"
 "pacman:unzip" = "latest"
-"pacman:onlyoffice-bin" = "latest"
 "pacman:lazygit" = "latest"
 "pacman:gdb" = "latest"
 "pacman:sqlite3" = "latest"
