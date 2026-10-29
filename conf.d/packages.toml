@@ -63,7 +63,6 @@
 "pacman:tree-sitter-cli" = "latest"
 "pacman:git" = "latest"
 "pacman:jujutsu" = "latest"
-"pacman:opencode" = "latest"
 "pacman:valgrind" = "latest"
 "pacman:age" = "latest"
 "pacman:rumdl" = "latest"
