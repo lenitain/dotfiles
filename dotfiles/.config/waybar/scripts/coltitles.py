@@ -21,7 +21,7 @@ INACTIVE_COLOR = "#859289"
 # 色值取自 .palette/everforest.md 的 dark medium：bg4 #4f585e
 # （Everforest 里正好是「窗口分隔线」那一档）。
 TITLE_GAP = "<span foreground='#4f585e'>\u2002│\u2002</span>"
-MAX_TITLE_PX = 400
+MAX_TITLE_PX = 360
 FONT = "Noto Sans,Maple Mono NL NF CN"
 FONT_SIZE_PX = 16
 
