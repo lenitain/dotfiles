@@ -19,3 +19,8 @@ minimum_release_age = "0s"
 # 需要预发布的工具在 conf.d/tools.toml 里单独打开。
 dotfiles.root = "~/.config/mise/dotfiles"
 dotfiles.default_mode = "symlink"
+# 让 `mise bootstrap dotfiles add` 把新条目写进 conf.d/dotfiles.toml 而不是本文件。
+# 不设的话 add 会往全局 config.toml 的 [dotfiles] 里塞条目, 破坏上面的分层拆分
+# (conf.d 里已有的条目仍会合并生效, 但同一份声明散在两个文件里, 迟早对不上)。
+# 只接受绝对路径或 ~/ 开头(相对路径不支持), 所以这里必须写全。
+write_targets.dotfiles = "~/.config/mise/conf.d/dotfiles.toml"
