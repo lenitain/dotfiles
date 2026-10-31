@@ -1,0 +1,16 @@
+# 个人 fish 插件仓库（方案 B）。
+#
+# pure-jj 现在由 ~/.projects/pure-jj 的本地 Git 仓库提供，dotfiles 的
+# conf.d/personal_plugins.fish 负责加载。远程仓库建立并 push 之后，做三件事：
+#
+#   git -C ~/.projects/pure-jj remote add origin git@github.com:lenitain/pure-jj.git
+#   git -C ~/.projects/pure-jj push -u origin main
+#   # 取消下面 [bootstrap.repos] 的注释，然后：
+#   mise bootstrap repos apply
+#
+# mise 要求本地 checkout 的 origin 与 url 完全一致；远程不存在或 origin
+# 不匹配时，apply/update 会中止。所以先保持注释，避免 `mise bootstrap`
+# 在远程就绪前失败。
+#
+# [bootstrap.repos]
+# "~/.projects/pure-jj" = { url = "git@github.com:lenitain/pure-jj.git", ref = "main" }
