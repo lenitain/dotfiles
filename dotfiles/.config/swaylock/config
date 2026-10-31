@@ -6,11 +6,12 @@ scaling=fill
 
 # Everforest Dark Medium colors
 color=000000
-inside-color=2d353b
-inside-clear-color=2d353b
-inside-caps-lock-color=2d353b
-inside-ver-color=2d353b
-inside-wrong-color=2d353b
+# 圆环内部完全透明（alpha=00），透出壁纸
+inside-color=00000000
+inside-clear-color=00000000
+inside-caps-lock-color=00000000
+inside-ver-color=00000000
+inside-wrong-color=00000000
 
 ring-color=7FBBB3
 ring-clear-color=7FBBB3
