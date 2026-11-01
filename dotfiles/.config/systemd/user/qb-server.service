@@ -7,7 +7,7 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=%h/.config/qutebrowser/scripts/qb-server --nowindow -R
+ExecStart=%h/.local/bin/scripts/qb-server --nowindow -R
 
 # 输入法变量必须在这里给：systemd service 拿的是 user manager 的环境，不含 niri
 # environment.kdl 里那份；缺了 QT_IM_MODULE，Qt 连 fcitx 插件都不会加载，
