@@ -1,6 +1,6 @@
 [Unit]
 Description=qutebrowser 常驻 server（--nowindow + IPC socket）
-Documentation=file:%h/.config/qutebrowser/scripts/qb-server
+Documentation=file:%h/.local/bin/scripts/qb-server
 # 会话结束（niri-session 会 `systemctl --user start niri-shutdown.target`，
 # 该 target 与 graphical-session.target 冲突）时跟着一起停。
 PartOf=graphical-session.target

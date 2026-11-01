@@ -38,13 +38,26 @@ MISE_HTTP_TIMEOUT = "5m"
 MISE_HTTP_DOWNLOAD_TIMEOUT = "10m"
 
 [settings]
-# node 二进制下载 (默认 nodejs.org)。两个坑:
+# node 二进制下载 (默认 nodejs.org/dist)。两个坑:
 #   1. 不能写 npmmirror.com/mirrors/node —— mise 对它有特判, 会拼出缺 /node/ 和
 #      -linux-x64 的 URL → 404
 #   2. 末尾斜杠必须留 —— mise 按 URL join 拼版本目录, 没斜杠会把最后一段替换掉 → 404
-# 留着不为速度, 只为 nodejs.org 抽风时可用(实测快慢随时在变, 别据此改配置)。
-# SHASUMS256.txt + .sig 镜像里都有, 校验不受影响。想回直连就注掉这一行。
-node.mirror_url = "https://cdn.npmmirror.com/binaries/node/"
+#
+# 为什么不用 cdn.npmmirror.com/binaries/node/ (原来用的那个):
+#   mise 的 node 后端**永远**从同一个 mirror 取 SHASUMS256.txt 来校验 tarball
+#   (src/plugins/core/node.rs 的 get_checksum / shasums_url), 没有单独的"校验和镜像"
+#   设置项。而 npmmirror 的 CDN 是按文件逐个同步的: 新版本先同步 tarball,
+#   SHASUMS256.txt / .sig 还没同步 —— 2026-11-01 实测 v26.13.0 就是这状态:
+#     node-v26.13.0-linux-x64.tar.gz  200
+#     SHASUMS256.txt                 404   ← mise 卡在这, 装不上
+#   报错信息 misleading: "the following flavors are available ... - musl",
+#   因为它从 index.json 里筛 `linux-x64-` 前缀, 而 index.json 只列到 "linux-x64"
+#   和 "linux-x64-musl", 前者被前缀过滤掉了 —— 别真去设 node.flavor=musl。
+#   换镜像: aliyun/ustc/tuna 都是 nodejs.org/dist 的整目录同步, tarball、
+#   SHASUMS256.txt、SHASUMS256.txt.sig 一起到, 校验链完整 (含 GPG 验签)。
+#   本机实测: aliyun 0.04s/9MB/s, ustc 0.4s/7MB/s, 直连 0.13s/7MB/s。
+# 临时直连: MISE_NODE_MIRROR_URL=https://nodejs.org/dist/ mise install node@latest
+node.mirror_url = "https://mirrors.aliyun.com/nodejs-release/"
 # pypi 后端的版本查询 (默认 pypi.org/pypi/{}/json)
 # 只管"定版本", 不管下载(下载走上面的 PIP_INDEX_URL / UV_DEFAULT_INDEX)。
 # 换之前先验新鲜度, 这行坏了不报错, 只会静默把 latest 钉在老版本上:
