@@ -7,9 +7,10 @@ never polled and nothing is written to disk.
 
 宽度策略：撞到右簇时从最长的那列开始压，不是按比例缩，也不是整行末尾一刀切。
 - 每列标题先用 Pango 量出像素宽；
-- 可用宽度 = 屏宽 - 工作区胶囊 - 标题胶囊自己的 padding/margin - 右簇宽度，
-  右簇宽度在渲染时按当前状态算（托盘图标数、电池百分比、音量/静音、时钟）；
-  电池容量只在启动时读一次（这台机器的 EC 读 capacity 偶尔要 80ms）；
+- 标题的右端 = 右簇左边界（右簇里最左那枚胶囊 = 托盘的左沿）；
+  可用宽度 = 这个边界 - 工作区胶囊 - 标题胶囊自己的 padding/margin。
+  边界在启动时按当前状态算一次（托盘图标数、电池百分比、音量/静音、时钟），
+  之后不再刷新；
 - 总宽超过可用宽度时取一个统一上限 L：最长的先降到和次长一样，追平后两列
   一起降，再追平第三长时三列一起降 —— 等价于把所有超过 L 的列都压到 L，
   L 取到「总宽刚好放得下」为止；原来就短于 L 的列完全不动。
@@ -17,8 +18,10 @@ never polled and nothing is written to disk.
 - modules.json 里的 max-length（GTK ellipsize）只当兜底：预算估偏时最多再把
   行尾多截一点，不会出现整列被挤没。
 
-右簇宽度要读几个系统状态，但都只在渲染时顺手取一次，带短 TTL 缓存，
-不新增定时器。
+右簇宽度要读几个系统状态（托盘图标数、音量/静音、电池百分比、屏宽），
+但都只在启动时读一次就定下，之后不再刷新：这些值后面就算变了，加起来也只
+值几十 px —— 标题的边界差这么一点，交给 GTK 的 ellipsize 兜底就行。
+换来的是脚本跑起来之后再不碰任何外部进程，也没有定时器。
 """
 
 import functools
@@ -73,8 +76,9 @@ _layouts = {}
 _last = None
 
 _width_cache = {"output": None, "width": None}
-_tray_cache = {"time": 0.0, "count": 1}
-_pulse_cache = {"time": 0.0, "muted": False, "volume": None}
+_tray_cache = {"done": False, "count": 1}
+_pulse_cache = {"done": False, "muted": False, "volume": None}
+_battery_cache = {"done": False, "capacity": None}
 
 
 def _layout(weight):
@@ -204,73 +208,75 @@ def _bar_width(output):
             subprocess.SubprocessError):
         width = None
 
+    # 失败不记：读不到屏宽就没有预算可用，下一次渲染再问一遍（niri 挂了这个模块
+    # 本来也没用，重试反而能自愈）。
     if width:
         _width_cache.update(output=output, width=width)
     return width
 
 
 def _tray_icons():
-    """How many SNI icons the tray capsule currently shows."""
-    now = time.monotonic()
-    if now - _tray_cache["time"] < 5:
-        return _tray_cache["count"]
+    """How many SNI icons the tray capsule currently shows.
 
-    count = 1  # watcher 查不到时按常驻的一枚算
-    try:
-        out = subprocess.run(
-            [
-                "gdbus", "call", "--session",
-                "--dest", "org.kde.StatusNotifierWatcher",
-                "--object-path", "/StatusNotifierWatcher",
-                "--method", "org.freedesktop.DBus.Properties.Get",
-                "org.kde.StatusNotifierWatcher", "RegisteredStatusNotifierItems",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=1,
-        ).stdout
-        count = len(re.findall(r"'[^']+'", out))
-    except (OSError, subprocess.SubprocessError):
-        pass
+    只读一次：托盘后来多一个应用也只值 45px 的边界差，不值得为它再问一遍。
+    """
+    if not _tray_cache["done"]:
+        count = 1  # watcher 查不到时按常驻的一枚算
+        try:
+            out = subprocess.run(
+                [
+                    "gdbus", "call", "--session",
+                    "--dest", "org.kde.StatusNotifierWatcher",
+                    "--object-path", "/StatusNotifierWatcher",
+                    "--method", "org.freedesktop.DBus.Properties.Get",
+                    "org.kde.StatusNotifierWatcher", "RegisteredStatusNotifierItems",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=1,
+            ).stdout
+            count = len(re.findall(r"'[^']+'", out))
+        except (OSError, subprocess.SubprocessError):
+            pass
 
-    _tray_cache.update(time=now, count=count)
-    return count
+        _tray_cache.update(done=True, count=count)
+    return _tray_cache["count"]
 
 
 def _pulse_state():
-    """(muted, volume%) of the default sink, matching the pulseaudio module."""
-    now = time.monotonic()
-    if now - _pulse_cache["time"] < 2:
-        return _pulse_cache["muted"], _pulse_cache["volume"]
+    """(muted, volume%) of the default sink, matching the pulseaudio module.
 
-    muted, volume = False, None
-    try:
-        out = subprocess.run(
-            [
-                "sh", "-c",
-                "pactl get-sink-mute @DEFAULT_SINK@ 2>/dev/null; "
-                "pactl get-sink-volume @DEFAULT_SINK@ 2>/dev/null",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=1,
-        ).stdout
-        muted = "Mute: yes" in out
-        match = re.search(r"(\d+)%", out)
-        if match:
-            volume = int(match.group(1))
-    except (OSError, subprocess.SubprocessError):
-        pass
+    只读一次：静音与否只是 50px 的边界差（静音时胶囊只剩图标）。
+    """
+    if not _pulse_cache["done"]:
+        muted, volume = False, None
+        try:
+            out = subprocess.run(
+                [
+                    "sh", "-c",
+                    "pactl get-sink-mute @DEFAULT_SINK@ 2>/dev/null; "
+                    "pactl get-sink-volume @DEFAULT_SINK@ 2>/dev/null",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=1,
+            ).stdout
+            muted = "Mute: yes" in out
+            match = re.search(r"(\d+)%", out)
+            if match:
+                volume = int(match.group(1))
+        except (OSError, subprocess.SubprocessError):
+            pass
 
-    _pulse_cache.update(time=now, muted=muted, volume=volume)
-    return muted, volume
-
-
-_battery_cache = {"done": False, "capacity": 100}
+        _pulse_cache.update(done=True, muted=muted, volume=volume)
+    return _pulse_cache["muted"], _pulse_cache["volume"]
 
 
 def _battery_capacity():
-    """百分比只读一次：这台机器的 EC 读 capacity 偶尔要 80ms，别每次渲染都掏。"""
+    """电池百分比：只读一次。
+
+    这台机器的 EC 读 capacity 偶尔要 80ms，更别说它一分钟也变不了几格。
+    """
     if not _battery_cache["done"]:
         capacity = None
         paths = glob.glob("/sys/class/power_supply/BAT*/capacity")
@@ -318,12 +324,11 @@ def _workspaces_px(state, output):
     return total + WORKSPACE_MARGINS_PX
 
 
-def _available_text_px(state):
-    """Width the title module may use before it runs into the right cluster."""
-    output = os.environ.get("WAYBAR_OUTPUT_NAME", "")
-    if not output:
-        workspace = focused_workspace(state["workspaces"])
-        output = (workspace or {}).get("output", "")
+def _right_edge_px(output):
+    """右簇左边界：右簇里最左那枚胶囊（托盘）的左沿，距屏幕左沿多少 px。
+
+    标题的右端就顶在这儿 —— 它是「标题最多能用到哪儿」的那一个数。
+    """
     width = _bar_width(output)
     if not width:
         return None
@@ -336,12 +341,23 @@ def _available_text_px(state):
         + _pulse_capsule_px()
         + _clock_capsule_px()
     )
+    return width - right_cluster
+
+
+def _available_text_px(state):
+    """Width the title module may use before it runs into the right cluster."""
+    output = os.environ.get("WAYBAR_OUTPUT_NAME", "")
+    if not output:
+        workspace = focused_workspace(state["workspaces"])
+        output = (workspace or {}).get("output", "")
+    edge = _right_edge_px(output)
+    if edge is None:
+        return None
     return (
-        width
+        edge
         - _workspaces_px(state, output)
         - TITLE_MARGIN
         - 2 * TITLE_PADDING_X
-        - right_cluster
     )
 
 
