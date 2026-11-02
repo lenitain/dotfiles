@@ -25,8 +25,10 @@
 # 在 fork 之前就会因 Inhibit 失败退出，比如 logind/dbus 不可用）。事件一到立刻
 # 返回；成败在同一次读里分流，失败路径不需要单独的回滚分支，也不会有「抢在
 # 状态落地前刷新」的竞态（刷新永远发生在握手之后）。关闭路径 kill 后做死亡
-# 确认：kill 只是异步投递，进程死亡没有事件源可用，只能确认 —— 每次探针 6ms、
-# 典型第 1-2 次就过，是兜底，不是主路径上的等待。
+# 确认：kill 只是异步投递，进程死亡没有事件源可用，只能确认 —— 分两层：进程死
+# 没死用 bash 内建 kill -0 盯（零 fork，实测 ~2.5ms 就死），锁摘没摘再用一次
+# 总线查询裁决（进程一退出 fd 就关，logind 随即删条目）。上限按墙钟毫秒算，
+# 不写「N 次」—— 那个数只是「上限 ÷ 单轮成本」的换算，探针一变边界就跟着漂。
 #
 # 抑制器必须 setsid 脱离调用方进程组：否则 waybar（或启动它的终端）一退出它就
 # 被一起带走，图标会自己变回米色/正常，而用户什么也没做。stdin 关 /dev/null；
@@ -47,6 +49,18 @@ WHO="waybar-idle-inhibit"
 # 自己的绝对路径：swayidle 的 timeout 命令要拿它当 argv 传过去，而那条命令是
 # swayidle 用 sh -c 跑的 —— 相对路径会在别的 cwd 下失效。
 SCRIPT="$(readlink -f "$0")"
+
+# 找出 comm 精确等于给定名字的进程 pid（一行一个；没有则为空）。
+# 不用 pgrep：pgrep -x 要全量扫 /proc（实测 20~46ms，本机 313 个进程），
+# 纯 bash 读 /proc/<pid>/comm 零 fork，约 8~20ms。
+pids_by_comm() {
+    local d comm
+    for d in /proc/[0-9]*; do
+        read -r comm 2>/dev/null < "$d/comm" || continue
+        [ "$comm" = "$1" ] && echo "${d#/proc/}"
+    done
+    return 0
+}
 
 # 输出「属于我们」的持锁进程 pid（可能多个，一行一个；没有则为空）。
 # busctl 输出的元组是 a(ssssuu)：what who why mode uid pid，pid 是最后一个字段；
@@ -86,7 +100,7 @@ blank() {
 # 它连 logind 都不连，抑制器对它完全无效。现在熄屏的决定权在 blank() 自己手里，
 # 不再依赖它那条路，但 before-sleep 的 swaylock 还得留着。
 start_swayidle() {
-    if pgrep -x swayidle >/dev/null 2>&1; then
+    if [ -n "$(pids_by_comm swayidle)" ]; then
         return 0
     fi
     niri msg action spawn -- swayidle -w timeout 300 "$SCRIPT blank" \
@@ -120,15 +134,28 @@ on() {
 
 off() {
     # 关闭抑制：一次清掉所有属于我们的抑制器（重复实例也收干净）
-    inhibitor_pids | xargs -r kill 2>/dev/null
-    # 死亡确认：kill 成功投递 ≠ 已死。每次探针 ~6ms + 1ms，上限 50 次 ≈ 350ms；
-    # 还没死就不硬改状态，交给 show() 如实显示（图标保持实际颜色 = 真相）
-    local i
-    for ((i = 0; i < 50; i++)); do
+    local pids pid
+    pids=$(inhibitor_pids)
+    [ -n "$pids" ] || return 0
+    printf '%s\n' "$pids" | xargs -r kill 2>/dev/null
+    # 死亡确认：kill 成功投递 ≠ 已死。上限按墙钟毫秒算（EPOCHREALTIME 去掉
+    # 非数字位，小数点随 locale 变）；写成「N 次」的话，那个 N 只是「上限 ÷ 单轮
+    # 成本」的换算结果，探针一变边界就跟着漂。
+    local deadline=$(( ${EPOCHREALTIME/[^0-9]/} + 350000 ))
+    # 进程死没死：bash 内建 kill -0，零 fork、不走总线
+    for pid in $pids; do
+        while kill -0 "$pid" 2>/dev/null; do
+            (( ${EPOCHREALTIME/[^0-9]/} >= deadline )) && break
+            sleep 0.001
+        done
+    done
+    # 锁摘没摘：以总线为准 —— 进程一退出 fd 就关，logind 随即删条目。
+    # 还没摘掉就不硬改状态，交给 show() 如实显示（图标保持实际颜色 = 真相）
+    while :; do
         [ -z "$(inhibitor_pids)" ] && return 0
+        (( ${EPOCHREALTIME/[^0-9]/} >= deadline )) && return 1
         sleep 0.001
     done
-    return 1
 }
 
 show() {
@@ -158,23 +185,38 @@ toggle() {
 # 但实时信号在 waybar 装好处理器之前，默认动作是 Term —— 冷启动时它还在
 # 动态链接器里，此时发过去就是静默秒杀（没有日志、没有 core）。
 #
-# 所以这里不按名字广播，而是逐个核对目标：
+# 所以这里不按名字广播，而是逐个核对目标（waybar_refreshable）：
 #   1. /proc/<pid>/exe 必须是 waybar（同名进程不算）；
 #   2. SigCgt 掩码里 SIGRTMIN+8 对应位必须是 1，即 waybar 已经把这个信号
 #      接成「刷新」而不是「终止」。
 # 两条都满足才发。不满足就跳过 —— 它启动后会自己跑一遍 show()，状态不会丢。
 # 结论：on / toggle / off 都只能请求刷新，没有正常路径能杀死 waybar。
+
+# 这个 pid 是不是「已经把刷新信号接成刷新、而不是终止」的 waybar。
+waybar_refreshable() {
+    local pid=$1 mask
+    case "$(readlink -f "/proc/$pid/exe" 2>/dev/null)" in
+        */waybar) ;;
+        *) return 1 ;;
+    esac
+    mask=$(sed -n 's/^SigCgt:[[:space:]]*//p' "/proc/$pid/status" 2>/dev/null)
+    [ -n "$mask" ] || return 1
+    # glibc: SIGRTMIN=34，SIGRTMIN+8=42，对应掩码第 41 位（从 0 数）
+    (( (16#$mask >> 41) & 1 ))
+}
+
 refresh_waybar() {
-    local pid mask
-    for pid in $(pgrep -x waybar); do
-        case "$(readlink -f "/proc/$pid/exe" 2>/dev/null)" in
-            */waybar) ;;
-            *) continue ;;
-        esac
-        mask=$(sed -n 's/^SigCgt:[[:space:]]*//p' "/proc/$pid/status" 2>/dev/null)
-        [ -n "$mask" ] || continue
-        # glibc: SIGRTMIN=34，SIGRTMIN+8=42，对应掩码第 41 位（从 0 数）
-        (( (16#$mask >> 41) & 1 )) || continue
+    local pid
+    # 脚本通常就是 waybar 自己拉起来的（custom 模块的 exec / on-click 都是直接
+    # spawn，不过 shell），父进程即 waybar —— 先看父进程，省掉全量扫 /proc 找
+    # waybar 的那 20~46ms。
+    if waybar_refreshable "$PPID"; then
+        kill -s RTMIN+8 "$PPID" 2>/dev/null
+        return 0
+    fi
+    # 父进程不是 waybar（niri 开机那条 on、手工调用）才退回扫描
+    for pid in $(pids_by_comm waybar); do
+        waybar_refreshable "$pid" || continue
         kill -s RTMIN+8 "$pid" 2>/dev/null
     done
 }
