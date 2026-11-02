@@ -7,10 +7,11 @@ never polled and nothing is written to disk.
 
 宽度策略：撞到右簇时从最长的那列开始压，不是按比例缩，也不是整行末尾一刀切。
 - 每列标题先用 Pango 量出像素宽；
-- 标题的右端 = 右簇左边界（右簇里最左那枚胶囊 = 托盘的左沿）；
+- 只维护一个数：右簇左边界（右簇里最左那枚胶囊 = 托盘的左沿）；
   可用宽度 = 这个边界 - 工作区胶囊 - 标题胶囊自己的 padding/margin。
-  边界按当前状态估算：托盘图标数、电池百分比、音量/静音只在启动时读一次，
-  时钟宽度每次渲染重算；这些值后续变化只值几十 px，交给 GTK 的 ellipsize 兜底。
+  边界 = 屏宽 - 右簇总宽，每个输出只在第一次渲染时整簇采样一次，之后沿用同一个
+  数 —— 不给簇里每个模块各设一套刷新节奏。采样之后簇里的变化（托盘增减一枚
+  45px、静音约 50px，电池/音量/时钟 ±20px）不再追，交给 GTK 的 ellipsize 兜底。
 - 总宽超过可用宽度时取一个统一上限 L：最长的先降到和次长一样，追平后两列
   一起降，再追平第三长时三列一起降 —— 等价于把所有超过 L 的列都压到 L，
   L 取到「总宽刚好放得下」为止；原来就短于 L 的列完全不动。
@@ -18,10 +19,10 @@ never polled and nothing is written to disk.
 - modules.json 里的 max-length（GTK ellipsize）只当兜底：预算估偏时最多再把
   行尾多截一点，不会出现整列被挤没。
 
-右簇宽度要读几个系统状态（托盘图标数、音量/静音、电池百分比、屏宽），
-但都只在启动时读一次就定下，之后不再刷新：这些值后面就算变了，加起来也只
-值几十 px —— 标题的边界差这么一点，交给 GTK 的 ellipsize 兜底就行。
-换来的是脚本跑起来之后再不碰任何外部进程，也没有定时器。
+采样只在第一次渲染（或换了输出）时发生：busctl 读 SNI watcher 的图标列表
+（约 3ms），wpctl 读默认 sink 的音量/静音（约 12ms），都不起常驻进程、没有
+定时器，跑起来之后不再碰任何外部进程。电池 capacity 只读一次（这台机器的 EC
+读它偶尔要 80ms），屏宽按 output 缓存一次。
 """
 
 import functools
@@ -50,6 +51,8 @@ TITLE_GAP = f"<span foreground='#4f585e'>{SEPARATOR_TEXT}</span>"
 # 全部对应 style.css / modules.json。改右簇或标题的字体、padding、margin 时
 # 同步这里，否则预算会偏：偏大只会让胶囊离右簇多留几 px（GTK 会兜底），
 # 偏小则行尾会被 GTK 多截一点。
+# 前提：config 里靠 "no-center": true 取消中栏，左栏（工作区 + 标题）才真能长到
+# 右簇左沿；否则 waybar 默认的 fixed-center 会把左栏卡在一半屏宽。
 FONT_FAMILY = "Noto Sans,Maple Mono NL NF CN"
 FONT_SIZE_PX = 18
 TITLE_WEIGHT = 500
@@ -76,8 +79,12 @@ _layouts = {}
 _last = None
 
 _width_cache = {"output": None, "width": None}
-_tray_cache = {"done": False, "count": 1}
-_pulse_cache = {"done": False, "muted": False, "volume": None}
+
+# 边界采样：整簇一次算完，每个输出只采一次（换输出才重采）。簇里只有托盘数和
+# 音量/静音需要问系统，读失败时沿用上次的值 —— 一次查询没成功不该让边界整档跳偏。
+_edge_cache = {"output": None, "edge": None}
+_tray = {"count": 1}
+_pulse = {"muted": False, "volume": None}
 _battery_cache = {"done": False, "capacity": None}
 
 
@@ -195,6 +202,7 @@ def _bar_width(output):
         result = subprocess.run(
             ["niri", "msg", "--json", "outputs"],
             capture_output=True,
+            check=False,
             text=True,
             timeout=2,
         )
@@ -211,61 +219,47 @@ def _bar_width(output):
     return width
 
 
-def _tray_icons():
-    """How many SNI icons the tray capsule currently shows.
+def _sample_tray():
+    """数一遍 SNI watcher 里注册的图标（waybar 的托盘胶囊按枚算 45px）。"""
+    try:
+        out = subprocess.run(
+            [
+                "busctl", "--user", "get-property",
+                "org.kde.StatusNotifierWatcher",
+                "/StatusNotifierWatcher",
+                "org.kde.StatusNotifierWatcher",
+                "RegisteredStatusNotifierItems",
+            ],
+            capture_output=True,
+            check=False,
+            text=True,
+            timeout=1,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return
 
-    只读一次：托盘后来多一个应用也只值 45px 的边界差，不值得为它再问一遍。
-    """
-    if not _tray_cache["done"]:
-        count = 1  # watcher 查不到时按常驻的一枚算
-        try:
-            out = subprocess.run(
-                [
-                    "gdbus", "call", "--session",
-                    "--dest", "org.kde.StatusNotifierWatcher",
-                    "--object-path", "/StatusNotifierWatcher",
-                    "--method", "org.freedesktop.DBus.Properties.Get",
-                    "org.kde.StatusNotifierWatcher", "RegisteredStatusNotifierItems",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=1,
-            ).stdout
-            count = len(re.findall(r"'[^']+'", out))
-        except (OSError, subprocess.SubprocessError):
-            pass
-
-        _tray_cache.update(done=True, count=count)
-    return _tray_cache["count"]
+    match = re.match(r"\s*as\s+(\d+)", out)  # busctl: `as 2 ":1.42/a" ":1.43/b"`
+    if match:
+        _tray["count"] = int(match.group(1))
 
 
-def _pulse_state():
-    """(muted, volume%) of the default sink, matching the pulseaudio module.
+def _sample_pulse():
+    """默认 sink 的音量与静音（对应 {volume}% 和 format-muted）。"""
+    try:
+        out = subprocess.run(
+            ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"],
+            capture_output=True,
+            check=False,
+            text=True,
+            timeout=1,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return
 
-    只读一次：静音与否只是 50px 的边界差（静音时胶囊只剩图标）。
-    """
-    if not _pulse_cache["done"]:
-        muted, volume = False, None
-        try:
-            out = subprocess.run(
-                [
-                    "sh", "-c",
-                    "pactl get-sink-mute @DEFAULT_SINK@ 2>/dev/null; "
-                    "pactl get-sink-volume @DEFAULT_SINK@ 2>/dev/null",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=1,
-            ).stdout
-            muted = "Mute: yes" in out
-            match = re.search(r"(\d+)%", out)
-            if match:
-                volume = int(match.group(1))
-        except (OSError, subprocess.SubprocessError):
-            pass
-
-        _pulse_cache.update(done=True, muted=muted, volume=volume)
-    return _pulse_cache["muted"], _pulse_cache["volume"]
+    match = re.search(r"Volume:\s*([\d.]+)", out)  # wpctl: `Volume: 0.60 [MUTED]`
+    if match:
+        _pulse["muted"] = "[MUTED]" in out
+        _pulse["volume"] = round(float(match.group(1)) * 100)
 
 
 def _battery_capacity():
@@ -295,13 +289,10 @@ def _battery_capsule_px():
 
 
 def _pulse_capsule_px():
-    muted, volume = _pulse_state()
-    if muted:
-        text = PULSE_ICON_PX  # format-muted 只留图标
-    else:
-        shown = 100 if volume is None else volume
-        text = _text_px(f"{shown}% ") + PULSE_ICON_PX
-    return 2 * PULSE_PADDING_X + text
+    if _pulse["muted"]:
+        return 2 * PULSE_PADDING_X + PULSE_ICON_PX  # format-muted 只留图标
+    shown = 100 if _pulse["volume"] is None else _pulse["volume"]
+    return 2 * PULSE_PADDING_X + _text_px(f"{shown}% ") + PULSE_ICON_PX
 
 
 def _clock_capsule_px():
@@ -320,24 +311,39 @@ def _workspaces_px(state, output):
     return total + WORKSPACE_MARGINS_PX
 
 
-def _right_edge_px(output):
-    """右簇左边界：右簇里最左那枚胶囊（托盘）的左沿，距屏幕左沿多少 px。
+def _right_cluster_px():
+    """右簇总宽：托盘 + idle + 电池 + 音量 + 时钟，外加固定间隙。
 
-    标题的右端就顶在这儿 —— 它是「标题最多能用到哪儿」的那一个数。
+    系统状态只在这里读：一次采样就是整簇的一次快照。
     """
-    width = _bar_width(output)
-    if not width:
-        return None
-
-    right_cluster = (
+    _sample_tray()
+    _sample_pulse()
+    return (
         RIGHT_GAPS_PX
-        + TRAY_ICON_PX * _tray_icons()
+        + TRAY_ICON_PX * _tray["count"]
         + IDLE_CAPSULE_PX
         + _battery_capsule_px()
         + _pulse_capsule_px()
         + _clock_capsule_px()
     )
-    return width - right_cluster
+
+
+def _right_edge_px(output):
+    """右簇左边界：右簇里最左那枚胶囊（托盘）的左沿，距屏幕左沿多少 px。
+
+    标题的右端就顶在这儿 —— 它是「标题最多能用到哪儿」的那一个数。
+    整簇每个输出只采一次样，之后的模块变化由 GTK 的 ellipsize 兜底。
+    """
+    width = _bar_width(output)
+    if not width:
+        return None
+
+    if _edge_cache["output"] == output:
+        return _edge_cache["edge"]
+
+    edge = width - _right_cluster_px()
+    _edge_cache.update(output=output, edge=edge)
+    return edge
 
 
 def _available_text_px(state):

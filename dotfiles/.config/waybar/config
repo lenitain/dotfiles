@@ -1,5 +1,12 @@
 {
     "layer": "top",
+
+    // 没有 modules-center，所以关掉中栏本身。默认 fixed-center=true 时 waybar 会给
+    // 中栏留一个固定的中心位（gtk_box_set_center_widget），左右两组各只能分到一半
+    // 宽度：标题胶囊长到屏幕中间就被 GTK 的 ellipsize 截掉，和右簇之间留一大片空白。
+    // 关掉之后左栏（工作区 + 标题）可以一路顶到右簇左沿。
+    "no-center": true,
+
     "include": [
         "~/.config/waybar/modules.json"
     ],
