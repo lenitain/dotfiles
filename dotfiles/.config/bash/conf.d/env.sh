@@ -28,7 +28,7 @@ done
 unset _bash_path_dir
 
 # 按「保留第一次出现」给 PATH 去重；空元素（代表当前目录）直接丢掉。
-# 存在的理由：mise activate 前置 shims 和 ~/.cargo/bin 时不检查是否已存在，
+# 存在的理由：mise env 前置 shims 和 ~/.cargo/bin 时不检查是否已存在，
 # 而且它自己输出的 PATH 里 ~/.cargo/bin 就已经有两份相邻副本，于是每嵌套一层
 # bash 就多一份。PATH 的自增点在这里和 conf.d/mise.sh 两处，两边各收一次尾。
 __bash_path_dedupe() {

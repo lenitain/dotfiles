@@ -34,6 +34,17 @@
 > 现在它读的是 `init.sh`，拿完环境层就返回——PATH 就绪，但别名/键位/提示符一个都不会进。
 > （MOD+B 就是这么坏过一次：PATH 只在 `.bashrc` 里设置，niri 的 `spawn` 找不到命令。）
 
+## 工具链（mise）：手动激活
+
+启动时用 `mise env` 一次性注入环境，**不用 `mise activate`**——activate 挂钩子，
+每次 cd、每个提示符都重算（本机约 40ms）。
+
+代价：cd 不再自动换工具版本。要切项目版本，敲 `mh` 手动刷新。
+
+- `auto_install = false`：缺工具只警告不下载，装什么由 `mise install` 决定。
+- 于是进项目看到 `mise WARN missing: node@20.19.0`、`node` 报「未找到」是正常的——
+  PATH 里本来就没那个版本。
+
 ## 目录
 
 ```
