@@ -70,6 +70,7 @@ vim.opt.incsearch = true -- 增量搜索（边输入边搜索）
 vim.opt.wrap = false -- 禁用自动换行（长行不换行，需水平滚动）
 vim.opt.title = true -- 启用终端标题栏（否则下面的 titlestring 不生效）
 vim.opt.titlestring = 'nvim: %{expand("%:~")}' -- 标题格式：nvim: 路径/文件名（家目录缩写为 ~）
+vim.opt.titlelen = 0 -- 标题不按窗口宽度截断（0 = 用完整路径；百分比会在窄窗口下把标题截成 "<.../LICENSE"）
 vim.opt.termguicolors = true -- 启用真彩色支持
 vim.opt.showmode = false -- 不显示模式提示（状态栏已有显示）
 vim.opt.shortmess:append("I") -- 禁用启动 intro 画面（NVIM logo + 帮助信息）
