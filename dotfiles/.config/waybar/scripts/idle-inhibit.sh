@@ -7,18 +7,15 @@
 #
 # 熄屏的原理：swayidle 的 timeout 命令是本脚本的 blank —— 它现场查 logind 的
 # 抑制器列表，锁在（常亮）就什么都不做，锁不在就照常熄屏。熄屏的超时值就在下面
-# start_swayidle 里（300 秒），图标 tooltip 与本脚本的回显文字以那里为准。
-#   （早先是靠 swayidle 自己认 logind 的 idle 抑制剂来决定要不要注册 timeout，
-#    但那条路只在它连上 logind 时才成立 —— 见 start_swayidle 的注释。判断放到
-#    自己这边更直白，也不受 swayidle 版本差异影响。）
+# start_swayidle 里（300 秒）。
 #
 # 状态不记在 pid 文件里，而是每次现场查 logind 的 ListInhibitors（busctl）。
 # 选它而不是 pgrep：一是快 —— 实测 6ms，pgrep -f 要 21-45ms（全量扫 300+ 进程
-# 的 cmdline），是旧版 toggle 延迟的大头；二是准 —— 它查的是锁本身，正是
-# swayidle 读的那个东西，比「进程在不在」更接近真相，抑制器被外部杀掉 /
-# logind 重启后同样自动纠正，不留「假 ON」。pid 也从同一条目取：持锁进程一死
-# fd 就关、logind 当场删条目，所以「被列出的 pid 必然是活的持锁者」，不会被
-# 系统复用的旧 pid 骗到误杀；依旧不往 /tmp 写 pid 文件（别人可预建抢占）。
+# 的 cmdline）；二是准 —— 它查的是锁本身，正是 swayidle 读的那个东西，比
+# 「进程在不在」更接近真相，抑制器被外部杀掉 / logind 重启后同样自动纠正，
+# 不留「假 ON」。pid 也从同一条目取：持锁进程一死 fd 就关、logind 当场删条目，
+# 所以「被列出的 pid 必然是活的持锁者」，不会被系统复用的旧 pid 骗到误杀；
+# 也不往 /tmp 写 pid 文件（别人可预建抢占）。
 #
 # 开启不轮询状态，而是等「就绪握手」：让被启动的命令在 Inhibit 成功之后写一行
 # ready，脚本阻塞读管道 —— 读到行 = 注册成功，读到 EOF = 失败（systemd-inhibit

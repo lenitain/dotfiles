@@ -1,16 +1,7 @@
 /* ============================================================
    Waybar 样式 —— 胶囊样式
-   参考图（Nord 顶栏）的要点：
-     1. bar 本身不画底色：只有胶囊有材质，胶囊之间的空隙直接透出壁纸；
-     2. 胶囊两端是完整的半圆（stadium），半径 = 高/2；
-     3. 每一组内容（图标组也好、文字组也好）都套一枚胶囊，
-        整条 bar 只有一种胶囊材质；
-     4. 整条 bar 没有大面积的高饱和色块。
-   文字/强调沿用 Everforest dark medium，胶囊底改用自定的深灰蓝：
-     胶囊底   #232A2E          ← 浮在壁纸上的那块实体
-     hover    #475258 (bg3)  ← 再浅一档
-     文字     #d3c6aa (fg)
-     强调     #a7c080 (green)
+   胶囊底 #232A2E，hover #475258，文字 #d3c6aa，强调 #a7c080。
+   bar 外壳透明：只有胶囊有材质，胶囊之间与上下留白直接透出壁纸。
    ============================================================ */
 
 * {
@@ -18,27 +9,19 @@
 }
 
 /* ---------- bar 外壳 ----------
-   外壳通明、不画任何东西：window 和里面的根盒子都不带底色，
-   所以整条 bar 只剩胶囊可见，胶囊之间的空隙和胶囊上下的 4px
-   全部露出壁纸。bar 依旧占住顶部这段高度（exclusive zone），
-   窗口不会钻到胶囊底下。 */
+   外壳通明、不画任何东西，但占住顶部这段高度（exclusive zone），
+   窗口不会钻到胶囊底下。
+   胶囊 29px（行盒 27 + padding 2）+ 上下 margin 各 4px = 37px；
+   min-height 给 38px 余量，避免 Waybar 因舍入把 bar 顶高一档。 */
 window#waybar {
   background-color: transparent;
   font-size: 18px;
-  /* 胶囊 29px（行盒 27 + padding 2）+ 上下 margin 各 4px = 37px；
-     min-height 给 38px 余量，避免 Waybar 因舍入把 bar 顶高一档。 */
   min-height: 38px;
-  margin: 0px;
-  padding: 0;
 }
 
 /* ---------- 胶囊的统一材质 ----------
-   凡是「带内容的一组」都套同一枚胶囊：底色 #232A2E（深灰蓝），
-   衬在壁纸上也有一块明确的实体，
-   不会糊成半透明的一抹。
-   圆角 = 高/2（29px 的胶囊 → 14px 即完整药丸）、
-   上下 margin 4px 是胶囊与 bar 上沿（也就是屏幕边缘）的留白，
-   也是 bar 高度的来源。 */
+   凡是「带内容的一组」都套同一枚胶囊：底色 #232A2E、圆角 14px、
+   margin 4px。 */
 #workspaces,
 #custom-coltitles,
 #pulseaudio,
@@ -47,32 +30,22 @@ window#waybar {
   background-color: #232A2E;
   border-radius: 14px;
   margin: 4px;
-  font-size: 18px;
   font-weight: 500;
   color: #d3c6aa;
 }
 
 /* ---------- 工作区 ----------
-   整组是一枚胶囊，组内按钮透明；active 只把数字换成米白，
-   不再是整块高饱和的绿色色块（那枚色块是这版最难看的部分）。
-   左边距 8px：屏幕边缘到胶囊的留白 = 胶囊之间的留白（8px）。
-   横向 padding 去掉：胶囊内部不再额外补空位，数字只由各自 40px
-   格子居中，首个数字到胶囊左沿会短于数字间距（先这样，要补再补）。 */
+   整组是一枚胶囊，组内按钮透明；active 只把数字换成米白。
+   左边距 8px：屏幕边缘到胶囊的留白 = 胶囊之间的留白。 */
 #workspaces {
-  background-color: #232A2E;
   font-weight: 700;
-  border-radius: 14px;
-  padding: 0;
   margin: 4px 4px 4px 8px;
 }
 
-/* 按钮：透明底，垂直 1px padding 把 27px 行盒撑成 29px 的胶囊高度
-   （行满整枚组胶囊）；水平 0 → 两端贴边。
-   所有格子等宽 40px：激活与未激活完全一样宽，不靠宽度差做指示
-   （宽出一截的激活格在圆角按钮里糊成一团，反而难看）。 */
+/* 按钮：透明底，垂直 1px padding 把 27px 行盒撑成 29px 的胶囊高度；
+   所有格子等宽 40px，激活与未激活完全一样宽，不靠宽度差做指示。 */
 #workspaces button {
   border-radius: 14px;
-  font-size: 18px;
   padding: 1px 0;
   color: #7a8478;
   background: transparent;
@@ -83,75 +56,46 @@ window#waybar {
   border: none;
 }
 
-/* active：数字用米白（Everforest fg #d3c6aa），底色不变。
-   宽度和普通格一样（40px，继承上面的 min-width），指示全靠这一抹米白。 */
+/* active：数字用米白（Everforest fg #d3c6aa），底色不变。 */
 #workspaces button.active {
   color: #d3c6aa;
-  background: transparent;
-  border: none;
 }
 
-/* hover：只改底色，不动字色 —— 数字本来就是靠颜色区分激活/未激活，
-   hover 再换一次字色会盖掉 active 的标记。 */
+/* hover：只改底色，不动字色 —— 数字靠颜色区分激活/未激活，
+   hover 再换字色会盖掉 active 的标记。 */
 #workspaces button:hover {
   background: #475258;
 }
 
-/* hover 到 active 格上：底色照常浮起，字色保持 active 的米白。 */
-#workspaces button.active:hover {
-  background: #475258;
-}
-
 /* ---------- 列标题 ----------
-   与其他胶囊同材质（同一块 #232A2E 底），不再单独做「更暗一档」的暗盘：
-   整条 bar 只有一种胶囊材质，靠内容区分，不靠明暗区分。
-   上下左右 margin 全是 4px：与工作区胶囊之间、屏幕边缘的留白
-   都是 8px（两个模块的 margin 相加），整条 bar 一个节奏。 */
+   与其他胶囊同材质；margin 4px 让标题胶囊与工作区胶囊之间、
+   屏幕边缘的留白都是 8px。 */
 #custom-coltitles {
-  font-weight: 500;
-  color: #d3c6aa;
-  background-color: #232A2E;
-  border-radius: 14px;
-  margin: 4px;
   padding: 1px 16px;
 }
 
 /* ---------- 托盘 ----------
-   托盘是「一组图标」，和其他组一样整组套一枚胶囊（#232A2E + 14px 圆角），
-   组内图标透明 —— 和工作区胶囊同一个模式：底色只画在组上，
-   单个格子的 hover 由下面各自的 EventBox 负责。 */
+   整组套一枚胶囊，组内图标透明；图标间距由 image 自己的 padding 提供，
+   这段空白因此也属于图标（可点、可 hover），不是 GTKBox 的 spacing。
+   首尾图标的 11px 同时充当胶囊内沿留白；垂直 3px 让 23px 图标
+   + 6px = 29px，与文字胶囊同高。 */
 #tray {
   background-color: #232A2E;
   border-radius: 14px;
-  padding: 0;
   margin: 4px;
 }
 
-/* 图标间距不用 GTKBox 的 spacing（modules.json 里 spacing: 0，
-   因为它不属于任何图标、点不中）；改由 image 自身 padding
-   撑开左右各 11px，这段空白算在图标盒子里，同样可点、同样 hover。
-   首尾图标的 11px 也就是胶囊的内沿留白，和文字胶囊 12px 横向
-   padding 同一节奏。
-   （实测 padding 加在 EventBox 上会被 GTK 忽略，加在 image 上才撑大盒子。）
-   垂直 3px：图标 23px + 6 = 29，与文字胶囊同高。 */
-#tray > .passive image,
 #tray > .active image,
 #tray > .needs-attention image {
   padding: 3px 11px;
 }
 
-/* hover 底画在图标自己的 EventBox（45×29）上，圆角同样是 14px：
-   首尾格因此和胶囊两端完全重合，中间格就是胶囊里浮起的一枚药丸，
-   和工作区里 hover 的格子观感一致。
-   （hover 必须挂在每枚图标上：托盘图标各有自己的 GdkWindow，
-   指针停在图标上时 #tray 本身收不到 enter，整组提亮不会触发。） */
-#tray > .passive,
+/* hover 底画在图标自己的 EventBox 上，圆角与胶囊两端一致。 */
 #tray > .active,
 #tray > .needs-attention {
   border-radius: 14px;
 }
 
-#tray > .passive:hover,
 #tray > .active:hover,
 #tray > .needs-attention:hover {
   background: #475258;
@@ -164,8 +108,7 @@ window#waybar {
   margin: 4px 8px 4px 4px;
 }
 
-/* ---------- 音量 / 电池 ----------
-   水平 padding 同值，两枚胶囊的图标节奏一致。 */
+/* ---------- 音量 / 电池 ---------- */
 #pulseaudio {
   padding: 1px 12px;
 }
@@ -175,14 +118,9 @@ window#waybar {
 }
 
 /* ---------- idle（desktop / 显示器图标）----------
-   单图标版胶囊：盒子和托盘图标那一格一模一样
-   （3px 11px → 23px 字形 + 22px 水平 padding = 45px 宽、29px 高），
-   所以它站在托盘胶囊旁边时同高、同内沿节奏。
-   两态共用同一张字形（见 scripts/idle-inhibit.sh），CSS 只负责颜色：
-   绿色 = 抑制中，米色 = 正常；单字形切换，零位移。
-   字形是 U+F108（Font Awesome 的 desktop）。字体栈换成 FontAwesome 后，
-   22px 下行盒只有 23px，加 3px 上下 padding 正好 29，与文字胶囊同高；
-   缺失而落到全局 Maple 时行盒是 30px，再加 6px 会顶到 36，把 bar 撑高。 */
+   单图标胶囊：3px 11px padding 让 23px 字形变成 45×29，
+   与托盘图标同尺寸、同内沿节奏。
+   两态共用同一张字形，CSS 只负责颜色：绿色 = 抑制中，米色 = 正常。 */
 #custom-idle-inhibit {
   font-family: "FontAwesome";
   font-size: 22px;
@@ -193,14 +131,12 @@ window#waybar {
   border-radius: 14px;
 }
 
-/* Idle Inhibit active（抑制中）：只换绿色，字形和盒子不变，状态切换零位移。 */
+/* Idle Inhibit active（抑制中）：只换绿色，字形和盒子不变。 */
 #custom-idle-inhibit.active {
   color: #a7c080;
 }
 
-/* ---------- hover ----------
-   胶囊从 #232A2E 浮起到 #475258。托盘内部格子的 hover 单独写在上面，
-   因为它挂在每枚图标的 EventBox 上而不是整组。 */
+/* ---------- hover ---------- */
 #custom-coltitles:hover,
 #clock:hover,
 #pulseaudio:hover,
@@ -210,7 +146,6 @@ window#waybar {
 }
 
 /* ---------- Tooltips ---------- */
-/* tooltip 底色沿用胶囊底 #232A2E，和胶囊同一块实体色。 */
 tooltip {
   border-radius: 8px;
   background-color: #232A2E;
@@ -220,12 +155,8 @@ tooltip {
   box-shadow: none;
 }
 
-tooltip * {
-  border-radius: 8px;
-}
-
 /* ---------- Battery critical warning ---------- */
-/* 红底 #e67e80 上用 bg0 #2d353b 写字（GTK 主题的 destructive_fg 同值）。 */
+/* 红底 #e67e80 上用 bg0 #2d353b 写字。 */
 #battery.critical:not(.charging) {
   background-color: #e67e80;
   color: #2d353b;

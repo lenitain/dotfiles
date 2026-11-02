@@ -1,19 +1,5 @@
 {
     "layer": "top",
-    /* 外壳不画任何底色：window 与根盒子全部透明（见 style.css），
-       整条 bar 只有胶囊有材质，胶囊之间的空隙与上下留白直接透出壁纸。
-       margin 仍为 0：bar 贴住屏幕边缘，胶囊自己的 4px margin
-       就是它与屏幕边缘的留白。 */
-    "margin-top": 0,
-    "margin-bottom": 0,
-    "margin-left": 0,
-    "margin-right": 0,
-    "spacing": 0,
-    "no-center": true,
-    /* 左簇吃掉「工作区右侧 → 右簇左侧」的全部宽度：右簇因此锚定在屏幕右边，
-       不随标题数量/文字长度左右漂移。列标题模块本身不 expand（见 modules.json），
-       标题暗盘只包住文字，不会变成一条贯穿半屏的长条。 */
-    "expand-left": true,
     "include": [
         "~/.config/waybar/modules.json"
     ],
@@ -31,4 +17,3 @@
         "clock"
     ]
 }
-

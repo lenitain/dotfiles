@@ -7,19 +7,7 @@
 #     niri msg -j windows              每扇窗的 app_id 和 id
 #     niri msg action close-window --id <ID>   精确关掉指定那扇
 # 合成器本来就在维护这份状态，也只有它知道得准，所以没有任何需要落盘的东西。
-#
-# 为什么不记 PID（曾经的做法）：
-#   - 记在 ~/.local/state 会跨重启留下陈旧记录；重启后 PID 被复用，wrapper 会
-#     以为「窗还开着」，点图标就一直没反应
-#   - 改放 /tmp 或 XDG_RUNTIME_DIR 只是降低概率，根因没除：等于自己维护一份
-#     影子状态，而它迟早会和真相对不上
-#   - 影子状态只认「本进程启动的那一个」；你在终端自己开的同款窗口它管不着
-# 现在的行为：终端里已经开着 pavucontrol 时，点图标会把它关掉 —— 这才是
-# toggle 该有的样子。
-#
-# 与 fuzzel-wrapper / slurp-wrapper 的 pkill 不是一回事：那两个的「进程活着」
-# 代表一个**进行中的状态**（正在框选 / 正在显示候选），新请求必须取消旧的；
-# 这里要的只是同一扇窗反复开关，按窗口关更准确。
+# 在终端里已经开着同款窗口时，点图标也会把它关掉 —— 这才是 toggle 该有的样子。
 set -u
 
 if [ $# -eq 0 ]; then
@@ -31,7 +19,7 @@ fi
 # 所以两种都得认：
 #     gsimplecal  →  'gsimplecal'                  直接相等
 #     pavucontrol →  'org.pulseaudio.pavucontrol'  取最后一段
-# 这不是「以防万一」—— 早期版本只做相等匹配，pavucontrol 就因此匹配不上，
+# 两种都要认：只做相等匹配会漏掉 pavucontrol 这类反向 DNS 名，
 # 点图标只会不断重开，永远关不掉。
 appid=$(basename -- "$1")
 

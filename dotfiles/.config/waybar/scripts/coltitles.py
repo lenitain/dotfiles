@@ -9,8 +9,8 @@ never polled and nothing is written to disk.
 - 每列标题先用 Pango 量出像素宽；
 - 标题的右端 = 右簇左边界（右簇里最左那枚胶囊 = 托盘的左沿）；
   可用宽度 = 这个边界 - 工作区胶囊 - 标题胶囊自己的 padding/margin。
-  边界在启动时按当前状态算一次（托盘图标数、电池百分比、音量/静音、时钟），
-  之后不再刷新；
+  边界按当前状态估算：托盘图标数、电池百分比、音量/静音只在启动时读一次，
+  时钟宽度每次渲染重算；这些值后续变化只值几十 px，交给 GTK 的 ellipsize 兜底。
 - 总宽超过可用宽度时取一个统一上限 L：最长的先降到和次长一样，追平后两列
   一起降，再追平第三长时三列一起降 —— 等价于把所有超过 L 的列都压到 L，
   L 取到「总宽刚好放得下」为止；原来就短于 L 的列完全不动。
@@ -37,8 +37,8 @@ from datetime import datetime
 
 ACTIVE_COLOR = "#d3c6aa"
 INACTIVE_COLOR = "#859289"
-# 列与列之间的分隔：一枚暗竖线。原来的 20px 空格和窗口标题自己的 " - " 一样宽，
-# 所以读不出「这里换列了」。竖线取自 niri 的列概念，颜色在胶囊底上刚好可见。
+# 列与列之间的分隔：一枚暗竖线。20px 空格和窗口标题自己的 " - " 一样宽，
+# 读不出「这里换列了」。竖线取自 niri 的列概念，颜色在胶囊底上刚好可见。
 # 竖线字形 advance 16px，两侧各留一枚 en space（8px）：列间总 32px，
 # 竖线本身两边各 8px 空白，比普通空格（4px）松一档。
 # 色值取自 .palette/everforest.md 的 dark medium：bg4 #4f585e
@@ -148,9 +148,6 @@ def _level(widths, avail):
 def _fit_columns(titles, avail, gap_px):
     """撞到右边时削峰：最长的先缩，追平次长的就一起缩，以此类推。"""
     count = len(titles)
-    if count == 0:
-        return titles
-
     widths = [_text_px(title) for title in titles]
     text_avail = avail - gap_px * (count - 1)
     if text_avail <= 0:
@@ -204,8 +201,7 @@ def _bar_width(output):
         outputs = json.loads(result.stdout)
         logical = (outputs.get(output) or {}).get("logical") or {}
         width = int(logical["width"]) if logical.get("width") else None
-    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError,
-            subprocess.SubprocessError):
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
         width = None
 
     # 失败不记：读不到屏宽就没有预算可用，下一次渲染再问一遍（niri 挂了这个模块
