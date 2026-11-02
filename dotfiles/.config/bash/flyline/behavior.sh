@@ -11,7 +11,10 @@ flyline --set-newline-marker ""
 # DECSCUSR（prompt/ps1.sh）才能保持 beam。
 flyline set-cursor --backend terminal
 
-# 鼠标保持默认 smart（可点选、可拖动移动光标）；要关掉用 flyline mouse --mode disabled。
+# 关掉 flyline 的鼠标接管：它在 smart 模式下开启 mouse tracking（DECSET 1000/1002/1003/1006），
+# foot 见到客户端抓鼠标就不做拖选，选中输出要精确命中或按住 Shift。代价是失去点哪跳哪、
+# 点选建议、悬停 tooltip。
+flyline mouse --mode disabled
 
 # 补全：输入时自动弹出候选菜单保持默认开启（auto-suggest 默认 true），这里只关掉
 # flycomp —— 也就是「No completion script found for 'xxx' ... Proceed?」那个询问。
