@@ -28,7 +28,7 @@
         "custom/idle-inhibit",
         "battery",
         "pulseaudio",
-        "custom/clock"
+        "clock"
     ]
 }
 

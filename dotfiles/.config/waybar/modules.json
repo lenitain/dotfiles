@@ -65,38 +65,41 @@
   },
 
   // Clock（单行、英文：数字月-日 星期 时:分，例如 "10-24 Sat 15:55"）
-  // 套 popup-wrapper 做「点一下开、再点一下关」。两个模块必须行为一致：
-  // gsimplecal 自带 toggle、pavucontrol 只开不关，交给 wrapper 统一按窗口开关。
-  // 不用内置 clock 模块的原因：它的 format 必须以 % 开头（chrono-spec 解析器硬要求），
-  // 而这里要的「月-日 星期 时间」拼法它表达不了。改成 custom/clock 走 date + JSON。
+  // 用内置 clock 模块，进程内格式化：不再 fork。
+  // 之前是 custom/clock + "interval": 1，waybar 每秒 fork 一次
+  // `sh -c 'LC_TIME=C date ...'`（一个 tick 两次 execve：sh 再 exec date），
+  // 只为拿一行文本 —— 一分钟 60 次，其中 59 次的输出与上一次逐字相同。
+  // 内置 clock 用 chrono 在 waybar 进程内格式化，默认 60 秒一次且对齐整分钟
+  // （显示的是 HH:MM，分钟变了才需要重画），零 fork、零子进程。
   // - 单行纯文本，不带 Pango markup：字号和字重都不在这里管 —— 全继承 style.css
-  //   里「系统信息模块」组规则的 16px / 500，与音量、电池完全同款。
-  //   旧版是在 markup 里写 weight="medium" + size="9216"，早就删了。
-  // - LC_TIME=C 仍然必须：月份已经数字化（不依赖 %b），但 %a 还是英文星期
-  //   —— 本机 locale 是 zh_CN.UTF-8，不覆盖就会输出「周六」，和数字月混排。
-  //   前缀只作用于这一条 date 命令，不改父进程/bar 的环境。
-  // - %m / %d：个位数月份/日期用 0 填充（"4-05" → "04-05"，不是 "4-5"），
+  //   里胶囊组的 18px / 500，与音量、电池完全同款。
+  // - format 是 chrono 格式串（不是 strftime）：整串必须包在一对花括号里，
+  //   所以是 "{:%m-%d %a %H:%M}"，不是 "%m-%d %a %H:%M"。
+  //   %m / %d：个位数月份/日期用 0 填充（"4-05" → "04-05"，不是 "4-5"），
   //   让月日两位对齐。分隔符当前是 -（和 tooltip 的 ISO 日期 %Y-%m-%d 观感
   //   一致），想换斜杠就把 %m-%d 改成 %m/%d → "10/24 Sat"。
-  //   想去掉前导零就换回 %-m-%-d（GNU date 修饰符，本机 glibc 支持）。
+  //   去掉前导零：chrono 没有 %-m 修饰符，只能靠 locale 之外的手段（如
+  //   "{:%m-%d %a %H:%M}" 改 "{:%-m-%-d ...}" 也不行），需要的话另写 custom。
+  // - locale: "C" 取代旧的 LC_TIME=C 前缀：本机 locale 是 zh_CN.UTF-8，
+  //   不覆盖 %a 就是「周六」，和数字月混排。locale 只作用于这个模块的格式化
+  //   （标签和 tooltip 都用它），不改父进程/bar 的环境。
   // - 变体（改一处即可）：星期全称 %a→%A（"10-24 Saturday 15:55"，宽约 +32px）；
-  //   12 小时制 %H:%M→%I:%M %p（"10-24 Sat 03:55 PM"）；无前导零用 %-m-%-d。
-  // - 宽度实测（Pango + Noto Sans，本机量得）：16px/500 下文字 113px + 左右 padding
-  //   22px = 盒宽约 135px；14px/500 的旧版是 123px，即变宽 12px，右簇会
-  //   相应左移。同一字符串换 700 只多 2px（文字 115px / 盒 137px），所以粗体
-  //   对右簇宽度的影响可以忽略。补零后个位数月/日各多一个字符（约 +9px/位），
-  //   最宽情形 "04-05 Sat 15:55" 约 131px。
+  //   12 小时制 %H:%M→%I:%M %p（"10-24 Sat 03:55 PM"）。
+  // - 宽度：与旧 custom/clock 的文本逐字相同（同一个 Pango 字体/字号/字重），
+  //   CSS 的左右 padding 也没动（还是 1px 13px），所以胶囊宽度不变、右簇不挪位；
+  //   scripts/coltitles.py 的 CLOCK_PADDING_X 仍按 13px 算，无需同步。
+  //   （本机实测 18px/500 下文字 128~140px，差值来自数字字形本身。）
   // - "justify": "center" 对单行已无实际作用，留着无害（ALabel 只在多行时用得上）。
-  // - exec 里的 \" 原样输出给 jsoncpp：date 不解释它，JSON 解码后才是真引号。
-  // - tooltip 是同一个 JSON 里的另一个字段（custom 模块默认就开 tooltip，不用写
-  //   "tooltip": true）：bar 上已有月日星期，tooltip 补年份 + ISO 周数；文案也用
-  //   英文（"Week 43"），免得英文时钟配中文 tooltip。%V 按 ISO 算，年末/年初偶尔
-  //   会出现「Week 1」配 12 月，属正常的 ISO 跨年现象。
-  "custom/clock": {
-    "exec": "LC_TIME=C date +'{\"text\": \"%m-%d %a %H:%M\", \"tooltip\": \"%Y-%m-%d · Week %V\"}'",
-    "return-type": "json",
-    "format": "{}",
-    "interval": 1,
+  // - on-click 走 waybar 的通用路径：on-click 的值本身就是命令，点一下跑一次
+  //   popup-wrapper gsimplecal —— 「点一下开、再点一下关」。两个模块必须行为一致：
+  //   gsimplecal 自带 toggle、pavucontrol 只开不关，交给 wrapper 统一按窗口开关。
+  // - tooltip-format 同为 chrono 格式串：bar 上已有月日星期，tooltip 补年份 +
+  //   ISO 周数；文案也用英文（"Week 43"），免得英文时钟配中文 tooltip。
+  //   %V 按 ISO 算，年末/年初偶尔会出现「Week 1」配 12 月，属正常的 ISO 跨年现象。
+  "clock": {
+    "format": "{:%m-%d %a %H:%M}",
+    "locale": "C",
+    "tooltip-format": "{:%Y-%m-%d · Week %V}",
     "align": 1,
     "justify": "center",
     "on-click": "~/.config/waybar/scripts/popup-wrapper gsimplecal"

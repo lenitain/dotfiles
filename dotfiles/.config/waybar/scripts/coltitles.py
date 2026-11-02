@@ -61,7 +61,7 @@ BATTERY_ICON_PX = 11      # format-icons 五档与插头同宽
 PULSE_ICON_PX = 11        # FA 扬声器字形在 18px 下约 11px
 BATTERY_PADDING_X = 12    # #battery padding: 1px 12px
 PULSE_PADDING_X = 12      # #pulseaudio padding: 1px 12px
-CLOCK_PADDING_X = 13      # #custom-clock padding: 1px 13px
+CLOCK_PADDING_X = 13      # #clock padding: 1px 13px
 # 标题胶囊右沿到屏幕右沿之间的固定间距：标题右 margin 4 + 托盘左 margin 4
 # + 5 个 8px 的小间隙（托盘→抑制→电池→音量→时钟 各 8，时钟右 margin 8）。
 RIGHT_GAPS_PX = 48

@@ -43,7 +43,7 @@ window#waybar {
 #custom-coltitles,
 #pulseaudio,
 #battery,
-#custom-clock {
+#clock {
   background-color: #232A2E;
   border-radius: 14px;
   margin: 4px;
@@ -159,7 +159,7 @@ window#waybar {
 
 /* ---------- 时钟 ----------
    最右一枚胶囊，右边距 8px：离屏幕右边缘的留白 = 胶囊之间的留白。 */
-#custom-clock {
+#clock {
   padding: 1px 13px;
   margin: 4px 8px 4px 4px;
 }
@@ -202,7 +202,7 @@ window#waybar {
    胶囊从 #232A2E 浮起到 #475258。托盘内部格子的 hover 单独写在上面，
    因为它挂在每枚图标的 EventBox 上而不是整组。 */
 #custom-coltitles:hover,
-#custom-clock:hover,
+#clock:hover,
 #pulseaudio:hover,
 #battery:hover,
 #custom-idle-inhibit:hover {
