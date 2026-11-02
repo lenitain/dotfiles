@@ -2,10 +2,6 @@
 	email = xt.zhu@qq.com
 	name = lenitain
 
-[core]
-	editor = nvim
-	autocrlf = input
-
 [pull]
 	rebase = true
 
