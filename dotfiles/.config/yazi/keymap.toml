@@ -28,8 +28,8 @@ prepend_keymap = [
   # =======================
   # 搜索跳转
   # =======================
-  { on = "z", run = "plugin finder -- --type=dir",  desc = "通过 fzf 搜索目录（仅路径）" },
-  { on = "Z", run = "plugin finder -- --type=file", desc = "通过 fzf 搜索文件（仅文件）" },
+  { on = "z", run = "plugin finder -- --type=dir",  desc = "通过 fzf 搜索目录（仅目录，含隐藏项与符号链接）" },
+  { on = "Z", run = "plugin finder -- --type=file", desc = "通过 fzf 搜索文件（仅文件，含隐藏项与符号链接）" },
 
   # =======================
   # 排序快捷（一键切换排序方式 + 行模式）
