@@ -137,18 +137,5 @@ vim.opt.undodir = undodir -- 设置撤销目录
 -- --------------------------------------------
 vim.g.markdown_recommended_style = 0 -- 禁用 markdown ftplugin 的默认样式改动
 
--- mise shims + go install 产物补入 PATH（确保 LSP/formatter/linter 可被发现）
-local extra_paths = {
-	vim.fn.expand("~/.local/share/mise/shims"),
-	vim.fn.expand("~/.local/bin"),
-	vim.fn.expand("~/.moon/bin"),
-	vim.fn.expand("~/.ghcup/bin"),
-}
-for _, p in ipairs(extra_paths) do
-	if vim.uv.fs_stat(p) and not string.find(vim.env.PATH, p, 1, true) then
-		vim.env.PATH = p .. ":" .. vim.env.PATH
-	end
-end
-
 -- 内置插件禁用由 lazy.nvim performance.rtp.disabled_plugins 统一处理（见 config/lazy.lua），
 -- 此处不再重复设置 vim.g.loaded_*
