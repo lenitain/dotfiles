@@ -17,7 +17,6 @@ return {
       { "<leader>u", group = "ui" },
       { "<leader>w", group = "windows" },
       { "<leader>x", group = "diagnostics" },
-      { "<leader>d", group = "debug" },
       { "<leader>t", group = "test" },
       { "<leader>c", group = "code" },
       { "<leader>r", group = "replace" },

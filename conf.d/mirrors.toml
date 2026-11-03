@@ -5,7 +5,7 @@
 # 由 ~/.gitconfig 的 url.insteadOf 改写 —— 两处换镜像时要同改。
 
 [env]
-# Go 模块 (go 后端装 gopls / dlv 等)
+# Go 模块 (go 后端装 gopls 等)
 GOPROXY = "https://goproxy.cn,direct"
 # Rust 工具链 (rustup) —— 这里只配镜像地址, 不配"装在哪"。
 # rustup/cargo 用它们自己的默认位置 ~/.rustup / ~/.cargo, 不搬去 XDG 目录:
@@ -64,7 +64,7 @@ node.mirror_url = "https://mirrors.aliyun.com/nodejs-release/"
 # 只管"定版本", 不管下载(下载走上面的 PIP_INDEX_URL / UV_DEFAULT_INDEX)。
 # 换之前先验新鲜度, 这行坏了不报错, 只会静默把 latest 钉在老版本上:
 #   curl -s <本行URL, 把 {} 换成包名> | grep -o '"version":"[^"]*"' | head -1
-# tuna 的这个 JSON 接口落后很多(ruff 0.5.7 / debugpy 1.8.5, 实际 0.16.9 / 1.8.22),
+# tuna 的这个 JSON 接口落后很多(ruff 0.5.7, 实际 0.16.9),
 # 但它的 simple index 是新鲜的 —— 所以只把定版本挪到 aliyun, 下载仍留 tuna。
 pypi.registry_url = "https://mirrors.aliyun.com/pypi/web/json/{}"
 
