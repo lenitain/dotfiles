@@ -31,11 +31,12 @@ zmx-select() {
     done < <(zmx list 2>/dev/null)
 
     local output
+    # 布局与配色来自 FZF_DEFAULT_OPTS（conf.d/fzf.sh）：输入栏在上、主题与
+    # Ctrl+T / Alt+C 一致。这里只补 zmx 自己的参数，别再自带 --layout。
     output=$(printf '%s\n' "${display[@]}" | fzf \
         --print-query \
         --expect=ctrl-n \
         --height=80% \
-        --reverse \
         --prompt='zmx> ' \
         --header='Enter: select | Ctrl-N: create new' \
         --preview='zmx history {1}' \

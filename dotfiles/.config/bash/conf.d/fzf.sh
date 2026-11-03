@@ -1,44 +1,47 @@
-# fzf 配置：主题、预览、flyline 键位入口。
+# fzf 配置：主题、布局、预览、flyline 键位入口。
 # 预览只有一份定义 —— Ctrl+T（选文件）与 Alt+C（选目录）都走 scripts/fzf_preview.sh，
 # 两边显示效果一致。
 
 # shellcheck source=/dev/null
 . "${BASH_CONFIG_HOME:-$HOME/.config/bash}/theme/everforest_dark_medium.sh"
 
-export FZF_DEFAULT_OPTS="\
-  --highlight-line \
-  --info=inline-right \
-  --ansi \
-  --layout=default \
-  --border=none \
-  --color=bg+:#$EVERFOREST_BG_PLUS \
-  --color=bg:#$EVERFOREST_BG \
-  --color=border:#$EVERFOREST_COMMENT \
-  --color=fg:#$EVERFOREST_FG \
-  --color=fg+:#$EVERFOREST_FG:bold \
-  --color=gutter:#$EVERFOREST_BG \
-  --color=header:#$EVERFOREST_GREEN \
-  --color=hl+:#$EVERFOREST_GREEN \
-  --color=hl:#$EVERFOREST_GREEN \
-  --color=info:#$EVERFOREST_COMMENT \
-  --color=marker:#$EVERFOREST_RED \
-  --color=pointer:#$EVERFOREST_RED \
-  --color=prompt:#$EVERFOREST_YELLOW:regular \
-  --color=query:#$EVERFOREST_FG:regular \
-  --color=scrollbar:#$EVERFOREST_SCROLLBAR \
-  --color=separator:#$EVERFOREST_SEPARATOR \
-  --color=spinner:#$EVERFOREST_RED \
-"
-
-# 逐条查重，重复 source 时不叠加
-for _bash_fzf_bind in tab:replace-query btab:toggle+down; do
-    case " ${FZF_DEFAULT_OPTS-} " in
-        *"--bind='$_bash_fzf_bind'"*) ;;
-        *) FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS-} --bind='$_bash_fzf_bind'" ;;
-    esac
-done
-unset _bash_fzf_bind
-export FZF_DEFAULT_OPTS
+# fzf 的基础选项 —— 所有 fzf 调用点的唯一来源（bash 侧）。
+#
+# 布局固定 reverse：输入栏在上、候选列表在下。调用点不要再自带 layout，
+# 命令行优先级高于 FZF_DEFAULT_OPTS，两边不一致时以调用点为准，反而会跑偏。
+# 主题的十六进制值取自 theme/everforest_dark_medium.sh，改色只改那一处。
+#
+# FZF_DEFAULT_OPTS 由 fzf 自己继承：从 shell 启动的每个 fzf 都拿到这一份设置
+# （bash 集成的 Ctrl+T / Alt+C、functions/zmx-select.sh，以及 yazi、nvim 里
+# 启动的 fzf），所以布局与配色天然统一。重复 source 只是重新算出同一个字符串。
+__bash_fzf_opts() {
+    printf '%s\n' \
+        '--layout=reverse' \
+        '--highlight-line' \
+        '--info=inline-right' \
+        '--ansi' \
+        '--border=none' \
+        "--color=bg+:#$EVERFOREST_BG_PLUS" \
+        "--color=bg:#$EVERFOREST_BG" \
+        "--color=border:#$EVERFOREST_COMMENT" \
+        "--color=fg:#$EVERFOREST_FG" \
+        "--color=fg+:#$EVERFOREST_FG:bold" \
+        "--color=gutter:#$EVERFOREST_BG" \
+        "--color=header:#$EVERFOREST_GREEN" \
+        "--color=hl+:#$EVERFOREST_GREEN" \
+        "--color=hl:#$EVERFOREST_GREEN" \
+        "--color=info:#$EVERFOREST_COMMENT" \
+        "--color=marker:#$EVERFOREST_RED" \
+        "--color=pointer:#$EVERFOREST_RED" \
+        "--color=prompt:#$EVERFOREST_YELLOW:regular" \
+        "--color=query:#$EVERFOREST_FG:regular" \
+        "--color=scrollbar:#$EVERFOREST_SCROLLBAR" \
+        "--color=separator:#$EVERFOREST_SEPARATOR" \
+        "--color=spinner:#$EVERFOREST_RED" \
+        "--bind='tab:replace-query'" \
+        "--bind='btab:toggle+down'"
+}
+export FZF_DEFAULT_OPTS="$(__bash_fzf_opts)"
 
 # ─── 预览 ───
 # 预览脚本：~/.config/bash/scripts/fzf_preview.sh

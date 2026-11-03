@@ -57,6 +57,9 @@ function M.run_with(cwd, walker, multi)
 		:arg(multi)
 		:arg("--walker=" .. walker)
 		:arg("--scheme=path")
+		-- 布局与 shell 里的 fzf 一致（输入栏在上，候选列表在下）：
+		-- 命令行优先于继承来的 FZF_DEFAULT_OPTS，脱离 shell 启动 yazi 时也一样
+		:arg("--layout=reverse")
 		:arg("--bind=ctrl-z:ignore")
 		:env("FZF_DEFAULT_COMMAND", "")
 		:env("FZF_DEFAULT_OPTS_FILE", "")

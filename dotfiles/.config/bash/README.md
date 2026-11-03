@@ -69,7 +69,7 @@
 | 提示符 | 本目录（pure 4.19.2 的 bash 版） | `conf.d/prompt.sh` 接线 → `prompt/ps1.sh` |
 | 提示符 widget | `widgets/repo.sh` → `prompt/repo.sh` | `conf.d/flyline.sh` 注册，flyline 子进程调用 |
 | 配色 | `theme/everforest_dark_medium.sh` | `conf.d/flyline.sh` 与 `conf.d/fzf.sh` 共用的十六进制值 |
-| fzf 主题 | `conf.d/fzf.sh` | 从 theme 文件生成 `FZF_DEFAULT_OPTS` |
+| fzf 主题与布局 | `conf.d/fzf.sh` | `__bash_fzf_opts` 生成 `FZF_DEFAULT_OPTS`（布局 reverse：输入栏在上） |
 | fzf 预览脚本 | `~/.config/bash/scripts/fzf_preview.sh` | fzf 子进程调用 |
 | zmx | mise | `conf.d/zmx.sh` + `functions/zmx-select.sh` |
 | 密钥 | `conf.d/API_KEY.sh`（gitignored） | `.bashrc` 的 conf.d glob + `.bash_profile` 的 `*KEY.sh` glob |

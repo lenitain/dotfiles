@@ -21,6 +21,8 @@ return {
   },
   opts = {
     -- Global settings
+    -- 布局与 shell 里的 fzf 保持一致（输入栏在上，候选列表在下）：
+    -- fzf-lua 的选项走命令行，优先于从 shell 继承来的 FZF_DEFAULT_OPTS
     fzf_opts = {
       ["--layout"] = "reverse",
       ["--info"] = "inline",
