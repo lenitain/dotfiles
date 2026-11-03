@@ -50,7 +50,7 @@ return {
       }
     end
 
-    -- Go (delve, go install → ~/go/bin/dlv)
+    -- Go (delve, go install → ~/.local/bin/dlv)
     dap.adapters.go = {
       type = "executable",
       command = "dlv",

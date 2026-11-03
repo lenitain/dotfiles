@@ -17,7 +17,8 @@ case ":$XDG_DATA_DIRS:" in
 esac
 
 # ─── PATH ───
-# 只补手工加的三处；~/.cargo/bin、~/go/bin 由 mise 负责。
+# 只补手工加的三处；~/.cargo/bin 由 mise 负责；go install 的产物在 ~/.local/bin
+# (GOBIN, 见 ~/.config/go/env)。
 for _bash_path_dir in "$HOME/.local/bin" "$HOME/.local/bin/scripts" "$HOME/.moon/bin"; do
     [ -d "$_bash_path_dir" ] || continue
     case ":$PATH:" in

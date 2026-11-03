@@ -8,11 +8,13 @@
 # Go 模块 (go 后端装 gopls / dlv 等)
 GOPROXY = "https://goproxy.cn,direct"
 # Rust 工具链 (rustup) —— 这里只配镜像地址, 不配"装在哪"。
-# rustup/cargo 用它们自己的默认位置 ~/.rustup / ~/.cargo (与 go 的 ~/go 同理)。
+# rustup/cargo 用它们自己的默认位置 ~/.rustup / ~/.cargo, 不搬去 XDG 目录:
 # 那两个位置只能靠 RUSTUP_HOME/CARGO_HOME 环境变量改, 而它们的 settings.toml /
-# config.toml 又住在 store 里(鸡生蛋) —— 所以"搬去 XDG 目录"的代价是每条启动路径
-# 都要分发变量(登录 shell / 图形会话 / systemd / IDE / launcher, 漏一处就坏)。
+# config.toml 又住在 store 里(鸡生蛋) —— 代价是每条启动路径都要分发变量
+# (登录 shell / 图形会话 / systemd / IDE / launcher, 漏一处就坏)。
 # 结论: 不搬, 用默认值, 全机零环境变量。
+# (Go 不受这条约束: GOPATH/GOBIN 写进 ~/.config/go/env, 一个文件所有启动路径都读,
+#  不用分发变量 —— 见 dotfiles/.config/go/env。)
 RUSTUP_DIST_SERVER = "https://mirrors.ustc.edu.cn/rust-static"
 RUSTUP_UPDATE_ROOT = "https://mirrors.ustc.edu.cn/rust-static/rustup"
 # node-gyp 构建原生模块时的 header 下载。mise 自己装 node 不读它, 见下方 node.mirror_url

@@ -1,2 +1,11 @@
 // GOPROXY 由 mise 的 [env] 注入 (mise 配置的 conf.d/mirrors.toml), 不要在这里再写一遍。
 // 写成注释而非留空, 是为了让下一个改这里的人知道去哪找。
+//
+// XDG 布局 —— Go 不认 XDG_* 变量, 只能写在这里; 但这个文件是所有启动路径的共同入口
+// (IDE / systemd / 图形会话 起的 go 都读它), 所以搬目录不用分发环境变量:
+//   GOPATH  ~/.local/share/go   模块缓存与源码 (原 ~/go, 已 mv 过去)
+//   GOBIN   ~/.local/bin        go install 的产物
+// GOCACHE 不用写: Go 默认取 os.UserCacheDir(), 已经是 ~/.cache/go-build。
+// 值必须写绝对路径: Go 不做 $HOME 展开, 只认字面量。
+GOBIN=/home/lenitain/.local/bin
+GOPATH=/home/lenitain/.local/share/go
