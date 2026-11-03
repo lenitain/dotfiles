@@ -73,7 +73,6 @@ vim.opt.titlestring = 'nvim: %{expand("%:~")}' -- 标题格式：nvim: 路径/�
 vim.opt.titlelen = 0 -- 标题不按窗口宽度截断（0 = 用完整路径；百分比会在窄窗口下把标题截成 "<.../LICENSE"）
 vim.opt.termguicolors = true -- 启用真彩色支持
 vim.opt.showmode = false -- 不显示模式提示（状态栏已有显示）
-vim.opt.shortmess:append("I") -- 禁用启动 intro 画面（NVIM logo + 帮助信息）
 vim.opt.showcmd = false -- 不显示命令（减少噪音）
 vim.opt.cmdheight = 0 -- 隐藏底部命令行保留行（按 : 或有输入提示时临时浮出）
 vim.opt.ruler = false -- 不显示光标位置（状态栏已有显示）
