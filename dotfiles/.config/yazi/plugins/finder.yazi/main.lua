@@ -15,15 +15,37 @@ function M:entry(job)
 		return ya.notify { title = "Finder", content = "Not supported under virtual filesystems", timeout = 5, level = "warn" }
 	end
 
+	-- --type 接受 file / dir（可逗号分隔）。fzf 的 walker 只认这几个词，
+	-- 混入空格或未知词会让 fzf 直接退出（invalid walker option），这里先挡掉。
+	local kinds = {}
+	for kind in tostring(job.args["type"] or "file"):gmatch("[^,%s]+") do
+		if kind ~= "file" and kind ~= "dir" then
+			return ya.notify { title = "Finder", content = "Unknown type: " .. kind, timeout = 5, level = "error" }
+		end
+		kinds[kind] = true
+	end
+	if not kinds.file and not kinds.dir then
+		return ya.notify { title = "Finder", content = "Type must be file or dir", timeout = 5, level = "error" }
+	end
+
 	-- Mirrors fzf's own shell helpers (`__fzf_cd__` / `__fzf_select__`):
 	-- `follow`/`hidden` keep dot-directories in the list, and the walker only
 	-- runs while nothing overrides it with FZF_DEFAULT_COMMAND
-	local kind = job.args["type"] or "file"
-	local walker = kind .. ",follow,hidden"
-	local multi = kind == "dir" and "+m" or "-m"
+	local walker = {}
+	if kinds.file then
+		table.insert(walker, "file")
+	end
+	if kinds.dir then
+		table.insert(walker, "dir")
+	end
+	table.insert(walker, "follow")
+	table.insert(walker, "hidden")
+	local walker_arg = table.concat(walker, ",")
+	local dirs_only = kinds.dir and not kinds.file
+	local multi = dirs_only and "+m" or "-m"
 
 	local permit = ui.hide()
-	local output, err = M.run_with(cwd, walker, multi)
+	local output, err = M.run_with(cwd, walker_arg, multi)
 	permit:drop()
 	if not output then
 		return ya.notify { title = "Finder", content = tostring(err), timeout = 5, level = "error" }
@@ -32,7 +54,7 @@ function M:entry(job)
 	local urls = M.split_urls(cwd, output)
 	if #urls == 0 then
 		return
-	elseif kind == "dir" then
+	elseif dirs_only then
 		return ya.emit("cd", { urls[1], raw = true })
 	elseif #urls == 1 then
 		return ya.emit("reveal", { urls[1], raw = true })
