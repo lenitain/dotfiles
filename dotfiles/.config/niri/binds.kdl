@@ -294,7 +294,7 @@ binds {
 
     // Pick color (点选取色)
     MOD+SHIFT+G hotkey-overlay-title="Pick color" {
-        spawn "hyprpicker" "--autocopy" "--notify" "--format" "hex"
+        spawn "~/.config/niri/scripts/pick-color"
     }
 
     // Screenshots

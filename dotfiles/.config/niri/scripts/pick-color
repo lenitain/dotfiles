@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# niri 内置取色器：niri msg pick-color 弹出放大镜，点击屏幕取色。
+# 取到的颜色以 "#rrggbb" 复制到剪贴板，并弹通知确认。
+#
+# 为什么不用 hyprpicker：0.4.8 起它改用 ext-image-copy-capture-v1 抓取输出，
+# 而 niri 未实现该协议，工具启动即退出；niri 自带的取色器走 compositor 内部
+# 渲染，无此限制。
+
+set -euo pipefail
+
+notify() {
+    local -a args=("$1" "$2")
+    [ -n "${3:-}" ] && args+=("-i" "$3")
+    notify-send "${args[@]}" || true
+}
+
+# 阻塞到用户点击取色（Esc 取消）。取消时 niri 输出 "No color was picked."。
+output="$(niri msg pick-color)" || exit 1
+
+hex="$(printf '%s\n' "$output" | sed -n 's/^Hex: \(#[0-9a-fA-F]\{6\}\)$/\1/p')"
+[ -n "$hex" ] || exit 1
+
+# wl-copy 会 fork 后台进程继承 stdout/stderr，必须重定向，
+# 否则 "pick-color | 任何命令" 会永久挂起。
+printf '%s' "$hex" | wl-copy >/dev/null 2>&1 || notify "复制失败" "无法写入剪贴板"
+
+printf '%s\n' "$hex"
+notify "取色器" "$hex"
