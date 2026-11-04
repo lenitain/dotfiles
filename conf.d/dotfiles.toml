@@ -3,6 +3,7 @@
 "~/.bash_profile" = {}
 "~/.bashrc" = {}
 "~/.cargo/config.toml" = {}
+"~/.config/aria2/aria2.conf" = {}
 "~/.config/bash" = {}
 "~/.config/bat" = {}
 "~/.config/btop" = {}
