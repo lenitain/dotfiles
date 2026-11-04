@@ -51,12 +51,9 @@ BEFORE="$(wl-paste -n 2>/dev/null || true)"
 watch_picked_color "$BEFORE" &
 WATCHER=$!
 
-# --zoom-in 的百分比是「视野占比」而非放大倍数，取值 0-99%：25% = 放大 4 倍。
 # 写成 200% 会被 shmooz 直接拒绝退出。
-shmooz --zoom-in 25% &
+shmooz --invert-scroll --zoom-in 10% &
 SHMOOZ=$!
-
-notify "放大镜已启动" "按 i 进入取色模式 · 左键点击取色 · 右键退出"
 
 wait "$SHMOOZ"
 kill "$WATCHER" 2>/dev/null
