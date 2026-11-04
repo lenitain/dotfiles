@@ -126,3 +126,4 @@
 "pacman:resvg" = "latest"
 "pacman:stylua" = "latest"
 "pacman:prek" = "latest"
+"pacman:libnotify" = "latest"
