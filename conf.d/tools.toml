@@ -21,7 +21,6 @@ rust = [
   { version = "nightly", profile = "minimal", components = ["miri", "rust-src"], mr_boxington = true },
 ]
 "mr-boxington" = "latest"
-"cargo:jj-gh" = "latest"
 "cargo:typos-cli" = "latest"
 "cargo:wireforge" = "latest"
 "cargo:wrfm-cli" = "latest"
