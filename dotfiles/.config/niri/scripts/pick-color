@@ -3,20 +3,15 @@
 #
 # 取色模式得用户自己按 i：wtype 走 zwp_virtual_keyboard，字符排在自定义 keycode 上，
 # 而 shmooz 拿裸 evdev 码比对快捷键（KEY_I=23），送过去的键不是 i，还会误触 Esc 退出。
+#
+# 不额外发通知：shmooz 的取色浮窗自己就实时显示 hex、复制后标 COPIED，剪贴板
+# 也由它写好（wl-copy 让内容活过它退出）。监听剪贴板只会看到同一次取色的两笔
+# 写入（原生 selection + wl-copy），要提示就得再去重，不如直接不提示。
 
 command -v shmooz >/dev/null 2>&1 || {
-    notify-send "取色器" "未安装 shmooz"
+    echo "shmooz 未安装" >&2
     exit 1
 }
 
-# shmooz 取色后把 hex 写进剪贴板；内容一变成 hex 就提示。
-# --watch 每次变更新起一个进程，各读各的 stdin，连续取色不会粘成一行。
-wl-paste --type text --watch bash -c '
-    read -r hex
-    [[ $hex =~ ^#[0-9a-fA-F]{6}$ ]] && notify-send "取色器" "$hex"
-' &
-WATCHER=$!
-trap 'kill "$WATCHER"' EXIT
-
 # 写成 200% 会被 shmooz 直接拒绝退出。
-shmooz --invert-scroll --zoom-in 10%
+exec shmooz --invert-scroll --zoom-in 10%
