@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
-# 放大镜 + 取色器：shmooz 一体化搞定
+# 放大镜 + 取色器：shmooz（Wayland 原生，wlr-screencopy + layer-shell）
 #
-# shmooz（Wayland 原生，wlr-screencopy + layer-shell）自带：
-#   滚轮         在指针位置缩放
-#   i            切换取色模式
-#   取色模式下   移动指针更新色块，左键点击把 #rrggbb 复制进剪贴板
-#   右键 / Esc   退出
+# shmooz 自带：
+#   滚轮        在指针位置缩放
+#   i           进入取色模式
+#   取色模式    移动指针更新色块，左键点击把 #rrggbb 复制进剪贴板
+#   右键        退出
 #
-# --zoom-in 的百分比是「视野占比」而非放大倍数，取值 0-99%：
-# 25% = 放大 4 倍。写成 200% 会被 shmooz 直接拒绝退出。
+# 取到的颜色由 shmooz 从它自己的启动抓帧里采样（抓帧早于放大镜覆盖层建立），
+# 所以既保住了 hyprpicker 那种放大镜手感，取到的色又准，不会被覆盖层污染。
 #
-# 颜色取自 shmooz 自己的抓帧，不会被它画的放大镜覆盖层污染，
-# 所以既保住了 hyprpicker 那种放大镜手感，取到的色又准。
-#
-# 本脚本负责：启动 shmooz → 自动按 i 进入取色模式 → 取到色后弹通知。
+# 为什么不让脚本用 wtype 自动按 i：
+# wtype 走 zwp_virtual_keyboard，自带 keymap 把字符排在自定义 keycode 上
+# （首个字符落到 evdev 2 号），而 shmooz 是拿裸 evdev 码比对快捷键的
+# （KEY_I=23、KEY_ESC=1）。送过去的键在 shmooz 眼里不是 i，还会误触 Esc 退出。
+# 取色模式只能由用户真按一次 i。
 
 set -uo pipefail
 
@@ -50,12 +51,12 @@ BEFORE="$(wl-paste -n 2>/dev/null || true)"
 watch_picked_color "$BEFORE" &
 WATCHER=$!
 
+# --zoom-in 的百分比是「视野占比」而非放大倍数，取值 0-99%：25% = 放大 4 倍。
+# 写成 200% 会被 shmooz 直接拒绝退出。
 shmooz --zoom-in 25% &
 SHMOOZ=$!
 
-# 等 shmooz 的 layer surface 映射并拿到键盘焦点（它要的是 Exclusive），再替用户按 i
-sleep 1
-wtype -k i 2>/dev/null || true
+notify "放大镜已启动" "按 i 进入取色模式 · 左键点击取色 · 右键退出"
 
 wait "$SHMOOZ"
 kill "$WATCHER" 2>/dev/null
