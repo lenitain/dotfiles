@@ -1,60 +1,22 @@
 #!/usr/bin/env bash
-# 放大镜 + 取色器：shmooz（Wayland 原生，wlr-screencopy + layer-shell）
+# 放大镜取色器（shmooz）：滚轮缩放，按 i 进取色模式，左键复制 #rrggbb，右键退出。
 #
-# shmooz 自带：
-#   滚轮        在指针位置缩放
-#   i           进入取色模式
-#   取色模式    移动指针更新色块，左键点击把 #rrggbb 复制进剪贴板
-#   右键        退出
-#
-# 取到的颜色由 shmooz 从它自己的启动抓帧里采样（抓帧早于放大镜覆盖层建立），
-# 所以既保住了 hyprpicker 那种放大镜手感，取到的色又准，不会被覆盖层污染。
-#
-# 为什么不让脚本用 wtype 自动按 i：
-# wtype 走 zwp_virtual_keyboard，自带 keymap 把字符排在自定义 keycode 上
-# （首个字符落到 evdev 2 号），而 shmooz 是拿裸 evdev 码比对快捷键的
-# （KEY_I=23、KEY_ESC=1）。送过去的键在 shmooz 眼里不是 i，还会误触 Esc 退出。
-# 取色模式只能由用户真按一次 i。
-
-set -uo pipefail
-
-notify() {
-    local -a args=("$1" "$2")
-    [ -n "${3:-}" ] && args+=("-i" "$3")
-    notify-send "${args[@]}" || true
-}
-
-# shmooz 取色后把 hex 写进剪贴板。这里盯着剪贴板，命中就通知。
-# 先记下启动时的剪贴板内容，避免把旧内容误报成本次取色结果。
-# 用轮询而不是 wl-paste --watch：watch 模式不会给内容补换行，
-# 按行读会把连续两次取色粘成一行。
-watch_picked_color() {
-    local before="$1"
-    local text
-    while true; do
-        text="$(wl-paste -n 2>/dev/null || true)"
-        if [[ "$text" =~ ^\#[0-9a-fA-F]{6}$ ]] && [ "$text" != "$before" ]; then
-            notify "取色器" "$text"
-            break
-        fi
-        sleep 0.2
-    done
-}
+# 取色模式得用户自己按 i：wtype 走 zwp_virtual_keyboard，字符排在自定义 keycode 上，
+# 而 shmooz 拿裸 evdev 码比对快捷键（KEY_I=23），送过去的键不是 i，还会误触 Esc 退出。
 
 command -v shmooz >/dev/null 2>&1 || {
-    notify "取色器" "未安装 shmooz"
+    notify-send "取色器" "未安装 shmooz"
     exit 1
 }
 
-BEFORE="$(wl-paste -n 2>/dev/null || true)"
-
-watch_picked_color "$BEFORE" &
+# shmooz 取色后把 hex 写进剪贴板；内容一变成 hex 就提示。
+# --watch 每次变更新起一个进程，各读各的 stdin，连续取色不会粘成一行。
+wl-paste --type text --watch bash -c '
+    read -r hex
+    [[ $hex =~ ^#[0-9a-fA-F]{6}$ ]] && notify-send "取色器" "$hex"
+' &
 WATCHER=$!
+trap 'kill "$WATCHER"' EXIT
 
 # 写成 200% 会被 shmooz 直接拒绝退出。
-shmooz --invert-scroll --zoom-in 10% &
-SHMOOZ=$!
-
-wait "$SHMOOZ"
-kill "$WATCHER" 2>/dev/null
-wait "$WATCHER" 2>/dev/null
+shmooz --invert-scroll --zoom-in 10%
