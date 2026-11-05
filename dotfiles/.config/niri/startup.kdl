@@ -1,5 +1,5 @@
 // Startup commands
-spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"
+spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 // 常亮：开机把整套熄屏机制拉起来。脚本负责起 swayidle（5 分钟无操作自动熄屏）
 // 并挂上 logind 的 idle 抑制器（此刻不熄屏）。waybar 的 idle-inhibit 按钮认的是
 // 同一条锁（who=waybar-idle-inhibit），所以开机图标直接是 ON；点一下按钮放掉锁，

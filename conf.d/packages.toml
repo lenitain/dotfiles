@@ -27,7 +27,7 @@
 "pacman:adw-gtk-theme" = "latest"
 "pacman:brightnessctl" = "latest"
 "pacman:ddcutil" = "latest"
-"pacman:polkit-kde-agent" = "latest"
+"pacman:polkit-gnome" = "latest"
 "pacman:pipewire" = "latest"
 "pacman:wireplumber" = "latest"
 "pacman:pipewire-pulse" = "latest"
