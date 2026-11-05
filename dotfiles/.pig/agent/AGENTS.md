@@ -44,8 +44,6 @@
 ## Safety
 
 - Never commit secrets, API keys, or credentials.
-- **MANDATORY: Before executing ANY command that requires elevated privileges, you MUST load and follow the `privilege-escalation` skill.** This includes package management, system services, file permissions, and system configuration.
-- When privileged access is required, use polkit (e.g. `pkexec`) instead of `sudo` or prompting for a password.
 - Never run `rm -rf /` or equivalent destructive commands without explicit confirmation.
 - Prefer `git stash` over `git checkout --` when reverting changes.
 - Before force-pushing, always confirm with the user.
