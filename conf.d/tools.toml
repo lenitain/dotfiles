@@ -28,6 +28,7 @@ rust = [
 "github:HalFrgrd/flyline" = "latest"
 "github:whoamihappyhacking/just-talk-go" = "latest"
 zmx = "latest"
+hunk = "latest"
 
 # ── 预发布白名单: 上游只发预发布版的工具在这里逐个打开 prerelease ──
 # 全局 prereleases 是关的, 原因见 config.toml。
