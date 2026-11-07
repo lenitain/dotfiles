@@ -2,7 +2,7 @@
 
 ## Rules
 
-- Keep changes scoped; do not create issues or pull requests, or post comments.
+- When inspecting a project's source code, `git clone` its URL into `~/.cloned/<name>` and read it there instead of fetching files one by one. Leave the clone in place when done.
 
 ## Skills
 
@@ -10,7 +10,7 @@
 
 ## Planning
 
-- A `planning-tasks` skill offers a mindset for breaking work into a visible checked-box checklist. Let the task's real scope decide: when it might benefit from structure, offer a checklist; when it's simple enough to just do, skip it. Remember the option exists - do not prescribe when to use it.
+- A `planning-tasks` skill offers a mindset for breaking work into a visible checked-box checklist. Let the task's real scope decide: when it might benefit from structure, offer a checklist; when it's simple enough to just do, skip it.
 
 ## Style
 
@@ -27,7 +27,7 @@
 - Keep responsibility boundaries clear and cohesive. Prefer pure functions and explicit invariants; favor convention over configuration when invariants can eliminate state or coordination. Put reusable code in the lowest suitable shared layer; avoid unnecessary dependencies and allocations. Prefer borrowed values and existing wrappers.
 - Keep async I/O non-blocking, preserve platform behavior, and follow existing error boundaries.
 - For renames or refactors, update all related variables, functions, parameters, modules, methods, types, derived types, exports, tests, configuration keys, documentation, and bindings.
-- Do not add or modify tests unless requested.
+- Only add or modify tests necessary.
 
 ## Workarounds
 
@@ -53,5 +53,5 @@
 ## Response
 
 - At the end of each response, include a brief recap summarizing key actions taken and outcomes.
-- Recap must be self-contained: write it so a reader who sees only the recap (without the conversation above) understands what was done and why. Include the subject, the action, and the result — not just a dangling conclusion.
+- Recap must be self-contained: write it so a reader who sees only the recap (without the conversation above) understands what was done and why. Include the subject, the action, and the result.
 - **Recap must use blockquote format** (using markdown `> text` syntax) to give it a visually distinct, bordered appearance with the left vertical bar.
