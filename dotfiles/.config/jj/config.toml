@@ -5,6 +5,8 @@ name = "lenitain"
 email = "xt.zhu@qq.com"
 
 [ui]
+# 裸 `jj` 等同于 `jj log`，避免打印 “Use `jj -h` …” 的提示
+default-command = "log"
 diff-editor = ["nvim", "-c", "setlocal readonly | set filetype=diff"]
 merge-editor = ["nvim", "-d", "-c", "setlocal readonly | set filetype=diff"]
 
