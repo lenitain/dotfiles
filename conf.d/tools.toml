@@ -27,7 +27,6 @@ rust = [
 "github:chmouel/shmooz" = "latest"
 "github:HalFrgrd/flyline" = "latest"
 zmx = "latest"
-hunk = "latest"
 
 # 预发布白名单；子表必须留在文件末尾，否则会吞掉上面 [tools] 的键。
 [tools."npm:@deepseek-ai/dsh"]

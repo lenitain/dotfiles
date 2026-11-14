@@ -13,6 +13,14 @@ merge-editor = ["nvim", "-d", "-c", "setlocal readonly | set filetype=diff"]
 [diff.git]
 context = 5
 
+[aliases]
+# jj i：共置初始化 Git 仓库
+i = { definition = ["git", "init", "--colocate"], doc = "Colocate-init a Git repo" }
+# jj d：编辑提交描述
+d = { definition = ["describe"], doc = "Edit the change description" }
+# jj n：新建空提交
+n = { definition = ["new"], doc = "Create a new empty change" }
+
 [template-aliases]
 # 本年度的日期省略年份，其余保留完整日期。
 # “当前年份”取工作副本提交的时间近似（每次 jj 操作都会刷新它）。
