@@ -7,8 +7,39 @@ email = "xt.zhu@qq.com"
 [ui]
 # 裸 `jj` 等同于 `jj log`，避免打印 “Use `jj -h` …” 的提示
 default-command = "log"
-diff-editor = ["nvim", "-c", "setlocal readonly | set filetype=diff"]
+# hunk.nvim：交互式挑选 hunk / 行，空格+回车 写回 output，q 以非 0 退出即放弃
+# 路径经环境变量传入，TMPDIR / 仓库路径含空格也不会被 command 参数切碎
+diff-editor = [
+  "env",
+  "HUNK_LEFT=$left",
+  "HUNK_RIGHT=$right",
+  "HUNK_OUTPUT=$output",
+  "nvim",
+  "-c",
+  'lua require("lazy").load({ plugins = { "hunk.nvim" } }); require("hunk").edit(vim.env.HUNK_LEFT, vim.env.HUNK_RIGHT, vim.env.HUNK_OUTPUT)',
+]
 merge-editor = ["nvim", "-d", "-c", "setlocal readonly | set filetype=diff"]
+# hunk 自带 g? 帮助面板，不再生成 JJ-INSTRUCTIONS 文件
+diff-instructions = false
+# 想让 jj diff / jj show 默认也走 hunk（会接管所有 diff 输出）时取消注释
+# diff-formatter = "hunk"
+# paginate = "never"
+
+# hunk.nvim 目录对比工具：jj diff / jj interdiff 加 --tool hunk 使用
+# 例：jj diff -r @ --tool hunk --no-pager
+# sh 负责把 nvim 接到终端（jj 会捕获工具输出），路径同理走环境变量
+[merge-tools.hunk]
+program = "sh"
+diff-invocation-mode = "dir"
+diff-do-chdir = false
+conflict-marker-style = "snapshot"
+diff-args = [
+  "-c",
+  "export HUNK_LEFT=\"$1\" HUNK_RIGHT=\"$2\"; exec nvim -c \"lua require('lazy').load({ plugins = { 'hunk.nvim' } }); require('hunk').view(vim.env.HUNK_LEFT, vim.env.HUNK_RIGHT)\" </dev/tty >/dev/tty",
+  "hunk-difftool",
+  "$left",
+  "$right",
+]
 
 [diff.git]
 context = 5
