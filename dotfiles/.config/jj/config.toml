@@ -7,6 +7,8 @@ email = "xt.zhu@qq.com"
 [ui]
 # 裸 `jj` 等同于 `jj log`，避免打印 “Use `jj -h` …” 的提示
 default-command = "log"
+# 描述 / commit message 编辑器；$line 让 `jj resolve --tool :editor` 直接跳到冲突行
+editor = ["nvim", "+$line"]
 # hunk.nvim：交互式挑选 hunk / 行，空格+回车 写回 output，q 以非 0 退出即放弃
 # 路径经环境变量传入，TMPDIR / 仓库路径含空格也不会被 command 参数切碎
 diff-editor = [
@@ -18,24 +20,37 @@ diff-editor = [
   "-c",
   'lua require("lazy").load({ plugins = { "hunk.nvim" } }); require("hunk").edit(vim.env.HUNK_LEFT, vim.env.HUNK_RIGHT, vim.env.HUNK_OUTPUT)',
 ]
-merge-editor = ["nvim", "-d", "-c", "setlocal readonly | set filetype=diff"]
+# 冲突解决：jj 内置的 scm-record TUI（逐 hunk 挑边），不依赖外部工具
+# 想直接改冲突标记：jj resolve --tool :editor（支持 N-way，编辑器即上面的 nvim）
+# 只想取某一边：jj resolve --tool :ours / :theirs
+merge-editor = ":builtin"
 # hunk 自带 g? 帮助面板，不再生成 JJ-INSTRUCTIONS 文件
 diff-instructions = false
-# 想让 jj diff / jj show 默认也走 hunk（会接管所有 diff 输出）时取消注释
-# diff-formatter = "hunk"
-# paginate = "never"
+# jj diff / jj show / jj interdiff 默认也走 hunk；pager 会截住 nvim，必须关掉
+# 没有终端（管道 / 脚本 / agent）时下面的 sh 会退回 git diff，保证输出不丢
+diff-formatter = "hunk"
+paginate = "never"
 
-# hunk.nvim 目录对比工具：jj diff / jj interdiff 加 --tool hunk 使用
-# 例：jj diff -r @ --tool hunk --no-pager
+# hunk.nvim 目录对比工具：默认 diff formatter，也可 jj diff --tool hunk 显式指定
 # sh 负责把 nvim 接到终端（jj 会捕获工具输出），路径同理走环境变量
 [merge-tools.hunk]
 program = "sh"
 diff-invocation-mode = "dir"
 diff-do-chdir = false
 conflict-marker-style = "snapshot"
+# git diff --no-index 在遇到差异时退出码为 1，不需要 jj 报错
+# 选择子进程的 stderr 而不是 stdout 判断终端：jj 总会把工具的 stdout 收走
+# git diff 的临时目录路径太吵，sed 掉后就是干净的 a/ b/ 前缀
+diff-expected-exit-codes = [0, 1]
 diff-args = [
   "-c",
-  "export HUNK_LEFT=\"$1\" HUNK_RIGHT=\"$2\"; exec nvim -c \"lua require('lazy').load({ plugins = { 'hunk.nvim' } }); require('hunk').view(vim.env.HUNK_LEFT, vim.env.HUNK_RIGHT)\" </dev/tty >/dev/tty",
+  '''
+  if [ -t 2 ]; then
+    export HUNK_LEFT="$1" HUNK_RIGHT="$2"
+    exec nvim -c "lua require('lazy').load({ plugins = { 'hunk.nvim' } }); require('hunk').view(vim.env.HUNK_LEFT, vim.env.HUNK_RIGHT)" </dev/tty >/dev/tty
+  fi
+  git --no-pager diff --no-index --color=auto -- "$1" "$2" | sed "s#${1#/}/##g; s#${2#/}/##g"
+  ''',
   "hunk-difftool",
   "$left",
   "$right",
@@ -43,6 +58,19 @@ diff-args = [
 
 [diff.git]
 context = 5
+
+# jj fix：与 nvim conform 对齐的格式化流水线，只在显式 `jj fix` 时运行
+# 裸 `jj fix` 的内置范围是 reachable(@, mutable())，会重写整段可变历史；
+# 收敛到工作副本，要整段历史时显式 `jj fix -s 'reachable(@, mutable())'`
+[revsets]
+fix = "@"
+
+# jj 只发出一个动作：把这个文件整理一遍（path + stdin 内容 → stdout）。
+# 路径 → 语言的映射、每个工具的参数、rustfmt 的 edition，全在 jj-fix 里；
+# 新增语言只改那一个脚本，不再往这里堆 [fix.tools.*]。
+[fix.tools.format]
+command = ["jj-fix", "$path"]
+patterns = ["all()"]
 
 [aliases]
 # jj i：共置初始化 Git 仓库

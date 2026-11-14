@@ -1,0 +1,49 @@
+#!/bin/bash
+# jj fix 的唯一入口：jj 只负责「把这个文件整理一下」这个动作本身，
+# 内容从 stdin 进、结果从 stdout 出；用哪种语言的哪种工具在这里决定。
+#
+# 调用约定（jj 保证）：cwd 是仓库根，$1 是仓库内相对路径。
+# 不认识的路径原样 cat 回去，所以可以放心用 patterns = ["all()"]。
+#
+# 这里是 jj 配置与语言工具链之间唯一的耦合点：新增语言只改这个 case。
+
+set -u
+
+path=${1:?usage: jj-fix <repo-relative-path>}
+
+# rustfmt 从 stdin 读时不知道 crate 的 edition（它在 Cargo.toml 里，不在内容里）。
+# 就近找 Cargo.toml；但若上层已有 rustfmt.toml，则尊重其中的 edition，不覆盖。
+rust_edition() {
+  local d=$1 e
+  while :; do
+    if [[ -f $d/rustfmt.toml || -f $d/.rustfmt.toml ]]; then return; fi
+    if [[ -f $d/Cargo.toml ]]; then
+      e=$(sed -n 's/^edition *= *"\([^"]*\)"/\1/p' "$d/Cargo.toml" | head -n1)
+      [[ -n $e ]] && { printf '%s' "$e"; return; }
+    fi
+    [[ $d == "." || $d == "/" ]] && return
+    d=$(dirname "$d")
+  done
+}
+
+case "$path" in
+  *.lua)
+    exec stylua --stdin-filepath "$path" - ;;
+  *.py)
+    exec ruff format --stdin-filename "$path" - ;;
+  *.rs)
+    edition=$(rust_edition "$(dirname "$path")")
+    if [[ -n $edition ]]; then
+      exec rustfmt --edition "$edition"
+    else
+      exec rustfmt
+    fi ;;
+  *.go)
+    exec gofumpt ;;
+  *.c|*.h|*.cc|*.cpp|*.cxx|*.hpp|*.hxx)
+    exec clang-format --assume-filename="$path" ;;
+  *.js|*.mjs|*.cjs|*.jsx|*.ts|*.mts|*.cts|*.tsx|*.css|*.scss|*.html|*.json|*.jsonc|*.yaml|*.yml|*.md|*.mdx)
+    exec prettierd "$path" ;;
+  *)
+    exec cat ;;
+esac
