@@ -160,16 +160,13 @@ c.content.javascript.clipboard = "access"
 # 语言标签用 BCP 47 的连字符形式，"zh-CN" 而非 "zh_CN"。
 c.content.headers.accept_language = "zh-CN,zh;q=0.9,en;q=0.8"
 
-# 广告拦截：双引擎（Brave 规则 + hosts），默认列表上追加中文规则
+# 广告拦截已关闭：每个请求前 `content.blocking.enabled` 会直接短路两个引擎（hostblock:113,
+# braveadblock:199），不会下载规则、不会解析列表。恢复拦截需要先装回依赖：
+#   sudo pacman -S python-adblock，然后 method="adblock" + adblock.lists + :adblock-update。
 # ,b 对当前网站开关拦截（官方 FAQ 推荐做法，误伤时一键放行）
-c.content.blocking.method = "both"
-c.content.blocking.adblock.lists += [
-    "https://easylist-downloads.adblockplus.org/easylistchina.txt"
-]
-# hosts 引擎默认源在 raw.githubusercontent.com（直连不可达），换 jsdelivr 镜像
-c.content.blocking.hosts.lists = [
-    "https://cdn.jsdelivr.net/gh/StevenBlack/hosts@master/hosts"
-]
+c.content.blocking.enabled = False
+# 即使将来临时打开 enabled 也不要回落到默认 StevenBlack 列表（每次启动要重下 2.4 MB）。
+c.content.blocking.hosts.lists = []
 config.bind(
     ",b", "config-cycle -p -u *://{url:host}/* content.blocking.enabled true false"
 )
