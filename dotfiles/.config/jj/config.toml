@@ -10,3 +10,71 @@ merge-editor = ["nvim", "-d", "-c", "setlocal readonly | set filetype=diff"]
 
 [diff.git]
 context = 5
+
+[template-aliases]
+# 本年度的日期省略年份，其余保留完整日期。
+# “当前年份”取工作副本提交的时间近似（每次 jj 操作都会刷新它）。
+# 注意：revset 只能在 commit 模板中使用，所以这些别名不能被 op 模板引用。
+'format_commit_timestamp(timestamp)' = '''
+if(timestamp.local().format("%Y") == stringify(try(revset("@").first().committer().timestamp().local().format("%Y"), "")),
+  timestamp.local().format("%m-%d %H:%M:%S"),
+  timestamp.local().format("%Y-%m-%d %H:%M:%S"))
+'''
+# 日志头部：作者是自己时不显示作者邮箱，日期按上面的规则显示
+'format_short_commit_header(commit)' = '''
+separate(" ",
+  format_short_change_id_with_change_offset(commit),
+  if(commit.mine(), "", format_short_signature(commit.author())),
+  format_commit_timestamp(commit_timestamp(commit)),
+  format_commit_bookmarks(commit),
+  format_commit_tags(commit),
+  format_commit_working_copies(commit),
+  format_short_commit_id(commit.commit_id()),
+  format_commit_labels(commit),
+  if(config("ui.show-cryptographic-signatures").as_boolean(),
+    format_short_cryptographic_signature(commit.signature())
+  ),
+)
+'''
+# 详细视图（jj show）里的作者/提交者时间同样省略今年的年份
+'format_detailed_signature(signature)' = '''
+join(" ",
+  coalesce(signature.name(), name_placeholder),
+  "<" ++ coalesce(signature.email(), email_placeholder) ++ ">",
+  "(" ++ format_commit_timestamp(signature.timestamp()) ++ ")",
+)
+'''
+# 单行模板也隐藏自己的作者
+'format_short_signature_oneline(signature)' = '''
+if(signature.email() == config("user.email").as_string(),
+  "",
+  coalesce(signature.email().local(), email_placeholder))
+'''
+# 单行模板的日期同样省略今年的年份（覆盖内置模板）
+'builtin_log_oneline(commit)' = '''
+if(commit.root(),
+  format_root_commit(commit),
+  label(
+    separate(" ",
+      if(commit.current_working_copy(), "working_copy"),
+      if(commit.immutable(), "immutable", "mutable"),
+      if(commit.conflict(), "conflicted"),
+    ),
+    separate(" ",
+      format_short_change_id_with_change_offset(commit),
+      format_short_signature_oneline(commit.author()),
+      format_commit_timestamp(commit_timestamp(commit)),
+      format_commit_bookmarks(commit),
+      format_commit_tags(commit),
+      format_commit_working_copies(commit),
+      format_short_commit_id(commit.commit_id()),
+      format_commit_labels(commit),
+      if(config("ui.show-cryptographic-signatures").as_boolean(),
+        format_short_cryptographic_signature(commit.signature())
+      ),
+      if(commit.empty(), empty_commit_marker),
+      format_commit_description_summary(commit),
+    ) ++ "\n",
+  )
+)
+'''
