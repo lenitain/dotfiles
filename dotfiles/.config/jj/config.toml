@@ -39,16 +39,20 @@ diff-invocation-mode = "dir"
 diff-do-chdir = false
 conflict-marker-style = "snapshot"
 # git diff --no-index 在遇到差异时退出码为 1，不需要 jj 报错
-# 选择子进程的 stderr 而不是 stdout 判断终端：jj 总会把工具的 stdout 收走
-# git diff 的临时目录路径太吵，sed 掉后就是干净的 a/ b/ 前缀
+# 是否开 hunk 由父进程 stdout 是否终端决定（见上面的 sh）
 diff-expected-exit-codes = [0, 1]
 diff-args = [
   "-c",
   '''
-  if [ -t 2 ]; then
-    export HUNK_LEFT="$1" HUNK_RIGHT="$2"
-    exec nvim -c "lua require('lazy').load({ plugins = { 'hunk.nvim' } }); require('hunk').view(vim.env.HUNK_LEFT, vim.env.HUNK_RIGHT)" </dev/tty >/dev/tty
-  fi
+  # jj 会把工具的 stdout 收走，所以只能看父进程（jj）的 fd 1：
+  # 只有它指回终端时才用 hunk；重定向到文件或管道时退回 git diff，
+  # 否则 hunk 会抢屏而 jj diff > patch 写出空文件。
+  case $(readlink "/proc/$PPID/fd/1" 2>/dev/null) in
+    /dev/pts/*|/dev/tty*)
+      export HUNK_LEFT="$1" HUNK_RIGHT="$2"
+      exec nvim -c "lua require('lazy').load({ plugins = { 'hunk.nvim' } }); require('hunk').view(vim.env.HUNK_LEFT, vim.env.HUNK_RIGHT)" </dev/tty >/dev/tty
+      ;;
+  esac
   git --no-pager diff --no-index --color=auto -- "$1" "$2" | sed "s#${1#/}/##g; s#${2#/}/##g"
   ''',
   "hunk-difftool",
