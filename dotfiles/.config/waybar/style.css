@@ -23,17 +23,17 @@ window#waybar {
 }
 
 /* ---------- 文字读数 ----------
-   三组读数文字裸着排，左右各 10px 内距：相邻两组之间就正好 20px。
+   三组读数文字裸着排，左右各 12px 内距：相邻两组之间就正好 24px。
    这个数不是拍的：macOS 的 NSStatusItemSpacing 默认 16pt，其菜单栏
    高 31px（Tahoe），空隙占栏高约 0.5；20px 是按原先约 37px 的条高取的。
-   内容区压到 30px 后不再跟着缩，保持 20px，读数才不会挤在一起。
-   时钟的右内距 10px 加 margin 2px = 12px，是离屏幕右边缘的留白。 */
+   内容区压到 30px 后不再跟着缩，再各加 2px 到 24px，读数才不会挤在一起。
+   时钟的右内距 12px 加 margin 2px = 14px，是离屏幕右边缘的留白。 */
 #pulseaudio,
 #battery,
 #clock {
   color: #d3c6aa;
   font-weight: 500;
-  padding: 0 10px;
+  padding: 0 12px;
   /* 读数 label 会被拉到内容区高度；纵向不留 margin，悬停洗色
      因此铺满 30px。 */
 }
@@ -178,7 +178,7 @@ window#waybar.empty #window {
 /* ---------- 托盘 ----------
    图标裸排，间距由 image 自己的 padding 提供，这段空白因此也属于
    图标（可点、可 hover），不是 GTKBox 的 spacing。
-   每侧 10px 内距与文字读数同一档，托盘内相邻图标之间也是 20px。
+   每侧 12px 内距与文字读数同一档，托盘内相邻图标之间也是 24px。
    23px 图标 + 上下各 2px padding = 27px 自然高，低于 30px 内容高；
    子 EventBox 会被 GtkBox 拉满 30px，所以 hover 底铺满内容区。
    padding 只决定自然高，不再决定悬停高度。 */
@@ -189,7 +189,7 @@ window#waybar.empty #window {
 
 #tray > .active image,
 #tray > .needs-attention image {
-  padding: 2px 10px;
+  padding: 2px 12px;
 }
 
 /* hover 底画在图标自己的 EventBox 上，高度由 30px 内容高决定。 */
@@ -204,8 +204,8 @@ window#waybar.empty #window {
 }
 
 /* ---------- 时钟 / 音量 / 电池 ----------
-   内距已由上面的文字读数规则给到 10px；时钟再补 2px 右边距，
-   让最右一组离屏幕边缘 12px。 */
+   内距已由上面的文字读数规则给到 12px；时钟再补 2px 右边距，
+   让最右一组离屏幕边缘 14px。 */
 #clock {
   margin-right: 2px;
 }
@@ -226,14 +226,14 @@ window#waybar.empty #window {
    不向下传 —— 所以 label 上的 :hover 永远不触发。hover 洗色只能画在
    box 上：它没有名字，按结构选。modules-right 里带 box 这层的只有
    tray（#tray）和这个 custom 模块，排除 tray 即唯一命中。
-   每侧 10px 内距与托盘图标同档。
+   每侧 12px 内距与托盘图标同档。
    纵向内距上 4 下 0：FontAwesome 的这个字形在 em 框里偏上——墨迹顶到
    ascent（1536/1792），baseline 之下只伸到 -128（descent 有 -256），
    22px 字号下行盒底部因此空出约 1.6px；对称内距会让图标读起来比旁边的
    文字高 2px。上下仍是共 4px，只是挪到上方，字形下移后视觉居中，
    自然高 26px 依然低于 30px 内容高。 */
 .modules-right > widget > box:not(#tray) {
-  padding: 4px 10px 0;
+  padding: 4px 12px 0;
   /* 这层 box 会被拉满内容区高度；不设纵向 margin，悬停洗色铺满 30px。 */
   margin: 0;
   border-radius: 8px;
