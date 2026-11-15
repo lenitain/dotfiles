@@ -15,7 +15,7 @@
 "pacman:wl-clipboard" = "latest"
 "pacman:greetd-tuigreet" = "latest"
 "pacman:xdg-desktop-portal-gtk" = "latest"
-"pacman:xdg-desktop-portal-gnome" = "latest"
+"pacman:xdg-desktop-portal-wlr" = "latest"
 "pacman:adw-gtk-theme" = "latest"
 "pacman:brightnessctl" = "latest"
 "pacman:ddcutil" = "latest"
