@@ -103,7 +103,7 @@ vim.opt.winborder = "rounded" -- 统一所有浮窗边框为圆角
 vim.opt.foldlevel = 99 -- 默认展开所有折叠
 vim.opt.foldlevelstart = 99 -- 打开文件时折叠级别
 vim.opt.foldcolumn = "0" -- 关闭折叠列（auto:1 时 markdown 标题层级会以数字显示）
--- diff 模式会把窗口的 foldcolumn 强制改成 2（覆盖上面的全局值），hunk/diffview 的
+-- diff 模式会把窗口的 foldcolumn 强制改成 2（覆盖上面的全局值），hunk 的
 -- 行号因此比普通窗口离边缘更远；显式指定 0 让 diff 视图与主界面保持一致
 vim.opt.diffopt:append("foldcolumn:0")
 vim.opt.foldmethod = "expr" -- 使用表达式折叠

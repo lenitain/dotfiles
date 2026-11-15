@@ -96,7 +96,7 @@ return {
           -- ===== C. 有意偏离上游：diff 的行内改动 =====
           -- 上游 colors/everforest.vim:150 是 DiffText = bg0-on-blue：深色字被「挖空」在
           -- #7fbbb3 的亮青块里。hunk.nvim（原生 diffthis，见 lua/hunk/ui/file.lua:20）
-          -- 和 diffview 逐字符看改动时，那样既读不出改了哪些字符，又和 DiffChange 的
+          -- 逐字符看改动时，那样既读不出改了哪些字符，又和 DiffChange 的
           -- 行底色 bg_blue(#3a515d) 断层极大（ΔE00 40.7）。
           -- 按 VS Code 的做法改成「同一块行底色上再叠一层更浓的同色」：VS Code 是行
           -- 底色 = 强调色 15% 叠加、改动处 = 25%（其 Dark Modern 实测 ΔE00 11.7、
