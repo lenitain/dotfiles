@@ -67,12 +67,13 @@
     // 放电：MD 电池电量图标（5 档与插头同宽 11px → 插电/放电右边缘恒定）。
     "format": "{capacity}% {icon}",
     "format-icons": ["󰁺", "󰁼", "󰁾", "󰂀", "󰂂"],
-    // 插电 / 充电 / 满电 / not-charging：绿色插头（span 只包图标，数字不变色）。
+    // 插电 / 充电 / 满电 / not-charging：统一换成插头图标，整组颜色由
+    // style.css 的 #battery.charging / .plugged / .full / .not-charging 给绿。
     // not-charging 必须单独覆盖，否则回落到 format 显示电池图标 → 闪烁。
-    "format-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
-    "format-full": "{capacity}% <span color='#a7c080'>󰂄</span>",
-    "format-not-charging": "{capacity}% <span color='#a7c080'>󰂄</span>",
-    "format-plugged": "{capacity}% <span color='#a7c080'>󰂄</span>",
+    "format-charging": "{capacity}% 󰂄",
+    "format-full": "{capacity}% 󰂄",
+    "format-not-charging": "{capacity}% 󰂄",
+    "format-plugged": "{capacity}% 󰂄",
 
     // tooltip 补全：时间/功率 + 循环/健康度。放电/充电有剩余时间与实时功率，
     // 其余状态落到通用 tooltip-format，避免报 "0.0 W"。

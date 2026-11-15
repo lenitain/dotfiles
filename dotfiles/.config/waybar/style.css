@@ -1,7 +1,10 @@
 /* ============================================================
-   Waybar 样式 —— 胶囊样式
-   胶囊底 #232A2E，hover #475258，文字 #d3c6aa，强调 #a7c080。
-   bar 外壳透明：只有胶囊有材质，胶囊之间与上下留白直接透出壁纸。
+   Waybar 样式 —— 无胶囊（flat）
+   整条 bar 与所有模块都不画底：文字、图标直接压在壁纸上。
+   状态只用低透明度色块标记，不留常驻材质。
+   壁纸顶部是深色星空（灰度均值 54、几乎均匀），米白 #d3c6aa
+   压上去约 7:1，去掉底色不损可读性；换亮色壁纸时靠这层
+   深色文字阴影兜底。
    ============================================================ */
 
 * {
@@ -10,97 +13,93 @@
 
 /* ---------- bar 外壳 ----------
    外壳通明、不画任何东西，但占住顶部这段高度（exclusive zone），
-   窗口不会钻到胶囊底下。
-   胶囊 29px（行盒 27 + padding 2）+ 上下 margin 各 4px = 37px；
+   窗口不会钻到文字底下。
+   元素高 29px（与改胶囊样式前同高）+ 上下 margin 各 4px = 37px；
    min-height 给 38px 余量，避免 Waybar 因舍入把 bar 顶高一档。 */
 window#waybar {
   background-color: transparent;
   font-size: 18px;
   min-height: 38px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
 }
 
-/* ---------- 胶囊的统一材质 ----------
-   凡是「带内容的一组」都套同一枚胶囊：底色 #232A2E、圆角 14px、
-   margin 4px。窗口标题不在此列：它是一行裸文字（见下方 #window）。 */
+/* ---------- 文字读数 ----------
+   三组读数文字裸着排，左右各 10px 内距：相邻两组之间就正好 20px。
+   这个数不是拍的：macOS 的 NSStatusItemSpacing 默认 16pt，其菜单栏
+   高 31px（Tahoe），空隙占栏高约 0.5；本 bar 38px 高，0.5×38 ≈ 20px。
+   时钟的右内距 10px 加 margin 2px = 12px，是离屏幕右边缘的留白。 */
 #pulseaudio,
 #battery,
 #clock {
-  background-color: #232A2E;
-  border-radius: 14px;
-  margin: 4px;
+  color: #d3c6aa;
   font-weight: 500;
-  color: #d3c6aa;
-}
-
-/* ---------- 工作区编号（#numbers） ----------
-   整组是一枚胶囊，组内按钮透明；active 只把数字换成米白。
-   左边距 8px：屏幕边缘到胶囊的留白 = 胶囊之间的留白。 */
-#workspaces.numbers {
-  background-color: #232A2E;
-  border-radius: 14px;
-  font-weight: 700;
-  margin: 4px 4px 4px 8px;
-}
-
-/* 按钮：透明底，垂直 1px padding 把 27px 行盒撑成 29px 的胶囊高度。
-   宽度不放在按钮上：按钮里的 GtkBox 会把 label 贴左侧，min-width
-   只会变成右侧空白。40px 给 label，label 自己会把数字居中。 */
-#workspaces.numbers button.niri-workspace {
-  border-radius: 14px;
-  padding: 1px 0;
-  margin: 0;
-  color: #7a8478;
-  background: transparent;
-  min-width: 0;
-  /* 覆盖 adw-gtk3-dark 给 button 的 min-height: 24，否则按钮会顶高胶囊和 bar */
-  min-height: 0;
-  /* 覆盖 GTK 主题给 button 注入的 1px 透明边框，否则悬停时整体收窄约 2px */
-  border: none;
-}
-
-/* 等宽槽位：所有格子一致宽度，激活与未激活完全一样宽，不靠宽度差做指示。
-   waybar 不给 label 加 class（niri/workspace.cpp 只给按钮加 niri-workspace），
-   所以这里只能按 GTK 节点名 label 选中；按钮的 min-width 不会把 label 居中。 */
-#workspaces.numbers button.niri-workspace label {
-  min-width: 40px;
-}
-
-/* active：数字用米白（Everforest fg #d3c6aa），底色不变。
-   empty 不单独上色：空工作区与普通未激活一样暗，只靠 active 做指示。 */
-#workspaces.numbers button.niri-workspace.active {
-  color: #d3c6aa;
-}
-
-/* hover：只改底色，不动字色 —— 数字靠颜色区分激活/未激活，
-   hover 再换字色会盖掉 active 的标记。 */
-#workspaces.numbers button.niri-workspace:hover {
-  background: #475258;
-}
-
-/* ---------- 当前工作区的 taskbar（#taskbar） ----------
-   current-only 下只剩一格：当前工作区的窗口图标装在同一枚胶囊里。
-   左右各 4px 按钮 margin 与两侧胶囊的 4px margin 合出 8px 间隔；
-   这一格收起时 margin 一起归零，两侧胶囊的间距回到 8px。 */
-#workspaces.taskbar {
+  padding: 0 10px;
+  /* 读数 label 会被拉到整条 bar 的高度；上下 4px margin 把悬停洗色
+     收成 29px，与工作区/托盘的悬停形状同高。 */
   margin: 4px 0;
 }
 
-/* 胶囊本身不留内距：每个 item 直接顶到胶囊边缘，item 的 14px 圆角
-   才能与胶囊外沿完全重合，悬停底色不会在圆角处露出直角。 */
+/* ---------- 工作区编号（#numbers） ----------
+   整组不画底，只有 active 那一格带一枚淡绿底：位置靠底色标记，
+   不靠宽度差。整组独占中栏，由 waybar 居中（fixed-center），
+   自身不再留边距，居中才不会偏。 */
+#workspaces.numbers {
+  margin: 0;
+}
+
+/* 按钮：透明底，垂直 4px margin 把 29px 行盒居进 38px 的 bar。
+   宽度不放在按钮上：按钮里的 GtkBox 会把 label 贴左侧，min-width
+   只会变成右侧空白。34px 给 label，label 自己会把数字居中。 */
+#workspaces.numbers button.niri-workspace {
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  margin: 4px 3px;
+  color: #859289;
+  background: transparent;
+  min-width: 0;
+  /* 覆盖 adw-gtk3-dark 给 button 的 min-height: 24，否则按钮会顶高 bar */
+  min-height: 29px;
+}
+
+#workspaces.numbers button.niri-workspace label {
+  min-width: 34px;
+}
+
+/* active：淡绿底 + 米白数字。底色是 22% 的强调绿叠在壁纸上，
+   一眼可辨，又不会变成一枚实心胶囊；数字同时提亮到米白，
+   绿色弱视也不影响判断。 */
+#workspaces.numbers button.niri-workspace.active {
+  color: #d3c6aa;
+  background-color: rgba(167, 192, 128, 0.22);
+}
+
+/* hover：米白 10% 的洗色。比 active 的绿更淡，两者不会混。
+   empty 不单独上色：空工作区与普通未激活一样暗。 */
+#workspaces.numbers button.niri-workspace:hover {
+  background-color: rgba(211, 198, 170, 0.1);
+}
+
+/* ---------- 当前工作区的 taskbar（#taskbar） ----------
+   current-only 下只剩一格：当前工作区的窗口图标裸排在同一行。
+   这一格收起时 margin 一起归零，不留空隙。 */
+#workspaces.taskbar {
+  margin: 0;
+}
+
 #workspaces.taskbar button.niri-workspace {
   min-width: 0;
   min-height: 29px;
-  margin: 0 4px;
+  margin: 4px 2px;
   padding: 0;
   border: none;
-  border-radius: 14px;
-  background-color: #232A2E;
+  background-color: transparent;
   box-shadow: none;
   font-weight: 500;
   color: #d3c6aa;
 }
 
-/* 当前工作区为空：这一格完全收起（尺寸、内距、间距归零），不留空胶囊。 */
+/* 当前工作区为空：这一格完全收起，不留空位。 */
 #workspaces.taskbar button.niri-workspace.empty {
   min-width: 0;
   min-height: 0;
@@ -109,23 +108,21 @@ window#waybar {
   background-color: transparent;
 }
 
-/* 每扇窗：撑满胶囊高度，圆角与胶囊同为 14px —— 悬停底色正好铺满胶囊，
-   与 #numbers 里整格高亮的悬停同一种形状。
-   左右 11px 内距与托盘图标同档：图标之间留 22px，胶囊两端各留 11px。 */
+/* 每扇窗：撑满 29px 行盒，圆角 8px 与 active 工作区同一档。
+   左右 9px 内距让相邻图标之间留 18px，两端各留 9px。 */
 #workspaces button.niri-workspace .niri-taskbar-btn {
   min-width: 0;
   min-height: 29px;
   margin: 0;
-  padding: 0 11px;
+  padding: 0 9px;
   border: none;
-  border-radius: 14px;
+  border-radius: 8px;
   background-color: transparent;
   box-shadow: none;
 }
 
 /* 找不到 app 图标时回落到 app_id 前 3 个字符（如 "foo"）。
-   字号降到 15px 并收窄最小宽度，让这格与 26px 图标那格等宽，
-   不会把整枚胶囊撑长。 */
+   字号降到 15px 并收窄最小宽度，让这格与 26px 图标那格等宽。 */
 #workspaces button.niri-workspace .niri-taskbar-btn label {
   font-size: 15px;
   font-weight: 700;
@@ -134,14 +131,12 @@ window#waybar {
 
 /* 悬停：只换底色，不动图标。 */
 #workspaces button.niri-workspace .niri-taskbar-btn:hover {
-  background-color: #475258;
+  background-color: rgba(211, 198, 170, 0.1);
 }
 
-/* 当前聚焦窗口：整格铺一层 30% 的强调绿。
-   只留一条 1px 底线时，图标本身的亮色会把线淹没，几十像素里看不出选中；
-   整格底色才是主指示（waybar 默认 taskbar 的 button.active、上游
-   niri-taskbar 的 button.focused 都是整格填色），不必再画底线。
-   30% 是绿色叠在 #232A2E 上的比例：一眼可辨，又不抢图标自己的颜色。 */
+/* 当前聚焦窗口：整格铺一层 30% 的强调绿——与 active 工作区同一套
+   颜色语言，表示「当前」。
+   30% 是绿色叠在深色壁纸上的比例：一眼可辨，又不抢图标自己的颜色。 */
 #workspaces button.niri-workspace .niri-taskbar-btn.focused {
   background-color: rgba(167, 192, 128, 0.3);
 }
@@ -152,15 +147,14 @@ window#waybar {
 }
 
 /* ---------- 当前窗口标题 ----------
-   标题是细节，不是与工作区/窗口图标并列的控件：不套胶囊，直接一行裸文字。
-   垂直 padding 1px 把 27px 行盒撑成 29px，基线与其他胶囊对齐；
-   左侧 4px 与 taskbar 胶囊的 4px 右 margin 合出 8px 间隔。
+   标题是细节，不是与工作区/窗口图标并列的控件：裸字，不画底。
+   左侧 8px 与 taskbar 图标的内距同档。
    标题没有长度上限：标签按整串标题申请宽度，左栏分到多少就显示多少，
    被右簇挤到时才由 ellipsize 截断（niri/window 构造时默认打开）。 */
 #window {
   background-color: transparent;
-  margin: 4px 8px 4px 4px;
-  padding: 1px 4px;
+  margin: 0 8px;
+  padding: 0 4px;
   font-weight: 500;
   color: #d3c6aa;
 }
@@ -168,71 +162,72 @@ window#waybar {
 /* 没有聚焦窗口时 label 被隐藏，但 #window 的盒子还在；
    用 niri/window 给整条 bar 打的 .empty class 把空壳收掉。 */
 window#waybar.empty #window {
-  background-color: transparent;
   margin: 0;
   padding: 0;
 }
 
 /* ---------- 托盘 ----------
-   整组套一枚胶囊，组内图标透明；图标间距由 image 自己的 padding 提供，
-   这段空白因此也属于图标（可点、可 hover），不是 GTKBox 的 spacing。
-   首尾图标的 11px 同时充当胶囊内沿留白；垂直 3px 让 23px 图标
-   + 6px = 29px，与文字胶囊同高。 */
+   图标裸排，间距由 image 自己的 padding 提供，这段空白因此也属于
+   图标（可点、可 hover），不是 GTKBox 的 spacing。
+   每侧 10px 内距与文字读数同一档，托盘内相邻图标之间也是 20px；
+   上下 4px margin 把整组收成 29px —— 这层 margin 决定子 EventBox 的
+   高度，也就是悬停洗色的高度，删了它 hover 会变成满栏高的色块。 */
+
 #tray {
-  background-color: #232A2E;
-  border-radius: 14px;
-  margin: 4px;
+  margin: 4px 0;
 }
 
 #tray > .active image,
 #tray > .needs-attention image {
-  padding: 3px 11px;
+  padding: 3px 10px;
 }
 
-/* hover 底画在图标自己的 EventBox 上，圆角与胶囊两端一致。 */
+/* hover 底画在图标自己的 EventBox 上，高度由 #tray 的 29px 决定。 */
 #tray > .active,
 #tray > .needs-attention {
-  border-radius: 14px;
+  border-radius: 8px;
 }
 
 #tray > .active:hover,
 #tray > .needs-attention:hover {
-  background: #475258;
+  background: rgba(211, 198, 170, 0.1);
 }
 
-/* ---------- 时钟 ----------
-   最右一枚胶囊，右边距 8px：离屏幕右边缘的留白 = 胶囊之间的留白。 */
+/* ---------- 时钟 / 音量 / 电池 ----------
+   内距已由上面的文字读数规则给到 10px；时钟再补 2px 右边距，
+   让最右一组离屏幕边缘 12px。 */
 #clock {
-  padding: 1px 13px;
-  margin: 4px 8px 4px 4px;
+  margin-right: 2px;
 }
 
-/* ---------- 音量 / 电池 ---------- */
-#pulseaudio {
-  padding: 1px 12px;
-}
-
-#battery {
-  padding: 1px 12px;
+/* 读数也保留悬停洗色（与工作区/托盘/idle 同一套：只换底色、不动字色），
+   圆角 8px 与其它悬停形状一致。 */
+#clock:hover,
+#pulseaudio:hover,
+#battery:hover {
+  background-color: rgba(211, 198, 170, 0.1);
+  border-radius: 8px;
 }
 
 /* ---------- idle（desktop / 显示器图标）----------
    waybar 0.16 的 custom 模块是 eventbox > box > label 三层：为兼容 0.15，
    #custom-idle-inhibit 这个名字落在 label 上；而鼠标进入时 waybar 只给
    eventbox 的直接子节点（中间那层匿名 box）打 :hover 状态，GTK 的 hover
-   不向下传 —— 所以 label 上的 :hover 永远不触发。胶囊（含 hover 底色）
-   只能画在 box 上：它没有名字，按结构选。modules-right 里带 box 这层的
-   只有 tray（#tray）和这个 custom 模块，排除 tray 即唯一命中。
-   3px 11px padding 让 22px 字形的 23px 行盒变成 45×29，与托盘图标同高。 */
+   不向下传 —— 所以 label 上的 :hover 永远不触发。hover 洗色只能画在
+   box 上：它没有名字，按结构选。modules-right 里带 box 这层的只有
+   tray（#tray）和这个 custom 模块，排除 tray 即唯一命中。
+   每侧 10px 内距与托盘图标同档；
+   3px 垂直内距让 22px 字形的 23px 行盒变成 45×29，与托盘图标同高。 */
 .modules-right > widget > box:not(#tray) {
-  background-color: #232A2E;
-  margin: 4px;
-  padding: 3px 11px;
-  border-radius: 14px;
+  padding: 3px 10px;
+  /* 与读数同理：这层 box 会被拉满 bar 高度，上下 4px margin 把悬停
+     洗色收成 29px。 */
+  margin: 4px 0;
+  border-radius: 8px;
 }
 
 .modules-right > widget > box:not(#tray):hover {
-  background: #475258;
+  background: rgba(211, 198, 170, 0.1);
 }
 
 /* 字形与颜色留在 label（name 和 JSON 的 class 都在这一层）：
@@ -248,14 +243,6 @@ window#waybar.empty #window {
   color: #a7c080;
 }
 
-/* ---------- hover ----------
-   标题是裸文字、不可点，不参与 hover。 */
-#clock:hover,
-#pulseaudio:hover,
-#battery:hover {
-  background: #475258;
-}
-
 /* ---------- Tooltips ---------- */
 tooltip {
   border-radius: 8px;
@@ -266,17 +253,27 @@ tooltip {
   box-shadow: none;
 }
 
-/* ---------- Battery critical warning ---------- */
-/* 红底 #e67e80 上用 bg0 #2d353b 写字。 */
-#battery.critical:not(.charging) {
-  background-color: #e67e80;
-  color: #2d353b;
-  animation: blink 0.5s linear infinite alternate;
+/* ---------- Battery critical warning ----------
+   只在「放电 + 电量告急」时变红。
+   不能写成 :not(.charging)：插电那一瞬 waybar 从 ACAD/online 判定
+   status=Plugged（.plugged 类立刻上身，图标也立刻换成插头），而内核
+   的 BAT1/status 要到 134~675ms 后才从 Discharging 改口 Charging。
+   那段窗口里 :not(.charging) 仍命中，且特异性 (1,2,0) 压过
+   #battery.plugged 的 (1,1,0) —— 于是图标已经变了、数字还红着，
+   要等内核改口才转绿，这就是「颜色慢一秒」的成因。
+   收窄到 .discharging 后两个类互斥，插电即绿，不再红绿打架。
+   告警只上字色：不铺底、不闪动；因为不占 background，悬停时照样是
+   常规的米白洗色（#battery:hover）。 */
+#battery.critical.discharging {
+  color: #e67e80;
 }
 
-@keyframes blink {
-  to {
-    background-color: #232A2E;
-    color: #d3c6aa;
-  }
+/* ---------- Battery 充电 / 插电 / 满电 ----------
+   waybar 把 status 小写化后直接当 class 打在 label 上（plugged /
+   not-charging 都带连字符），所以整组（数字 + 插头图标）统一转绿。 */
+#battery.charging,
+#battery.plugged,
+#battery.full,
+#battery.not-charging {
+  color: #a7c080;
 }
