@@ -10,6 +10,8 @@ return {
       -- 其他 lualine 配置...
     },
     sections = {
+      -- 左侧：默认是 branch + diff + diagnostics，这里去掉 branch（分支名已靠其他方式查看）
+      lualine_b = { "diff", "diagnostics" },
       -- 中间状态栏显示文件完整路径
       -- path = 3 绝对路径，home 缩写为 ~ | path = 2 绝对路径 | path = 1 相对路径 | path = 0 仅文件名
       lualine_c = {
