@@ -209,6 +209,10 @@ mode = "0755"
 content = """
 [Unit]
 Description=按供电状态切换电源性能档
+# ppd 自己 After=multi-user.target。本单元若也 WantedBy=multi-user.target 就成环:
+# multi-user.target After 本单元 After ppd After multi-user.target —— systemd 会删掉
+# 本单元的 start job, 开机根本起不来, mise 每次 bootstrap 都得补一次 start。
+# 挂 graphical.target 即解环, 且天然排在 ppd 之后 (真就绪)。
 After=power-profiles-daemon.service
 Wants=power-profiles-daemon.service
 
@@ -218,7 +222,7 @@ RemainAfterExit=yes
 ExecStart=/usr/local/bin/power-profile
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target
 """
 owner = "root"
 group = "root"
