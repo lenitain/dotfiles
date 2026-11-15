@@ -290,11 +290,6 @@ binds {
         spawn "~/.config/niri/scripts/ocr-select"
     }
 
-    // Pick color (点选取色)
-    MOD+SHIFT+G hotkey-overlay-title="Pick color" {
-        spawn "~/.config/niri/scripts/pick-color"
-    }
-
     // Screenshots
     CTRL+SHIFT+1 hotkey-overlay-title="Screenshot" {
         spawn "~/.config/niri/scripts/screenshot"

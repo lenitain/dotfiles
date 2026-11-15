@@ -24,7 +24,6 @@ rust = [
 "cargo:typos-cli" = "latest"
 "cargo:wireforge" = "latest"
 "cargo:wrfm-cli" = "latest"
-"github:chmouel/shmooz" = "latest"
 "github:HalFrgrd/flyline" = "latest"
 zmx = "latest"
 
