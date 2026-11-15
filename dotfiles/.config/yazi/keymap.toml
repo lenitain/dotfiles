@@ -21,6 +21,12 @@ prepend_keymap = [
   { on = [ "g", "<Space>" ], run = "cd --interactive", desc = "交互式目录跳转" },
 
   # =======================
+  # 可移动设备
+  # =======================
+  { on = [ "g", "u" ], run = "cd /run/media", desc = "U 盘挂载点：/run/media/<用户>/<标签>" },
+  { on = [ "g", "M" ], run = "cd /run/user/1000/gvfs", desc = "手机 MTP 挂载点（先在终端 gio mount mtp://）" },
+
+  # =======================
   # 智能进入
   # =======================
   { on = "<Right>", run = "plugin smart-enter", desc = "智能进入目录或打开文件" },

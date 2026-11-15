@@ -28,6 +28,7 @@
 "~/.config/qutebrowser" = {}
 "~/.config/swaylock" = {}
 "~/.config/systemd/user" = {}
+"~/.config/udiskie" = {}
 "~/.config/user-dirs.dirs" = {}
 "~/.config/user-dirs.locale" = {}
 "~/.config/uv" = {}
@@ -41,6 +42,7 @@
 "~/.local/share/fcitx5/rime/default.custom.yaml" = {}
 "~/.local/share/fcitx5/rime/wanxiang.custom.yaml" = {}
 "~/.local/share/fcitx5/themes" = {}
+"~/.local/share/wallpapers" = {}
 "~/.npmrc" = {}
 "~/.palette" = {}
 "~/.pig/agent/AGENTS.md" = {}
@@ -48,4 +50,3 @@
 "~/.pig/agent/settings.json" = {}
 "~/.pig/agent/themes" = {}
 "~/.pig/agent/web-search.json" = {}
-"~/.local/share/wallpapers" = {}

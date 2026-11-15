@@ -107,6 +107,8 @@
 "pacman:prek" = "latest"
 "pacman:libnotify" = "latest"
 "pacman:niri" = "latest"
+"pacman:gvfs-mtp" = "latest"
+"pacman:udiskie" = "latest"
 
 "flatpak-user:com.tencent.WeChat" = "latest"
 "flatpak-user:com.qq.QQ" = "latest"

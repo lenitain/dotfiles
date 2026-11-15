@@ -1,0 +1,21 @@
+# udiskie —— U 盘/移动硬盘自动挂载器
+# 设备发现与挂载由 udisks2 完成，本文件只控制 udiskie 的交互行为。
+
+program_options:
+  automount: true                # 插上即挂载到 /run/media/$USER/<label>
+  notify: true                   # mako 通知：已挂载/已卸载
+  tray: false                    # niri 无托盘栏
+  password_prompt: "builtin:gui"  # LUKS 加密盘弹 GTK 密码框
+  password_cache: 10             # 密码缓存 10 分钟
+  file_manager: false          # 通知里不放"打开"动作
+
+# 按设备定制（示例，按需取消注释）
+# device_config:
+#   - id_label: BACKUP
+#     automount: false           # 这块盘插上不自动挂
+#   - id_uuid: 1234-ABCD
+#     options: [ro]              # 只读挂载
+
+# 全局挂载选项（示例，默认走 udisks2 的 gid/uid 策略）
+# mount_options:
+#   - options: [nosuid, noexec]
