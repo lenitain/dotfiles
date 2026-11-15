@@ -3,9 +3,10 @@
 -- 配色基准：**sainnhe 原版 everforest 的渲染结果**（dark + medium + 上游默认选项）。
 -- 校验方式：把原版 colors/everforest.vim + autoload/everforest.vim 挂到临时 rtp 里
 -- headless 渲染一遍，导出「全部高亮组 → 解析后的最终取值」，再和本机的同名组做 diff。
--- 因此本文件只保留两类内容：
+-- 因此本文件只保留三类内容：
 --   1) 上游默认选项（background = medium、ui_contrast = low）；
---   2) 移植版 (neanias/everforest-nvim) 与原版不一致的组 —— 逐组钉回原版取值。
+--   2) 移植版 (neanias/everforest-nvim) 与原版不一致的组 —— 逐组钉回原版取值；
+--   3) 少数有意偏离上游的组（DiffText），理由见文件末尾 on_highlights 里的说明。
 -- 不再按 ~/.palette/everforest.md 的 Usages 列做二次映射：那份表的字面在多处与上游
 -- 实现不符（Properties→fg vs 实现 Blue、Hint→green vs 实现 Purple、Status Line
 -- 背景 bg1/bg0 vs 实现 bg2/bg1、Concealed Text→grey0 vs @conceal→Grey 等），
@@ -91,6 +92,23 @@ return {
           --    （lua/plugins/lspconfig.lua:119），这些组不会渲染，未做逐一对齐。
           -- 4) @variable.member.yaml：上游只映射旧名 @field.yaml，新名渲染成蓝；这里
           --    由主题给绿。yaml 查询两个名字都不发（键走 @property），实际不渲染。
+
+          -- ===== C. 有意偏离上游：diff 的行内改动 =====
+          -- 上游 colors/everforest.vim:150 是 DiffText = bg0-on-blue：深色字被「挖空」在
+          -- #7fbbb3 的亮青块里。hunk.nvim（原生 diffthis，见 lua/hunk/ui/file.lua:20）
+          -- 和 diffview 逐字符看改动时，那样既读不出改了哪些字符，又和 DiffChange 的
+          -- 行底色 bg_blue(#3a515d) 断层极大（ΔE00 40.7）。
+          -- 按 VS Code 的做法改成「同一块行底色上再叠一层更浓的同色」：VS Code 是行
+          -- 底色 = 强调色 15% 叠加、改动处 = 25%（其 Dark Modern 实测 ΔE00 11.7、
+          -- ΔL* +10.6）。everforest 的 DiffChange 本身已经是 bg0 上 10 个 ΔE00 的浓
+          -- 叠加，只提亮度没多少余量（35% 混合的 ΔE00 = 14.1，但文字对比度掉到 2.93）。
+          -- 因此这块选「同色相、提色度 + 提一档亮度」：L* 33.1→43.0、C* 11.2→22.4，
+          -- ΔE00 13.8（与 tokyonight 的 15.4 同档），而文字对比度仍有 3.43。
+          -- 必须显式写 bg：DiffText 是盖在 DiffChange 上的，不设 bg 会落到 Normal 的
+          -- bg0，蓝行里变成一个个黑窟窿（实测）。
+          -- 0.12 的 diffopt=inline:char 也走这里：对侧没有对应文字的「行内新增」改用
+          -- DiffTextAdd 画，而它默认就 link 到 DiffText。
+          hl.DiffText = { bg = "#266f78" }
         end,
       }
       vim.cmd.colorscheme("everforest")
