@@ -217,10 +217,14 @@ window#waybar.empty #window {
    不向下传 —— 所以 label 上的 :hover 永远不触发。hover 洗色只能画在
    box 上：它没有名字，按结构选。modules-right 里带 box 这层的只有
    tray（#tray）和这个 custom 模块，排除 tray 即唯一命中。
-   每侧 10px 内距与托盘图标同档；
-   2px 垂直内距让 22px 字形的 23px 行盒自然高约 27px，低于 28px 条高。 */
+   每侧 10px 内距与托盘图标同档。
+   纵向内距上 4 下 0：FontAwesome 的这个字形在 em 框里偏上——墨迹顶到
+   ascent（1536/1792），baseline 之下只伸到 -128（descent 有 -256），
+   22px 字号下行盒底部因此空出约 1.6px；对称内距会让图标读起来比旁边的
+   文字高 2px。上下仍是共 4px，只是挪到上方，字形下移后视觉居中，
+   自然高 26px 依然低于 28px 条高。 */
 .modules-right > widget > box:not(#tray) {
-  padding: 2px 10px;
+  padding: 4px 10px 0;
   /* 这层 box 会被拉满 bar 高度；不设纵向 margin，悬停洗色铺满 28px。 */
   margin: 0;
   border-radius: 8px;
