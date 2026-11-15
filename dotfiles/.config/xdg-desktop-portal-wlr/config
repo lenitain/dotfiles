@@ -1,0 +1,7 @@
+# xdg-desktop-portal-wlr 配置。niri 只实现输出级抓取（zwlr_screencopy），
+# 所以 chooser 里出现的是 Monitor 项；用 fuzzel 把它列成菜单，而不是
+# 默认的 slurp 框选。
+[screencast]
+chooser_type=dmenu
+chooser_cmd=fuzzel -d -p 'Select a source to share:' -l 10
+max_fps=60
