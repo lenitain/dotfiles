@@ -140,12 +140,12 @@ flyline 是 bash 的 loadable builtin（不是独立进程），但它和 bash �
 widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
 
 ```
-[zmx] [docker] user@host  ~/path  main* ≡2 ⇡1 ⇣3   ← 会话段 + cwd(蓝) + git/jj(暗灰/青)
-# ❄impure (venv) |0|1 ❯                              ← 上下文(红/青/暗灰) + 退出码(红) + 符号(洋红)
+[zmx] [docker] user@host  ~/path  main* ≡ 2 ⇡ 1 ⇣ 3   ← 会话段 + cwd(蓝) + git/jj(暗灰/青)
+# ❄impure (venv) |0|1 ❯                               ← 上下文(红/青/暗灰) + 退出码(红) + 符号(洋红)
 ```
 
 - git/jj 段由 `widgets/repo.sh` 输出（jj 仓库优先，否则 git）：git 是
-  branch / dirty(`*`) / stash(`≡N`) / `⇡N` `⇣N`（分支、dirty、上游、ahead/behind
+  branch / dirty(`*`) / stash(`≡ N`) / `⇡ N` `⇣ N`（分支、dirty、上游、ahead/behind
   都来自同一次 `git status --porcelain=v2 --branch`，stash 另查一次）；jj 是变更 id / 最近的祖先书签
   （`~N` 距离）/ `(empty)`，以及 @ 的冲突 `×` 和 divergent `≠`。
   jj 的书签只在 @ 的 20 个祖先提交内查找，距离是从 @ 沿父边走过去的边数
@@ -180,7 +180,7 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
   cgroup v2 只有一行 `0::/`，rootless 运行时只能由 PID 1 兜底，那时只能给出泛称 `[container]`。
 - 命令耗时默认不显示。想打开就取消 `conf.d/flyline.sh` 里的 `last-command-duration` 注册，
   并把 `FLYLINE_DURATION` 补回 `PS1`（记得同时为它留 8 列宽度）。
-- 宽度：仓库里第一条提示符按上限 40 列预留；widget 每次把实际可见宽度写进
+- 宽度：仓库里第一条提示符按上限 43 列预留；widget 每次把实际可见宽度写进
   `$XDG_RUNTIME_DIR/bash-prompt-repo-width.<shell pid>`，之后 cwd 按 `COLUMNS` 减去
   这个实际值决定是否缩略成 `…/尾段`（切仓库后的第一条提示符用上一个仓库的宽度）。
   第 2 行不参与这个预算。
@@ -201,8 +201,11 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
 ## 已知差异
 
 - 路径宽度按字符数计算，CJK 双宽路径比终端列宽略宽。
+- `≡` `⇡` `⇣` 不在 Maple Mono NL NF CN 里，foot 从回退字体取字形，字形常画到格边：
+  git 段里符号与数字之间因此留一个空格；`❄` 同样走回退字体，但按 pure 的样式仍紧贴 shell 名。
+  jj 段的 `×` `≠` `~` `*` `!` 都在主字体里，不存在这个问题。
 - 仓库段的宽度缓存按 shell 而不是按仓库：刚 `cd` 进另一个仓库时，第一条提示符用的是
-  上一个仓库的实际宽度；第一次进仓库（没有缓存）用 40 列上限。仓库段超过预算
+  上一个仓库的实际宽度；第一次进仓库（没有缓存）用 43 列上限。仓库段超过预算
   （超长分支名、多个书签）时第一行仍可能折行一次。
 - Tab 补全/历史搜索 UI 由 flyline 提供。
 - 历史后端用 bash 原生（`histappend` + 提示符后 `history -a`）；换成 flyline 的 JSONL 后端会

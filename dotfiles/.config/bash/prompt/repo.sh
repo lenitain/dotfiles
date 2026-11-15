@@ -17,8 +17,10 @@ __bash_prompt_repo() {
     __bash_prompt_git
 }
 
-# git 段：branch + dirty(*) + stash(≡N) + unpushed/unpulled(⇡N/⇣N)。
+# git 段：branch + dirty(*) + stash(≡ N) + unpushed/unpulled(⇡ N/⇣ N)。
 # branch/dirty 用 brblack，stash/同步用 cyan；数字同 pure 的 pure_show_numbered_git_indicator。
+# 符号与数字之间留一个空格：≡ ⇡ ⇣ 不在 Maple Mono 里，foot 回退的字体常把字形画到
+# 格边，紧贴数字时两条笔画会连成一个字形。
 #
 # 分支、dirty、上游、ahead/behind 全在 `git status --porcelain=v2 --branch` 的头部，
 # 一次 fork 就够（原来分 6 次问 git，约 27ms/提示符，这是一次约 7ms）。
@@ -53,11 +55,11 @@ __bash_prompt_git() {
 
     local stash='' stash_count
     stash_count=$(command git rev-list --walk-reflogs --count refs/stash 2>/dev/null) || stash_count=0
-    [ "${stash_count:-0}" -gt 0 ] 2>/dev/null && stash=" $__bash_prompt_symbol_stash$stash_count"
+    [ "${stash_count:-0}" -gt 0 ] 2>/dev/null && stash=" $__bash_prompt_symbol_stash $stash_count"
 
     local ahead_ansi='' behind_ansi=''
-    [ "${ahead:-0}" -gt 0 ] 2>/dev/null && ahead_ansi="$__bash_prompt_symbol_ahead$ahead"
-    [ "${behind:-0}" -gt 0 ] 2>/dev/null && behind_ansi="$__bash_prompt_symbol_behind$behind"
+    [ "${ahead:-0}" -gt 0 ] 2>/dev/null && ahead_ansi="$__bash_prompt_symbol_ahead $ahead"
+    [ "${behind:-0}" -gt 0 ] 2>/dev/null && behind_ansi="$__bash_prompt_symbol_behind $behind"
 
     local head_ansi="\[$__bash_prompt_color_mute\]${branch}${dirty}\[$__bash_prompt_color_reset\]"
     local info=''

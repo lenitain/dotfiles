@@ -21,7 +21,8 @@ __bash_prompt_symbol_root='#'
 __bash_prompt_symbol_nixdevshell='❄'
 __bash_prompt_symbol_exit_status='|'
 # repo 段的符号：dirty 由 git 与 jj 共用（两边各写一遍就是两份事实，见 README 的「验证」）；
-# ≡ ⇡ ⇣ 只有 git 段用。
+# ≡ ⇡ ⇣ 只有 git 段用，而且 Maple Mono 里没有：foot 从回退字体取字形，常画到格边，
+# 所以拼段时符号和数字之间要留空格（见 prompt/repo.sh）。
 __bash_prompt_symbol_dirty='*'
 __bash_prompt_symbol_stash='≡'
 __bash_prompt_symbol_ahead='⇡'
@@ -53,8 +54,8 @@ __bash_prompt_visible_length() {
 }
 
 # 仓库段的宽度：仓库里先用这个上限，之后用 widget 写回的实际宽度（见下）。
-# 上限是 jj/git 段的观测最大值（含前导空格，见 prompt/ps1.sh）。
-__bash_prompt_repo_reserved=40
+# 上限是 jj/git 段的观测最大值（含前导空格和符号/数字间的空格，见 prompt/ps1.sh）。
+__bash_prompt_repo_reserved=43
 
 # per-shell 的小文件（宽度缓存、jj 的 stderr）都放 XDG_RUNTIME_DIR（per-user 0700，登出即清）：
 # 没有它就返回 1，调用方继续用上限 / 丢掉警告，不去 /tmp 里按 PID 猜文件名。

@@ -74,15 +74,15 @@ printf 'u\n' > "$tmp/clean/u.txt"
 expect_in "main*" "$tmp/clean" "dirty 仓库"
 rm -f "$tmp/clean/u.txt"
 
-# stash：数字恒开
+# stash：数字恒开（符号与数字之间一个空格）
 mkdir "$tmp/stash" && init_repo "$tmp/stash" \
     && printf 'a\n' > "$tmp/stash/a.txt" && commit_in "$tmp/stash" init \
     && printf 'b\n' > "$tmp/stash/b.txt" \
     && git -C "$tmp/stash" add b.txt \
     && git -C "$tmp/stash" stash --quiet
-expect_in "main ≡1" "$tmp/stash" "stash"
+expect_in "main ≡ 1" "$tmp/stash" "stash"
 
-# 上游：本地领先 2、落后 1（stash / 箭头之间各一个空格）
+# 上游：本地领先 2、落后 1（段之间、符号与数字之间各一个空格）
 git init --bare --quiet --initial-branch=main "$tmp/remote.git"
 git clone --quiet "$tmp/remote.git" "$tmp/sync" 2>/dev/null
 git -C "$tmp/sync" config user.email git-check@example.com
@@ -97,7 +97,7 @@ git -C "$tmp/other" push --quiet
 printf '1\n' > "$tmp/sync/1.txt" && commit_in "$tmp/sync" one
 printf '2\n' > "$tmp/sync/2.txt" && commit_in "$tmp/sync" two
 git -C "$tmp/sync" fetch --quiet
-expect_in "main ⇡2 ⇣1" "$tmp/sync" "上游领先 2 / 落后 1"
+expect_in "main ⇡ 2 ⇣ 1" "$tmp/sync" "上游领先 2 / 落后 1"
 
 # 无 upstream：不出箭头
 mkdir "$tmp/local" && init_repo "$tmp/local" \
