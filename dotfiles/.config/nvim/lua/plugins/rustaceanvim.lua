@@ -47,10 +47,9 @@ return {
 			pattern = "rust",
 			callback = function(args)
 				local bufnr = args.buf
-				-- hunk.nvim 的 diff 临时 buffer（buftype=nofile/nowrite）不是真实文件：
-				-- 起 rust-analyzer 会因找不到 Cargo 根而刷多行警告，把屏幕顶进
-				-- hit-enter 提示（请按 ENTER 继续）
-				if vim.bo[bufnr].buftype ~= "" then
+				-- hunk.nvim 的 diff 临时 buffer 不是真实文件：起 rust-analyzer 会因
+				-- 找不到 Cargo 根而刷多行警告，把屏幕顶进 hit-enter 提示
+				if require("config.util").is_virtual_buffer(bufnr) then
 					return
 				end
 				vim.schedule(function()

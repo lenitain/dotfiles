@@ -11,9 +11,9 @@ return {
 		-- 打开文件的同步路径 —— 首次打开某语言文件不再卡顿。
 		local function async_root_dir(markers)
 			return function(bufnr, on_dir)
-				-- hunk.nvim 等虚拟 buffer（hunk://…）不是真实文件，LSP 挂上去只会
-				-- 对着不存在的根目录报错；on_dir(nil) 让 nvim 不启动该客户端
-				if vim.api.nvim_buf_get_name(bufnr):match("^%a[%w+.-]*://") then
+				-- hunk.nvim 等虚拟 buffer 不是真实文件，LSP 挂上去只会对着不存在的
+				-- 根目录报错；on_dir(nil) 让 nvim 不启动该客户端
+				if require("config.util").is_virtual_buffer(bufnr) then
 					on_dir(nil)
 					return
 				end

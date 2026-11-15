@@ -20,7 +20,12 @@ return {
 
     vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "InsertLeave" }, {
       group = lint_augroup,
-      callback = function()
+      callback = function(args)
+        -- hunk.nvim 等虚拟 buffer 不是真实文件：对它们跑 lint 只会拿不存在的
+        -- 路径白起进程，诊断也无处可用
+        if require("config.util").is_virtual_buffer(args.buf) then
+          return
+        end
         lint.try_lint()
       end,
     })
