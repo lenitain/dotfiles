@@ -82,11 +82,31 @@ api.nvim_create_autocmd("FileType", {
 
 
 -- 7. markdown/JSON 文件设置：不隐藏任何字符
+--    conceallevel 是窗口选项，而 FileType 可能在 nvim_buf_call 的临时窗口里触发
+--    （hunk.nvim 等虚拟 buffer），buffer 之后才挂到真正的窗口上；所以除了按
+--    filetype 立刻生效，还要在窗口显示该 buffer 时再设一次。
+local no_conceal_fts = { "markdown", "markdown_inline", "json", "jsonc", "json5" }
+
+local function disable_conceal(buf)
+  for _, win in ipairs(vim.fn.win_findbuf(buf)) do
+    vim.wo[win].conceallevel = 0
+  end
+end
+
 api.nvim_create_autocmd("FileType", {
   group = aug,
-  pattern = { "markdown", "markdown_inline", "json", "jsonc", "json5" },
-  callback = function()
-    vim.opt_local.conceallevel = 0
+  pattern = no_conceal_fts,
+  callback = function(event)
+    disable_conceal(event.buf)
+  end,
+})
+
+api.nvim_create_autocmd("BufWinEnter", {
+  group = aug,
+  callback = function(event)
+    if vim.tbl_contains(no_conceal_fts, vim.bo[event.buf].filetype) then
+      disable_conceal(event.buf)
+    end
   end,
 })
 
