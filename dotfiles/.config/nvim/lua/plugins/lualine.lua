@@ -28,6 +28,10 @@ return {
       -- 右侧：encoding + filetype
       -- 去掉了默认的 fileformat（unix/dos/mac 换行图标，就是那个企鹅）
       lualine_x = { "encoding", "filetype" },
+      -- 默认的 progress（Top/Bot/百分比）换成行/总行:列
+      -- %L 是 Vim 原生 statusline 的总行数；%3l、%-2c 的宽度对齐模仿自带的 location
+      lualine_y = {},
+      lualine_z = { "%3l/%L:%-2c" },
     },
   },
   config = function(_, opts)
