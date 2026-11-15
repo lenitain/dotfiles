@@ -10,8 +10,8 @@
   // show-label 关掉编号后，这格里只有该工作区各窗口的 app 图标：左键聚焦窗口，
   // 中键关窗，悬停显示标题；图标顺序跟 niri 的滚动布局（列→行）。
   // 空工作区时整格收起（style.css 里把 padding/margin 归零）。
-  // icon-size 26：这一格没有额外内距，26 在 29px 胶囊里上下各留 1.5px；
-  // 比 tray 的 23 图标略大，因为这里图标本身就是胶囊内的主体。
+  // icon-size 26：这一格没有额外内距，26 在 28px 条高里上下各留 1px；
+  // 比 tray 的 23 图标略大，因为这里图标本身就是这格的主体。
   "niri/workspaces#taskbar": {
     "current-only": true,
     "workspace-taskbar": {
@@ -39,8 +39,9 @@
   },
 
   // System tray
-  // icon-size 23 与 18px 字号配套：图标 23 + 上下各 3px padding = 29px，
-  // 与文字胶囊同高。cursor 让整组图标显示手型。
+  // icon-size 23 与 18px 字号配套：图标 23 + 上下各 2px padding = 27px，
+  // 低于 28px 条高；EventBox 会被拉满，hover 底仍是整条 bar 高。
+  // cursor 让整组图标显示手型。
   "tray": {
     "icon-size": 23,
     "cursor": true
