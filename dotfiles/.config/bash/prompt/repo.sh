@@ -7,6 +7,13 @@ __bash_prompt_repo() {
     if __bash_prompt_jj; then
         return 0
     fi
+    # jj 仓库里 jj 自己失败（工作副本陈旧、配置错、锁、二进制坏了）不能退回 git：
+    # colocated 仓库里 git 看的是同一份工作副本，画出来像正常结果（分支名，甚至
+    # jj/keep/<hash>），把真正的错误藏掉。没装 jj 才退回 git（那份 git 信息至少是对的）。
+    if __bash_prompt_in_jj_repo && command -v jj >/dev/null 2>&1; then
+        repo_ansi="\[$__bash_prompt_color_red\]jj!\[$__bash_prompt_color_reset\]"
+        return 0
+    fi
     __bash_prompt_git
 }
 
@@ -118,8 +125,12 @@ __bash_prompt_jj() {
     __bash_prompt_jj_commit_template
     local template=$REPLY
 
+    # 不加 --ignore-working-copy：jj 的工作副本本身就是一个提交，只有 snapshot 才能
+    # 发现文件变了；git status 那种只读查询在 jj 里不存在（不 snapshot 就只能读上一次
+    # 的状态，刚改完文件会一直显示 (empty)）。让 jj 在这里 snapshot，仓库段和 `jj st`
+    # 看到的就是同一份状态，代价是文件变过的那次提示符会写一条 snapshot 操作。
     local log_output
-    log_output=$(command jj --no-pager log --ignore-working-copy --color=never --no-graph \
+    log_output=$(command jj --no-pager log --color=never --no-graph \
         --template "$template" --revisions "$revset" 2>/dev/null) || return 1
     [ -n "$log_output" ] || return 1
 

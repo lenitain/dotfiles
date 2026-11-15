@@ -151,8 +151,13 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
   jj 的书签只在 @ 的 20 个祖先提交内查找，距离是从 @ 沿父边走过去的边数
   （空 @ 不计一步），最近的本地书签超出这个范围就不显示；merge 时同一距离上的
   多个书签都画出来（逗号分隔）。jj 不画同步状态；要看远端跟踪用
-  `jj bookmark list`。jj 用 `--ignore-working-copy` 读最后一次 snapshot：刚改完
-  文件、还没跑任何 jj 命令时，`(empty)` / `*` 仍是上一次的状态（提示符不写 op log）。
+  `jj bookmark list`。jj 段每次都让 jj 做一次 snapshot：jj 的工作副本就是一个提交，
+  只有 snapshot 能发现文件变化（没有 git status 那种只读查询），所以 `(empty)` / `*`
+  和 `jj st` 永远一致。代价是文件改过的那次提示符会写一条 snapshot 操作；没变化时
+  只做一次 stat 扫描，大仓库可以装 watchman 并设 `fsmonitor.backend = "watchman"` 提速。
+  jj 自己失败时（工作副本陈旧、配置错、锁）画红色的 `jj!`，不退回 git：共置仓库里
+  git 会给出一份看着正常的分支名，把真正的错误藏住；报错细节跑一次 `jj st` 看。
+  只有仓库里有 `.jj` 但没装 jj 时才退回 git。
   flyline 只等 100ms，超时那段时间仓库段是空白
   （`--placeholder 0`），提示符不再被 `jj log` 或 `git status` 卡住。
 - 符号行（第 2 行）的段按 pure 的顺序拼，每条提示符重算，都只读变量和内建、不 fork：
@@ -206,7 +211,7 @@ bash -n ~/.bashrc ~/.bash_profile ~/.config/bash/init.sh \
     ~/.config/bash/conf.d/*.sh ~/.config/bash/functions/*.sh \
     ~/.config/bash/prompt/*.sh ~/.config/bash/widgets/*.sh \
     ~/.config/bash/scripts/*.sh
-~/.config/bash/scripts/repo_check.sh    # repo 段：模板段数契约 + 端到端场景（参考点、merge、符号链接），退出码必须是 0
+~/.config/bash/scripts/repo_check.sh    # repo 段：模板段数契约 + 端到端场景（参考点、merge、符号链接、未 snapshot 的改动、jj 报错），退出码必须是 0
 ~/.config/bash/scripts/git_check.sh     # git 段：分支/dirty/stash/上游/detached/bare/空仓库 + 宽度缓存，退出码必须是 0
 ~/.config/bash/widgets/repo.sh          # 仓库里输出单行、仓库外输出空，两种情况退出码都必须是 0
 bash -i -c 'type ll; flyline settings; flyline key list'   # 需要 pty

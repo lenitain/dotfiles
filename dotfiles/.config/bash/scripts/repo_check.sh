@@ -63,6 +63,43 @@ scenario_ancestor() {
     expect_segment "<id> main~1 (empty)" "$dir" "祖先参考点"
 }
 
+# 场景：改完文件、还没跑任何 jj 命令。提示符必须自己 snapshot，立刻画出 * 和距离；
+# 退回 --ignore-working-copy 读旧状态时这里会停在 `<id> main (empty)`（回归测试）。
+scenario_unsnapshotted_change() {
+    local dir=$1
+    mkdir -p "$dir" || return 1
+    (
+        cd "$dir" || exit 1
+        jj git init --quiet . >/dev/null 2>&1 || exit 1
+        printf 'a\n' > f || exit 1
+        jj describe -m c1 >/dev/null 2>&1 || exit 1
+        jj bookmark create main >/dev/null 2>&1 || exit 1
+        jj new >/dev/null 2>&1 || exit 1
+    ) || return 1
+    expect_segment "<id> main (empty)" "$dir" "改动前的空工作副本"
+    printf 'b\n' >> "$dir/f"
+    expect_segment "<id> main~1*" "$dir" "未 snapshot 的改动"
+}
+
+# 场景：jj 仓库里 jj 自己报错（工作副本陈旧、配置错、锁、二进制坏了）。必须画失败标记，
+# 不能退回 git：colocated 仓库的 git 分支名/`jj/keep/<hash>` 看着像正常结果，会把
+# 真正的错误藏住。伪造一个 exit 1 的 jj 来模拟。
+scenario_jj_failure() {  # dir fake_bin
+    local dir=$1 fake=$2 out got
+    mkdir -p "$dir" "$fake" || return 1
+    (
+        cd "$dir" || exit 1
+        jj git init --quiet . >/dev/null 2>&1 || exit 1
+        jj describe -m c1 >/dev/null 2>&1 || exit 1
+        jj bookmark create main >/dev/null 2>&1 || exit 1
+        jj new >/dev/null 2>&1 || exit 1
+    ) || return 1
+    printf '#!/bin/sh\nexit 1\n' > "$fake/jj" && chmod +x "$fake/jj" || return 1
+    out=$(cd "$dir" && PATH="$fake:$PATH" __bash_prompt_repo && printf '%s' "$repo_ansi")
+    got=$(printf '%s' "$out" | strip_ansi)
+    [ "$got" = 'jj!' ] || report "jj 报错时 期望 [jj!] 实际 [$got]"
+}
+
 # 场景：从符号链接进仓库子目录。$PWD 是逻辑路径，jj/git 按物理路径解析；向上找
 # .jj 也必须用物理路径，否则会落到 git 兜底（colocated 仓库里会画出 jj/keep/<hash>）。
 scenario_symlink() {  # dir link，dir 已经是 scenario_ancestor 建的仓库
@@ -109,6 +146,8 @@ if command -v jj >/dev/null 2>&1; then
     scenario_dir=$(mktemp -d) || report "端到端: mktemp 失败"
     if [ -n "${scenario_dir-}" ]; then
         scenario_ancestor "$scenario_dir/ancestor"
+        scenario_unsnapshotted_change "$scenario_dir/unsnapshotted"
+        scenario_jj_failure "$scenario_dir/jj_failure" "$scenario_dir/fakebin"
         scenario_symlink "$scenario_dir/ancestor" "$scenario_dir/link"
         scenario_merge "$scenario_dir/merge"
         scenario_bookmark_on_at "$scenario_dir/on_at"
