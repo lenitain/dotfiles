@@ -49,12 +49,16 @@ window#waybar {
 
 /* 按钮：透明底，纵向不留 margin，按钮随 bar 拉满 28px。
    宽度不放在按钮上：按钮里的 GtkBox 会把 label 贴左侧，min-width
-   只会变成右侧空白。34px 给 label，label 自己会把数字居中。 */
+   只会变成右侧空白。40px 给 label，label 自己会把数字居中。
+   横向也不留 margin：原先 34px 宽 + 左右各 3px 空档共 40px 一节，
+   现在这 6px 空档并进按钮，相邻 hover 底色首尾相接，鼠标在相邻
+   数字之间过去时不会掉进无反馈的死区。整组总宽仍是 40px 一节，
+   数字位置与居中都不受影响。 */
 #workspaces.numbers button.niri-workspace {
   border: none;
   border-radius: 8px;
   padding: 0;
-  margin: 0 3px;
+  margin: 0;
   color: #859289;
   background: transparent;
   min-width: 0;
@@ -63,7 +67,7 @@ window#waybar {
 }
 
 #workspaces.numbers button.niri-workspace label {
-  min-width: 34px;
+  min-width: 40px;
 }
 
 /* active：淡绿底 + 米白数字。底色是 22% 的强调绿叠在壁纸上，
