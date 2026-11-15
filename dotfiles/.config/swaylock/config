@@ -43,6 +43,7 @@ font-size=128
 
 # Indicator
 # 尺寸单位是逻辑像素，实际渲染时会再乘以输出缩放（当前 1.25）
-# 外径 = 2 * (radius + thickness) = 216，约占 1536x864 屏幕的 1/7
+# radius 是圆环中线半径，thickness 是环的宽度
+# 外径 = 2 * (radius + thickness) = 576，缩放后约 720 设备像素
 indicator-radius=256
-indicator-thickness=16
+indicator-thickness=24
