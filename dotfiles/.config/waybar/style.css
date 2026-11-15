@@ -14,20 +14,30 @@
 /* ---------- bar 外壳 ----------
    外壳通明、不画任何东西，但占住顶部这段高度（exclusive zone），
    窗口不会钻到文字底下。
-   条高 28px，由 config 的 "height": 28 钉死；window 上的 CSS min-height
+   条高 32px，由 config 的 "height": 32 钉死；window 上的 CSS min-height
    只会让首次 configure 冲到 38 再落回内容高，所以不在这里写高度。
-   所有悬停/状态底色都铺满这 28px，上下不再留 margin 空隙。 */
+   三栏容器上下各留 1px，内容区因此是 30px：悬停/状态底色铺满这
+   30px，又不会贴死在屏幕顶边和栏底上，上下各透出一线壁纸。 */
 window#waybar {
   background-color: transparent;
   font-size: 18px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
 }
 
+/* 三栏容器是 window 的直接子节点，它们的纵向内距就是整条内容区的
+   上下留白。子控件默认被拉满容器高度，30px 内容高由此传到每个
+   模块；模块自己不再需要写纵向 margin。 */
+.modules-left,
+.modules-center,
+.modules-right {
+  padding: 1px 0;
+}
+
 /* ---------- 文字读数 ----------
    三组读数文字裸着排，左右各 10px 内距：相邻两组之间就正好 20px。
    这个数不是拍的：macOS 的 NSStatusItemSpacing 默认 16pt，其菜单栏
    高 31px（Tahoe），空隙占栏高约 0.5；20px 是按原先约 37px 的条高取的。
-   条高压到 28px 后不再跟着缩，保持 20px，读数才不会挤在一起。
+   内容区压到 30px 后不再跟着缩，保持 20px，读数才不会挤在一起。
    时钟的右内距 10px 加 margin 2px = 12px，是离屏幕右边缘的留白。 */
 #pulseaudio,
 #battery,
@@ -35,8 +45,8 @@ window#waybar {
   color: #d3c6aa;
   font-weight: 500;
   padding: 0 10px;
-  /* 读数 label 会被拉到整条 bar 的高度；纵向不留 margin，悬停洗色
-     因此铺满 28px 条高。 */
+  /* 读数 label 会被拉到内容区高度；纵向不留 margin，悬停洗色
+     因此铺满 30px。 */
 }
 
 /* ---------- 工作区编号（#numbers） ----------
@@ -47,7 +57,7 @@ window#waybar {
   margin: 0;
 }
 
-/* 按钮：透明底，纵向不留 margin，按钮随 bar 拉满 28px。
+/* 按钮：透明底，纵向不留 margin，按钮随内容区拉满 30px。
    宽度不放在按钮上：按钮里的 GtkBox 会把 label 贴左侧，min-width
    只会变成右侧空白。40px 给 label，label 自己会把数字居中。
    横向也不留 margin：原先 34px 宽 + 左右各 3px 空档共 40px 一节，
@@ -112,7 +122,7 @@ window#waybar {
   background-color: transparent;
 }
 
-/* 每扇窗：撑满 28px 条高，圆角 8px 与 active 工作区同一档。
+/* 每扇窗：撑满 30px 内容高，圆角 8px 与 active 工作区同一档。
    左右 9px 内距让相邻图标之间留 18px，两端各留 9px。 */
 #workspaces button.niri-workspace .niri-taskbar-btn {
   min-width: 0;
@@ -174,8 +184,8 @@ window#waybar.empty #window {
    图标裸排，间距由 image 自己的 padding 提供，这段空白因此也属于
    图标（可点、可 hover），不是 GTKBox 的 spacing。
    每侧 10px 内距与文字读数同一档，托盘内相邻图标之间也是 20px。
-   23px 图标 + 上下各 2px padding = 27px 自然高，低于 28px 条高；
-   子 EventBox 会被 GtkBox 拉满 28px，所以 hover 底铺满整条 bar。
+   23px 图标 + 上下各 2px padding = 27px 自然高，低于 30px 内容高；
+   子 EventBox 会被 GtkBox 拉满 30px，所以 hover 底铺满内容区。
    padding 只决定自然高，不再决定悬停高度。 */
 
 #tray {
@@ -187,7 +197,7 @@ window#waybar.empty #window {
   padding: 2px 10px;
 }
 
-/* hover 底画在图标自己的 EventBox 上，高度由 28px 条高决定。 */
+/* hover 底画在图标自己的 EventBox 上，高度由 30px 内容高决定。 */
 #tray > .active,
 #tray > .needs-attention {
   border-radius: 8px;
@@ -226,10 +236,10 @@ window#waybar.empty #window {
    ascent（1536/1792），baseline 之下只伸到 -128（descent 有 -256），
    22px 字号下行盒底部因此空出约 1.6px；对称内距会让图标读起来比旁边的
    文字高 2px。上下仍是共 4px，只是挪到上方，字形下移后视觉居中，
-   自然高 26px 依然低于 28px 条高。 */
+   自然高 26px 依然低于 30px 内容高。 */
 .modules-right > widget > box:not(#tray) {
   padding: 4px 10px 0;
-  /* 这层 box 会被拉满 bar 高度；不设纵向 margin，悬停洗色铺满 28px。 */
+  /* 这层 box 会被拉满内容区高度；不设纵向 margin，悬停洗色铺满 30px。 */
   margin: 0;
   border-radius: 8px;
 }
