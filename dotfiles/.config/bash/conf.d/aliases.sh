@@ -48,7 +48,6 @@ alias a='aria2c -c'
 # ─── App Shortcuts ───
 alias n='nvim'
 alias p='pig'
-alias lg='lazygit'
 alias mc='cd ~/.config/mise'
 alias mr='__bash_mise_refresh'
 alias ms='mise run setup-all'

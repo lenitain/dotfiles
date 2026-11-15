@@ -80,33 +80,5 @@ return {
         end
       end,
     })
-
-    -- 集成 lazygit
-    local Terminal = require("toggleterm.terminal").Terminal
-    local lazygit = Terminal:new({
-      cmd = "lazygit",
-      dir = "git_dir",
-      direction = "float",
-      float_opts = {
-        border = "rounded",
-      },
-      on_open = function(term)
-        vim.cmd("startinsert!")
-        -- 在 lazygit 终端中按 q 关闭
-        vim.keymap.set("n", "q", function()
-          term:close()
-        end, { buffer = term.bufnr, silent = true })
-      end,
-      on_close = function()
-        vim.cmd("startinsert!")
-      end,
-    })
-
-    function _LAZYGIT_TOGGLE()
-      lazygit:toggle()
-    end
-
-    -- lazygit 快捷键
-    vim.keymap.set("n", "<leader>gg", _LAZYGIT_TOGGLE, { desc = "打开 lazygit" })
   end,
 }

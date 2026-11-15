@@ -253,10 +253,6 @@ map("n", "<leader>ud", function()
   vim.notify("诊断: " .. (vim.diagnostic.is_enabled() and "开" or "关"))
 end, { desc = "切换诊断显示" })
 
--- ==================== Git 集成（lazygit） ====================
-
--- <leader>gg 已由 toggleterm.lua 接管（打开 lazygit，自动定位到当前文件的 git 根）
-
 -- 新建文件
 map("n", "<leader>fn", "<cmd>enew<cr>", { desc = "新建文件" })
 
