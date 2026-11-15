@@ -75,6 +75,7 @@ vim.opt.termguicolors = true -- 启用真彩色支持
 vim.opt.showmode = false -- 不显示模式提示（状态栏已有显示）
 vim.opt.showcmd = false -- 不显示命令（减少噪音）
 vim.opt.cmdheight = 0 -- 隐藏底部命令行保留行（按 : 或有输入提示时临时浮出）
+vim.opt.shortmess:append("I") -- 隐藏启动时的介绍页（Neovim 自带的 NVIM logo 浮窗）
 vim.opt.ruler = false -- 不显示光标位置（状态栏已有显示）
 vim.opt.laststatus = 3 -- 全局状态栏（单一状态栏横跨所有窗口）
 vim.opt.scrolloff = 8 -- 光标距顶部/底部至少保留 8 行
