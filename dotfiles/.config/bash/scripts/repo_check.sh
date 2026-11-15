@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# repo 段自检：模板的段数契约 + 端到端场景（参考点、merge、符号链接）。
+# repo 段自检：模板的段数契约 + 端到端场景（参考点、merge、符号链接、未 snapshot 的改动、
+# snapshot 警告、书签冲突、jj 报错）。
 # 改 prompt/repo.sh 的列数组、模板或参考点选择之后跑一遍（见 README 的「验证」）；
 # 退出码 0 才算过。这里可以随便 fork，热路径不行 —— 所以检查不放 widget 里。
 # 只检查自己所在的这棵树（符号链接进来也一样），不看 BASH_CONFIG_HOME：
@@ -19,6 +20,9 @@ trap 'rm -rf "$check_home"' EXIT
 export XDG_CONFIG_HOME="$check_home/xdg"
 mkdir -p "$XDG_CONFIG_HOME/jj" || exit 1
 printf '[user]\nname = "repo-check"\nemail = "repo-check@example.com"\n' > "$XDG_CONFIG_HOME/jj/config.toml" || exit 1
+# snapshot 警告走 $XDG_RUNTIME_DIR 下的 per-shell 文件；隔离到临时目录，不碰真实 runtime dir。
+export XDG_RUNTIME_DIR="$check_home/run"
+mkdir -p "$XDG_RUNTIME_DIR" || exit 1
 
 strip_ansi() { sed $'s/\x1b\\[[0-9;]*m//g; s/\\\\\\[//g; s/\\\\\\]//g'; }
 
@@ -79,6 +83,50 @@ scenario_unsnapshotted_change() {
     expect_segment "<id> main (empty)" "$dir" "改动前的空工作副本"
     printf 'b\n' >> "$dir/f"
     expect_segment "<id> main~1*" "$dir" "未 snapshot 的改动"
+}
+
+# 场景：新文件超过 snapshot.max-new-file-size（默认 1MiB）。jj 拒绝 snapshot，
+# 只在 stderr 写 warning；仓库段必须画 !，否则提示符看起来正常、文件却没进 jj。
+scenario_snapshot_warning() {
+    local dir=$1
+    mkdir -p "$dir" || return 1
+    (
+        cd "$dir" || exit 1
+        jj git init --quiet . >/dev/null 2>&1 || exit 1
+        jj describe -m c1 >/dev/null 2>&1 || exit 1
+        jj bookmark create main >/dev/null 2>&1 || exit 1
+        jj new >/dev/null 2>&1 || exit 1
+        head -c 2000000 /dev/zero | tr '\0' 'x' > big.bin || exit 1
+    ) || return 1
+    expect_segment "<id> main (empty) !" "$dir" "snapshot 警告"
+}
+
+# 场景：书签冲突——本地移过书签、远端又前进了。jj st 会警告、jj log <名字> 直接报错，
+# 仓库段必须在书签名后面画 !，不能画成正常书签。
+scenario_conflicted_bookmark() {  # dir remote seed
+    local dir=$1 remote=$2 seed=$3
+    local -a ident=(-c user.name=repo-check -c user.email=repo-check@example.com)
+    git init --bare --quiet --initial-branch=main "$remote" || return 1
+    git clone --quiet "$remote" "$seed" 2>/dev/null || return 1
+    printf 'a\n' > "$seed/a" && git -C "$seed" add a &&
+        git -C "$seed" "${ident[@]}" commit -qm init &&
+        git -C "$seed" push --quiet origin main || return 1
+
+    jj git clone "$remote" "$dir" >/dev/null 2>&1 || return 1
+    (
+        cd "$dir" || exit 1
+        jj new main >/dev/null 2>&1 || exit 1
+        printf 'b\n' > b || exit 1
+        jj bookmark set main -r @ >/dev/null 2>&1 || exit 1
+    ) || return 1
+
+    # 远端再走一个提交 → 本地 main 与 main@origin 分叉，main 变 conflicted。
+    printf 'c\n' > "$seed/c" && git -C "$seed" add c &&
+        git -C "$seed" "${ident[@]}" commit -qm remote &&
+        git -C "$seed" push --quiet origin main || return 1
+    ( cd "$dir" && jj git fetch >/dev/null 2>&1 ) || return 1
+
+    expect_segment "<id> main!*" "$dir" "冲突的书签"
 }
 
 # 场景：jj 仓库里 jj 自己报错（工作副本陈旧、配置错、锁、二进制坏了）。必须画失败标记，
@@ -147,6 +195,9 @@ if command -v jj >/dev/null 2>&1; then
     if [ -n "${scenario_dir-}" ]; then
         scenario_ancestor "$scenario_dir/ancestor"
         scenario_unsnapshotted_change "$scenario_dir/unsnapshotted"
+        scenario_snapshot_warning "$scenario_dir/warning"
+        scenario_conflicted_bookmark "$scenario_dir/conflicted" \
+            "$scenario_dir/remote.git" "$scenario_dir/seed"
         scenario_jj_failure "$scenario_dir/jj_failure" "$scenario_dir/fakebin"
         scenario_symlink "$scenario_dir/ancestor" "$scenario_dir/link"
         scenario_merge "$scenario_dir/merge"

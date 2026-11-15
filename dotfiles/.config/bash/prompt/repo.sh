@@ -91,7 +91,8 @@ __bash_prompt_jj_commit_columns=(
     'commit_id'
     'change_id.shortest()'
     'parents.map(|p| p.commit_id()).join("\x1e")'
-    'local_bookmarks.map(|b| b.name()).join("\x1e")'
+    # 冲突的书签名后面缀一个 \x1d 哨兵：合法 ref 名里没有控制字符，显示前再剥掉。
+    'local_bookmarks.map(|b| b.name() ++ if(b.conflict(), "\x1d", "")).join("\x1e")'
     'if(empty, "1", "0")'
     'if(conflict, "1", "0")'
     'if(divergent, "1", "0")'
@@ -129,10 +130,16 @@ __bash_prompt_jj() {
     # 发现文件变了；git status 那种只读查询在 jj 里不存在（不 snapshot 就只能读上一次
     # 的状态，刚改完文件会一直显示 (empty)）。让 jj 在这里 snapshot，仓库段和 `jj st`
     # 看到的就是同一份状态，代价是文件变过的那次提示符会写一条 snapshot 操作。
+    #
+    # stderr 不能丢：拒绝 snapshot（新文件超过 snapshot.max-new-file-size、权限）是 warning，
+    # 命令本身成功，丢掉就只剩一个看起来正常的 (empty)。收进 per-shell 文件，非空画 !。
+    local warn_file=/dev/null at_warn=0
+    __bash_prompt_runtime_file jj-warn "$PPID" && warn_file=$REPLY
     local log_output
     log_output=$(command jj --no-pager log --color=never --no-graph \
-        --template "$template" --revisions "$revset" 2>/dev/null) || return 1
+        --template "$template" --revisions "$revset" 2>"$warn_file") || return 1
     [ -n "$log_output" ] || return 1
+    [ -s "$warn_file" ] && at_warn=1
 
     local flags commit_id change_short parents local_bookmarks empty conflict divergent
     local at_change_id='' at_key='' at_bookmarks='' at_empty=0 at_conflict=0 at_divergent=0
@@ -214,13 +221,19 @@ __bash_prompt_jj() {
     fi
 
     local -a reference_parts=()
-    local name part
+    local name part conflicted
     local -a name_list=()
     IFS=$'\x1e' read -r -a name_list <<< "$ancestor_names"
     for name in "${name_list[@]}"; do
         [ -n "$name" ] || continue
+        # 冲突的书签：jj log <名字> / jj bookmark set 都会报错，不能画成正常书签。
+        conflicted=0
+        case $name in
+            *$'\x1d') conflicted=1; name=${name%$'\x1d'} ;;
+        esac
         part="\[$__bash_prompt_color_mute\]$name"
         [ "$ancestor_distance" -gt 0 ] && part+="~${ancestor_distance}"
+        [ "$conflicted" = 1 ] && part+="\[$__bash_prompt_color_red\]$__bash_prompt_symbol_warn"
         part+="\[$__bash_prompt_color_reset\]"
         reference_parts+=("$part")
     done
@@ -239,6 +252,8 @@ __bash_prompt_jj() {
     local -a status_parts=()
     [ "$at_conflict" = 1 ] && status_parts+=("\[$__bash_prompt_color_red\]×\[$__bash_prompt_color_reset\]")
     [ "$at_divergent" = 1 ] && status_parts+=("\[$__bash_prompt_color_red\]≠\[$__bash_prompt_color_reset\]")
+    # jj 自己写了警告（stderr 非空）：常见是拒绝 snapshot 的大文件，`jj st` 看原文。
+    [ "$at_warn" = 1 ] && status_parts+=("\[$__bash_prompt_color_yellow\]$__bash_prompt_symbol_warn\[$__bash_prompt_color_reset\]")
 
     repo_ansi=$head_ansi
     if [ ${#status_parts[@]} -gt 0 ]; then

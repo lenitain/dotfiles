@@ -7,6 +7,7 @@ __bash_prompt_color_blue=$'\e[34m'
 __bash_prompt_color_magenta=$'\e[35m'
 __bash_prompt_color_red=$'\e[31m'
 __bash_prompt_color_cyan=$'\e[36m'
+__bash_prompt_color_yellow=$'\e[33m'
 __bash_prompt_color_white=$'\e[37m'
 __bash_prompt_color_mute=$'\e[90m'
 __bash_prompt_color_reset=$'\e[0m'
@@ -25,6 +26,8 @@ __bash_prompt_symbol_dirty='*'
 __bash_prompt_symbol_stash='≡'
 __bash_prompt_symbol_ahead='⇡'
 __bash_prompt_symbol_behind='⇣'
+# repo 段的告警：书签冲突跟在书签名后面，jj 的 stderr 警告单独跟在段尾。
+__bash_prompt_symbol_warn='!'
 # ANSI SGR 的 ERE。必须存成变量：[[ =~ ]] 里直接写带引号的模式会被当字面量。
 __bash_prompt_ansi_pattern=$'\e''\[[0-9;]*m'
 
@@ -53,12 +56,16 @@ __bash_prompt_visible_length() {
 # 上限是 jj/git 段的观测最大值（含前导空格，见 prompt/ps1.sh）。
 __bash_prompt_repo_reserved=40
 
-# widget 的输出宽度 bash 看不到，只能由子进程写、父 shell 下一条提示符读；
-# 路径按 shell PID 分。只放 XDG_RUNTIME_DIR（per-user 0700，登出即清）：
-# 没有它就返回 1，调用方继续用上限，不去 /tmp 里按 PID 猜文件名。
-__bash_prompt_repo_width_file() {
+# per-shell 的小文件（宽度缓存、jj 的 stderr）都放 XDG_RUNTIME_DIR（per-user 0700，登出即清）：
+# 没有它就返回 1，调用方继续用上限 / 丢掉警告，不去 /tmp 里按 PID 猜文件名。
+__bash_prompt_runtime_file() { # 名字，pid
     [ -n "${XDG_RUNTIME_DIR-}" ] || return 1
-    REPLY=$XDG_RUNTIME_DIR/bash-prompt-repo-width.$1
+    REPLY=$XDG_RUNTIME_DIR/bash-prompt-$1.$2
+}
+
+# widget 的输出宽度 bash 看不到，只能由子进程写、父 shell 下一条提示符读；路径按 shell PID 分。
+__bash_prompt_repo_width_file() {
+    __bash_prompt_runtime_file repo-width "$1"
 }
 
 # 读回缓存的宽度写进 REPLY；没有文件或内容不是数字时返回 1。

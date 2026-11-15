@@ -158,6 +158,12 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
   jj 自己失败时（工作副本陈旧、配置错、锁）画红色的 `jj!`，不退回 git：共置仓库里
   git 会给出一份看着正常的分支名，把真正的错误藏住；报错细节跑一次 `jj st` 看。
   只有仓库里有 `.jj` 但没装 jj 时才退回 git。
+  jj 往 stderr 写警告时（典型是超过 `snapshot.max-new-file-size` 的新文件被拒绝，
+  权限错误同理）段尾画黄色 `!`：命令本身成功，但那个文件没进 jj，不标的话提示符是
+  一份看起来正常的 `(empty)`；原文跑 `jj st` 看（一次性的提示也会亮一次，比如共置仓库里
+  git HEAD 变过、jj 重置了工作副本父提交）。冲突的书签名后面画红色 `!`
+  （`main~1!`、`main!`）：`jj log <名字>` 会直接报 `Name ... is conflicted`，
+  `jj bookmark list` 看两个目标，`jj bookmark set <名字> -r <rev>` 定夺。
   flyline 只等 100ms，超时那段时间仓库段是空白
   （`--placeholder 0`），提示符不再被 `jj log` 或 `git status` 卡住。
 - 符号行（第 2 行）的段按 pure 的顺序拼，每条提示符重算，都只读变量和内建、不 fork：
@@ -211,7 +217,7 @@ bash -n ~/.bashrc ~/.bash_profile ~/.config/bash/init.sh \
     ~/.config/bash/conf.d/*.sh ~/.config/bash/functions/*.sh \
     ~/.config/bash/prompt/*.sh ~/.config/bash/widgets/*.sh \
     ~/.config/bash/scripts/*.sh
-~/.config/bash/scripts/repo_check.sh    # repo 段：模板段数契约 + 端到端场景（参考点、merge、符号链接、未 snapshot 的改动、jj 报错），退出码必须是 0
+~/.config/bash/scripts/repo_check.sh    # repo 段：模板段数契约 + 端到端场景（参考点、merge、符号链接、未 snapshot 的改动、snapshot 警告、书签冲突、jj 报错），退出码必须是 0
 ~/.config/bash/scripts/git_check.sh     # git 段：分支/dirty/stash/上游/detached/bare/空仓库 + 宽度缓存，退出码必须是 0
 ~/.config/bash/widgets/repo.sh          # 仓库里输出单行、仓库外输出空，两种情况退出码都必须是 0
 bash -i -c 'type ll; flyline settings; flyline key list'   # 需要 pty
