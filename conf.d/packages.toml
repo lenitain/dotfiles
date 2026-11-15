@@ -37,7 +37,6 @@
 "pacman:7zip" = "latest"
 "pacman:unzip" = "latest"
 "pacman:gdb" = "latest"
-"pacman:sqlite3" = "latest"
 "pacman:strace" = "latest"
 "pacman:bpftrace" = "latest"
 "pacman:perf" = "latest"
