@@ -67,7 +67,9 @@ vim.opt.incsearch = true -- 增量搜索（边输入边搜索）
 -- --------------------------------------------
 -- 界面显示
 -- --------------------------------------------
-vim.opt.wrap = false -- 禁用自动换行（长行不换行，需水平滚动）
+vim.opt.wrap = true -- 自动换行：长行在窗口右边界折行显示
+vim.opt.linebreak = true -- 在单词边界折行（不会把单词拆开）
+vim.opt.breakindent = true -- 折行后的续行保持原行缩进
 vim.opt.title = true -- 启用终端标题栏（否则下面的 titlestring 不生效）
 vim.opt.titlestring = 'nvim: %{expand("%:~")}' -- 标题格式：nvim: 路径/文件名（家目录缩写为 ~）
 vim.opt.titlelen = 0 -- 标题不按窗口宽度截断（0 = 用完整路径；百分比会在窄窗口下把标题截成 "<.../LICENSE"）
