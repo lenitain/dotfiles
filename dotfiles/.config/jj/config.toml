@@ -79,8 +79,10 @@ patterns = ["all()"]
 [aliases]
 # jj i：共置初始化 Git 仓库
 i = { definition = ["git", "init", "--colocate"], doc = "Colocate-init a Git repo" }
-# jj d：编辑提交描述
-d = { definition = ["describe"], doc = "Edit the change description" }
+# jj d：查看改动（走 hunk）
+d = { definition = ["diff"], doc = "Show the changes in the working copy" }
+# jj de：编辑提交描述
+de = { definition = ["describe"], doc = "Edit the change description" }
 # jj n：新建空提交
 n = { definition = ["new"], doc = "Create a new empty change" }
 
