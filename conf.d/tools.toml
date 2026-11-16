@@ -1,29 +1,41 @@
+# 工具来源分三类：
+#   ① 语言运行时        → mise 内建插件（core:*）
+#   ② 成品（独立二进制）→ GitHub Release（aqua:* / github:*，自带 checksum / 签名）
+#   ③ 语言生态工具      → 语言包管理器（npm: / go: / cargo:）
+# 有 mise 原生 shorthand 的一律写 shorthand，来源由 registry 决定；
+# registry 换后端时用 `mise backends switch -g` 迁移。
+
 [tools]
+# ── ① 运行时 / 工具链 ─────────────────────────────────────────────
 zig = "latest"
-"aqua:zigtools/zls" = "latest"
 go = "latest"
-"go:mvdan.cc/gofumpt" = "latest"
-"go:github.com/golangci/golangci-lint/v2/cmd/golangci-lint" = "latest"
-"go:golang.org/x/tools/gopls" = "latest"
-"github:MichaelKinsy/PiG" = "latest"
-nodejs = "latest"
-"npm:pnpm" = "latest"
+node = "latest"
 bun = "latest"
-"npm:typescript" = "latest"
-"npm:typescript-language-server" = "latest"
-"npm:@fsouza/prettierd" = "latest"
-"npm:eslint_d" = "latest"
-"npm:pyright" = "latest"
-ruff = "latest"
-"aqua:LuaLS/lua-language-server" = "latest"
 rust = [
   { version = "stable", profile = "default", components = ["rust-analyzer", "rust-src"], mr_boxington = true },
   { version = "nightly", profile = "minimal", components = ["miri", "rust-src"], mr_boxington = true },
 ]
 "mr-boxington" = "latest"
-"cargo:typos-cli" = "latest"
+
+# ── ② 成品：上游发 GitHub Release ─────────────────────────────────
+typos = "latest"                # aqua:crate-ci/typos
+gofumpt = "latest"              # aqua:mvdan/gofumpt
+golangci-lint = "latest"        # aqua:golangci/golangci-lint
+pnpm = "latest"                 # aqua:pnpm/pnpm
+ruff = "latest"                 # aqua:astral-sh/ruff
+zls = "latest"                  # aqua:zigtools/zls（recipe 走 builds.zigtools.org，minisign 验签）
+lua-language-server = "latest"  # aqua:LuaLS/lua-language-server
+zmx = "latest"                  # github:neurosnap/zmx
+"github:MichaelKinsy/PiG" = "latest"
 "github:HalFrgrd/flyline" = "latest"
-zmx = "latest"
+
+# ── ③ 语言生态工具：跟包管理器走 ─────────────────────────────────
+"npm:typescript" = "latest"
+"npm:typescript-language-server" = "latest"
+"npm:@fsouza/prettierd" = "latest"
+"npm:eslint_d" = "latest"
+"npm:pyright" = "latest"
+"go:golang.org/x/tools/gopls" = "latest"
 
 # 预发布白名单；子表必须留在文件末尾，否则会吞掉上面 [tools] 的键。
 [tools."npm:@deepseek-ai/dsh"]
