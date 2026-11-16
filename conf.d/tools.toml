@@ -18,11 +18,8 @@ rust = [
 "mr-boxington" = "latest"
 
 # ── ② 成品：上游发 GitHub Release ─────────────────────────────────
-typos = "latest"                # aqua:crate-ci/typos
 gofumpt = "latest"              # aqua:mvdan/gofumpt
 golangci-lint = "latest"        # aqua:golangci/golangci-lint
-pnpm = "latest"                 # aqua:pnpm/pnpm
-ruff = "latest"                 # aqua:astral-sh/ruff
 zls = "latest"                  # aqua:zigtools/zls（recipe 走 builds.zigtools.org，minisign 验签）
 lua-language-server = "latest"  # aqua:LuaLS/lua-language-server
 zmx = "latest"                  # github:neurosnap/zmx
