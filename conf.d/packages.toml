@@ -111,7 +111,6 @@
 "pacman:udiskie" = "latest"
 "pacman:onlyoffice-bin" = "latest"
 "pacman:kicad" = "latest"
-"pacman:freecad" = "latest"
 
 "flatpak-user:com.tencent.WeChat" = "latest"
 "flatpak-user:com.qq.QQ" = "latest"
