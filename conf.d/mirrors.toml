@@ -1,7 +1,18 @@
 # 镜像。mise 只管自己 HTTP 客户端；裸 git 走 ~/.gitconfig 的 url.insteadOf。
 
 [env]
-GOPROXY = "https://goproxy.cn,direct"
+# Go 模块代理串联。挑镜像的三条硬标准（全部实测过）：
+#   ① 要提供 /sumdb/ 端点 —— 否则 go 会直连被墙的 sum.golang.org 做校验，每个版本各等一次超时
+#   ② 对"不存在的模块"必须返回 404 —— GOPROXY 链只认 404/410 才继续往后回退，
+#      返回 200(空列表)或 403 会当场中断整条链
+#   ③ miss 路径要快 —— mise 猜模块根时会连打 5 个前缀探测，镜像每个慢 10s 就直接爆 20s 预算
+# 合格：goproxy.cn（miss 0.07s，缓存 TTL 仅 60s 所以经常要回源 GitHub，回源失败就报
+#       "not found: temporarily unavailable"）→ proxy.golang.com.cn（miss 0.16s，TTL 4h，更稳）
+# 淘汰：mirrors.tencent.com/go（miss 要 11s）、goproxy.baidu.com（miss 返 200）、
+#       goproxy.io（@latest 返 403）、aliyun/ustc/nju/bfsu/sjtu（只做静态同步，不按需回源、无 sumdb）
+# 注意：不要设 GOSUMDB。GOPROXY 里有代理时，go 会自动走 <proxy>/sumdb/<name>/，
+# 手写 GOSUMDB=sum.golang.org https://goproxy.cn 反而让它去请求 goproxy.cn/tile/… 而 404。
+GOPROXY = "https://goproxy.cn,https://proxy.golang.com.cn,direct"
 RUSTUP_DIST_SERVER = "https://mirrors.ustc.edu.cn/rust-static"
 RUSTUP_UPDATE_ROOT = "https://mirrors.ustc.edu.cn/rust-static/rustup"
 NODEJS_ORG_MIRROR = "https://npmmirror.com/mirrors/node"
@@ -17,6 +28,9 @@ MISE_HTTP_DOWNLOAD_TIMEOUT = "10m"
 [settings]
 # 末尾斜杠必须留；不要用 npmmirror 的 /mirrors/node（会被特判成 404）
 node.mirror_url = "https://mirrors.aliyun.com/nodejs-release/"
+# 查"工具最新版本"的总预算（默认 20s）。和 MISE_HTTP_TIMEOUT 是两回事：
+# 那个是单个 HTTP 请求的超时，这个是整个版本查询的时限，超了就是 timed out。
+fetch_remote_versions_timeout = "60s"
 # 只管定版本，不管下载；配错不报错，会静默把 latest 钉在老版本
 pypi.registry_url = "https://mirrors.aliyun.com/pypi/web/json/{}"
 

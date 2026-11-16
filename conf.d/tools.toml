@@ -5,7 +5,10 @@ go = "latest"
 "go:mvdan.cc/gofumpt" = "latest"
 "go:github.com/golangci/golangci-lint/v2/cmd/golangci-lint" = "latest"
 "go:golang.org/x/tools/gopls" = "latest"
-"go:github.com/MichaelKinsy/PiG/cmd/pig" = "latest"
+# PiG 走 github 后端而不是 go 后端：go 后端要把包路径猜成模块路径，
+# goproxy.cn 没缓存该模块时会退回 git + sum.golang.org，单次版本查询就能吃掉 20s+
+# （默认 fetch_remote_versions_timeout）而超时。release 自带预编译二进制，快且稳。
+"github:MichaelKinsy/PiG" = "latest"
 nodejs = "latest"
 "npm:pnpm" = "latest"
 bun = "latest"
