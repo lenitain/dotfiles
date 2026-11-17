@@ -9,8 +9,11 @@
 # 绿色高亮就不会出现。launcher 模式没有 --match-nth 的概念，所以不受影响。
 
 # 获取选择，保留完整的 ID\t内容 格式传给 fuzzel
+# 覆盖 ini 里的 exit-immediately-if-empty=yes：历史为空时也要弹出一个空窗口，
+# 否则 fuzzel 收到空输入会直接退出、不弹窗，按键看起来就像"完全没反应"。
+# （ini 里的全局设置保留给其它脚本化调用，比如电源菜单。）
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-selected=$(cliphist list | "$SCRIPT_DIR/fuzzel-wrapper" --dmenu --prompt="Clipboard " --with-nth=2)
+selected=$(cliphist list | "$SCRIPT_DIR/fuzzel-wrapper" --dmenu --prompt="Clipboard " --with-nth=2 --override=dmenu.exit-immediately-if-empty=no)
 
 if [ -n "$selected" ]; then
   # 直接用选中的完整行(包含ID)进行decode
