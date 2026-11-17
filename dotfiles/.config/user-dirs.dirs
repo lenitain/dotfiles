@@ -1,9 +1,11 @@
-# This file is written by xdg-user-dirs-update
-# If you want to change or add directories, just edit the line you're
-# interested in. All local changes will be retained on the next run.
-# Format is XDG_xxx_DIR="$HOME/yyy", where yyy is a shell-escaped
-# homedir-relative path, or XDG_xxx_DIR="/yyy", where /yyy is an
-# absolute path. No other format is supported.
+# XDG 用户目录 —— 声明式来源，由 mise dotfiles 部署为 ~/.config/user-dirs.dirs。
+# 上游 xdg-user-dirs-update 已关闭（~/.config/user-dirs.conf: enabled=false），
+# 所以这里不会被任何程序重写；目录由 `mise run setup-desktop` 按本文件建齐。
+#
+# 格式（规范只支持这两种）: XDG_xxx_DIR="$HOME/yyy" 或 "/yyy"，yyy 需 shell
+# 转义。文件允许被 shell 直接 source，所以除 XDG_*_DIR 外不要写别的东西。
+# 规范列出的键: DESKTOP DOWNLOAD TEMPLATES PUBLICSHARE DOCUMENTS MUSIC PICTURES
+# VIDEOS；PROJECTS 是上游 /etc/xdg/user-dirs.defaults 里的实现扩展。
 #
 XDG_DESKTOP_DIR="$HOME/Desktop"
 XDG_DOWNLOAD_DIR="$HOME/Downloads"

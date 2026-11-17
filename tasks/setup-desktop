@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="用户层: dconf 桌面设置 + XDG 用户目录 (无 root)"
+#MISE description="用户层: dconf 桌面设置 + 按 user-dirs.dirs 建 XDG 目录 (无 root)"
 
 set -euo pipefail
 
@@ -47,17 +47,33 @@ else
   info "跳过 dconf: 未安装 dconf 命令"
 fi
 
-# ── 2. XDG 用户目录: 建英文, 删中文 ──
-xdg_en=(Desktop Downloads Templates Public Documents Music Pictures Videos Projects)
-xdg_cn=(桌面 下载 模板 公共 文档 音乐 图片 视频 项目)
-for d in "${xdg_en[@]}"; do
-  mkdir -p "$HOME/$d"
+# ── 2. XDG 用户目录: 唯一来源是 user-dirs.dirs ──
+# 上游 xdg-user-dirs-update 由 ~/.config/user-dirs.conf 关闭 (enabled=false):
+# 它按 locale 建本地化目录, 并在任何已声明目录缺失时用 mkstemp + rename 重写
+# user-dirs.dirs —— 那会把 dotfiles 的符号链接顶成普通文件。
+# 目录改由本任务按文件内容派生, 清单只有一处。
+xdg_dirs_file="${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs"
+if [ ! -r "$xdg_dirs_file" ]; then
+  err "缺少 $xdg_dirs_file (应由 mise dotfiles 部署)"
+  exit 1
+fi
+# 该文件格式保证可被 shell 直接 source (规范明文要求); 不 export ——
+# XDG_*_DIR 只属于这个文件, 不是环境变量。
+(
+  . "$xdg_dirs_file"
+  while IFS= read -r key; do
+    if [ -n "${!key}" ]; then
+      mkdir -p -- "${!key}"
+    fi
+  done < <(grep -oE '^XDG_[A-Z]+_DIR' "$xdg_dirs_file")
+)
+info "XDG 用户目录已按 $xdg_dirs_file 建齐"
+
+# 一次性迁移: pin 英文名之前的上游运行可能已建过本地化目录。
+# rmdir 只删空目录, 非空的留给人工判断。
+for d in 桌面 下载 模板 公共 文档 音乐 图片 视频 项目; do
+  rmdir -- "$HOME/$d" 2>/dev/null || true
 done
-for d in "${xdg_cn[@]}"; do
-  [ -e "$HOME/$d" ] || continue
-  rm -rf -- "$HOME/$d"
-done
-info "XDG 用户目录已对齐"
 
 # bat 缓存已移至 [bootstrap.hooks.post-dotfiles] (conf.d/hooks.toml)
 

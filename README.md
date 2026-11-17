@@ -69,7 +69,7 @@ mise ls                # 已装工具
 | `setup-all`           | 聚合入口                                                     | sudo |
 | `setup-tuning`        | 桌面性能调优（BBR / Wi-Fi 省电 / 电源档位），立即应用 + 体检 | sudo  |
 | `setup-boot`          | systemd-boot / sdboot-manage；带守卫，手动跑，不入 setup-all | sudo |
-| `setup-desktop`       | dconf 桌面设置 + XDG 用户目录                                | 用户 |
+| `setup-desktop`       | dconf 桌面设置 + 按 user-dirs.dirs 建 XDG 目录               | 用户 |
 | `setup-fonts`         | Maple Mono 字体                                              | 用户 |
 | `setup-pig`           | PiG agent + 扩展                                             | 用户 |
 | `setup-rime-wanxiang` | 万象拼音 → fcitx5                                            | 用户 |

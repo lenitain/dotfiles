@@ -8,13 +8,10 @@ export TERMINAL=foot
 export MANPAGER='nvim - +Man!'
 export ORT_DISABLE_TELEMETRY=1
 
-# ─── XDG / Qt ───
+# ─── Qt ───
+# flatpak 的 XDG_DATA_DIRS 补丁由 /etc/profile.d/flatpak.sh 负责，systemd --user
+# 侧也已就位，两处同值；这里不重复（重复写会因为守卫永远命中而死代码）。
 export QT_QPA_PLATFORMTHEME=gtk3
-: "${XDG_DATA_DIRS:=/usr/local/share:/usr/share}"
-case ":$XDG_DATA_DIRS:" in
-    *:/var/lib/flatpak/exports/share:*) ;;
-    *) export XDG_DATA_DIRS="/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share:$XDG_DATA_DIRS" ;;
-esac
 
 # ─── PATH ───
 # 只补手工加的三处；~/.cargo/bin 与 go install 的产物都由 mise 负责。
