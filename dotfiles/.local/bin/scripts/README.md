@@ -9,7 +9,7 @@
 
 ```bash
 cd ~/vms
-run-vm --install --iso ~/Downloads/fedora.iso --new fedora44   # 首次安装
+run-vm --install --iso ~/downloads/fedora.iso --new fedora44   # 首次安装
 run-vm fedora44.qcow2                                          # 之后启动
 run-vm                                                         # 交互选择磁盘
 ```
@@ -17,7 +17,7 @@ run-vm                                                         # 交互选择磁
 | 选项                | 说明                                                                          |
 | ------------------- | ----------------------------------------------------------------------------- |
 | `--install`         | 安装模式：挂载 ISO 并从光驱引导                                               |
-| `--iso FILE`        | 指定 ISO，任意路径；不给则按同名自动找（磁盘旁边 → 当前目录 → `~/Downloads`） |
+| `--iso FILE`        | 指定 ISO，任意路径；不给则按同名自动找（磁盘旁边 → 当前目录 → `~/downloads`） |
 | `--new NAME`        | 新建 `NAME.qcow2` 并进入安装模式                                              |
 | `--bios`            | 用 SeaBIOS 启动 —— 唯一支持「硬盘优先、光驱兜底」的模式                       |
 | `--disk-size SIZE`  | 新建磁盘大小，默认 `32G`                                                      |
@@ -40,7 +40,7 @@ run-vm                                                         # 交互选择磁
 ├── fedora44.qcow2          ← 虚拟磁盘：系统与数据
 └── fedora44.OVMF_VARS.fd   ← 固件变量：Boot#### 引导项，必须和磁盘作伴
 
-ISO 随便放：~/Downloads/xxx.iso、/media/usb/xxx.iso …
+ISO 随便放：~/downloads/xxx.iso、/media/usb/xxx.iso …
 ```
 
 磁盘和 `.OVMF_VARS.fd` 永远同目录同基名；ISO 不受这个约束。不传参数时在当前目录

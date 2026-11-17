@@ -146,7 +146,7 @@ c.tabs.indicator.width = 4
 c.tabs.padding = {"top": 6, "bottom": 6, "left": 8, "right": 8}
 
 # 下载
-c.downloads.location.directory = "~/Downloads"
+c.downloads.location.directory = "~/downloads"
 c.downloads.location.prompt = False
 
 # 隐私

@@ -6,13 +6,15 @@
 # 转义。文件允许被 shell 直接 source，所以除 XDG_*_DIR 外不要写别的东西。
 # 规范列出的键: DESKTOP DOWNLOAD TEMPLATES PUBLICSHARE DOCUMENTS MUSIC PICTURES
 # VIDEOS；PROJECTS 是上游 /etc/xdg/user-dirs.defaults 里的实现扩展。
+# 值刻意用小写（规范不限制值的大小写，只要求 $HOME/yyy 或 /yyy）：改回大写
+# 需同步改消费者里的硬编码路径（qutebrowser / yazi / niri 脚本 / run-vm）。
 #
-XDG_DESKTOP_DIR="$HOME/Desktop"
-XDG_DOWNLOAD_DIR="$HOME/Downloads"
-XDG_TEMPLATES_DIR="$HOME/Templates"
-XDG_PUBLICSHARE_DIR="$HOME/Public"
-XDG_DOCUMENTS_DIR="$HOME/Documents"
-XDG_MUSIC_DIR="$HOME/Music"
-XDG_PICTURES_DIR="$HOME/Pictures"
-XDG_VIDEOS_DIR="$HOME/Videos"
-XDG_PROJECTS_DIR="$HOME/Projects"
+XDG_DESKTOP_DIR="$HOME/desktop"
+XDG_DOWNLOAD_DIR="$HOME/downloads"
+XDG_TEMPLATES_DIR="$HOME/templates"
+XDG_PUBLICSHARE_DIR="$HOME/public"
+XDG_DOCUMENTS_DIR="$HOME/documents"
+XDG_MUSIC_DIR="$HOME/music"
+XDG_PICTURES_DIR="$HOME/pictures"
+XDG_VIDEOS_DIR="$HOME/videos"
+XDG_PROJECTS_DIR="$HOME/projects"

@@ -14,7 +14,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-SCREENSHOT_DIR="$HOME/Pictures/Screenshots"
+SCREENSHOT_DIR="$HOME/pictures/Screenshots"
 mkdir -p "$SCREENSHOT_DIR"
 
 # 通知统一入口，与 record 的 notify() 同名同构，第三个参数为可选图标。

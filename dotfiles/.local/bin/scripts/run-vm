@@ -115,10 +115,10 @@ else
 	DISK="${disks[$((sel - 1))]}"
 fi
 
-# 找同名 ISO：磁盘旁边 → 当前目录 → ~/Downloads
+# 找同名 ISO：磁盘旁边 → 当前目录 → ~/downloads
 find_iso() {
 	local name="$1" dir
-	for dir in "$(dirname "$DISK")" "$PWD" "$HOME/Downloads"; do
+	for dir in "$(dirname "$DISK")" "$PWD" "$HOME/downloads"; do
 		if [[ -f "$dir/$name" ]]; then
 			printf '%s\n' "$dir/$name"
 			return 0
@@ -141,7 +141,7 @@ if [[ -n $ISO ]]; then
 fi
 if [[ $INSTALL -eq 1 && -z $ISO ]]; then
 	echo "安装模式需要 ISO，用 --iso FILE 指定" >&2
-	candidates=$(ls -1 "$(dirname "$DISK")"/*.iso "$PWD"/*.iso "$HOME/Downloads"/*.iso 2>/dev/null | sort -u)
+	candidates=$(ls -1 "$(dirname "$DISK")"/*.iso "$PWD"/*.iso "$HOME/downloads"/*.iso 2>/dev/null | sort -u)
 	if [[ -n $candidates ]]; then
 		echo "可用的 ISO：" >&2
 		while IFS= read -r f; do printf '  %s\n' "$f" >&2; done <<< "$candidates"
