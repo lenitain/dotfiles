@@ -9,6 +9,7 @@ local tree_opts   -- hunk 传给 ui.tree.create 的 opts 表：改写其 winid �
                   -- hunk 内部的 Component.focus()/toggle() 继续指向有效窗口
 local tree_cursor -- 收起前的树内光标，展开时还原
 local armed = false -- 启动阶段 hunk 自己会切窗口，此时不许自动收起
+local previewed -- 右侧当前展示的文件：光标停在同一文件上无需重开
 
 local function tree_win()
   local win = tree_opts and tree_opts.winid
@@ -55,6 +56,8 @@ local function expand()
   local win = vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_buf(win, tree_buf)
   vim.api.nvim_set_option_value("winfixwidth", true, { win = win })
+  -- 收起期间可能用 <CR> 打开过别的文件，重新展开后第一次移动光标要重新预览
+  previewed = nil
   tree_opts.winid = win
   equalize()
 
@@ -139,8 +142,30 @@ return {
         tree_opts = context.opts
         tree_cursor = nil
         armed = false
+        previewed = nil
 
         bind_tree_key(context.buf)
+
+        -- hunk 的 on_preview 在 DiffEditor 模式下用第二个参数重新聚焦文件树；
+        -- split 布局里 focus/toggle 都只是聚焦本文件管理的树窗口
+        local tree_handle = {
+          buf = context.buf,
+          focus = expand,
+          toggle = expand,
+        }
+
+        -- 光标在树上移动就预览右侧 diff，不必先按 <CR> 或 l
+        vim.api.nvim_create_autocmd("CursorMoved", {
+          buffer = context.buf,
+          desc = "光标移动时预览 diff 文件",
+          callback = function()
+            local node = context.tree:get_node()
+            if node and node.type == "file" and node.change.filepath ~= previewed then
+              previewed = node.change.filepath
+              context.opts.on_preview(node.change, { tree = tree_handle })
+            end
+          end,
+        })
 
         -- 启动保持展开（初始界面就有文件树）；等 hunk 自己的布局动作
         -- 都结束后再启用"焦点离开即收起"
