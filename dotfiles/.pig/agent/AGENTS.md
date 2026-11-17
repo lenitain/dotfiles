@@ -2,7 +2,7 @@
 
 ## Rules
 
-- When inspecting a project's source code, `git clone` its URL into `~/.cloned/<name>` and read it there instead of fetching files one by one. Leave the clone in place when done.
+- When inspecting a project's source code, `git clone` its URL into `~/.local/share/upstream/<name>` and read it there instead of fetching files one by one. Leave the clone in place when done.
 
 ## Skills
 
