@@ -1,0 +1,48 @@
+# lazygit 主题：everforest dark medium 调色板，与 bash/fzf/yazi 同一套。
+# 十六进制值取自 ~/.config/bash/theme/everforest_dark_medium.sh（bash 侧唯一来源）。
+gui:
+  nerdFontsVersion: "3"
+  theme:
+    # 聚焦面板的边框：绿色加粗
+    activeBorderColor:
+      - "#a7c080"
+      - "bold"
+    # 未聚焦面板的边框
+    inactiveBorderColor:
+      - "#475258"
+    # 面板内搜索时的聚焦边框
+    searchingActiveBorderColor:
+      - "#a7c080"
+      - "bold"
+    # 底部快捷键提示
+    optionsTextColor:
+      - "#7fbbb3"
+
+    # 选中行：整行抬亮一档 + 加粗，不改前景色。
+    # 和 fzf 的 bg+ / yazi 的 indicator 同一写法（都是「浅一档背景 + 加粗」），
+    # 不用反色块。背景取调色板里的 SELECTION 色。
+    selectedLineFgColor:
+      - "bold"
+    selectedLineBgColor:
+      - "#3a464c"
+    # 失焦面板里的选中行：再弱一档（fzf 的 bg+ 同色）
+    inactiveViewSelectedLineBgColor:
+      - "#343f44"
+
+    # 已 cherry-pick 的提交
+    cherryPickedCommitFgColor:
+      - "#7fbbb3"
+    cherryPickedCommitBgColor:
+      - "#d699b6"
+    # rebase 标记的 base 提交
+    markedBaseCommitFgColor:
+      - "#7fbbb3"
+    markedBaseCommitBgColor:
+      - "#dbbc7f"
+
+    # 有未暂存改动的文件
+    unstagedChangesColor:
+      - "#e67e80"
+    # 默认前景色
+    defaultFgColor:
+      - "#d3c6aa"

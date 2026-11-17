@@ -36,6 +36,7 @@
 "pacman:fzf" = "latest"
 "pacman:7zip" = "latest"
 "pacman:unzip" = "latest"
+"pacman:lazygit" = "latest"
 "pacman:gdb" = "latest"
 "pacman:strace" = "latest"
 "pacman:bpftrace" = "latest"
