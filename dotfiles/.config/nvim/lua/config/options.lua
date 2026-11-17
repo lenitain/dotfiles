@@ -67,9 +67,7 @@ vim.opt.incsearch = true -- 增量搜索（边输入边搜索）
 -- --------------------------------------------
 -- 界面显示
 -- --------------------------------------------
-vim.opt.wrap = true -- 自动换行：长行在窗口右边界折行显示
-vim.opt.linebreak = true -- 在单词边界折行（不会把单词拆开）
-vim.opt.breakindent = true -- 折行后的续行保持原行缩进
+vim.opt.wrap = false -- 不自动换行：长行横向滚动，宽表格/代码保持对齐（<leader>uw 临时切换）
 vim.opt.title = true -- 启用终端标题栏（否则下面的 titlestring 不生效）
 vim.opt.titlestring = 'nvim: %{expand("%:~")}' -- 标题格式：nvim: 路径/文件名（家目录缩写为 ~）
 vim.opt.titlelen = 0 -- 标题不按窗口宽度截断（0 = 用完整路径；百分比会在窄窗口下把标题截成 "<.../LICENSE"）
@@ -87,7 +85,7 @@ vim.opt.pumblend = 0 -- 弹出菜单透明度
 vim.opt.winblend = 0 -- 浮动窗口透明度
 vim.opt.conceallevel = 3 -- 隐藏标记文本（如 markdown 中的链接语法）
 vim.opt.list = true -- 显示不可见字符
-vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" } -- 不可见字符的显示符号
+vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣", extends = "⟩", precedes = "⟨" } -- 不可见字符的显示符号；extends/precedes 提示左右还有被截断的内容
 vim.opt.fillchars = { -- 窗口分隔符样式
 	foldopen = "─",
 	foldclose = "+",
@@ -96,7 +94,6 @@ vim.opt.fillchars = { -- 窗口分隔符样式
 	diff = "╱",
 	eob = " ",
 }
-vim.opt.smoothscroll = true -- 平滑滚动（Neovim 0.10+）
 vim.opt.winborder = "rounded" -- 统一所有浮窗边框为圆角
 
 -- --------------------------------------------

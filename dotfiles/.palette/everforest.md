@@ -3,8 +3,8 @@
 ## Contents
 
 1. [Palette Variants](#palette-variants)
-   * [Dark](#dark)
-   * [Light](#light)
+   - [Dark](#dark)
+   - [Light](#light)
 1. [Highlights](#highlights)
 1. [Neovim: resolved highlight groups (generated, nvim-specific)](everforest-nvim-groups.md)
 
@@ -75,38 +75,38 @@ The color values in the table below correspond to the **dark** variant of the co
 contrast. The semantics of color identifiers, however, apply uniformly to all [Palette Variants](#palette-variants) and
 contrast settings.
 
-|                    | Hex     | Identifier    | Usages                                                                                                                    |
-|--------------------|---------|---------------|---------------------------------------------------------------------------------------------------------------------------|
-| ![#232A2E][hl_bgd] | #232A2E | `bg_dim`      | Dimmed Background                                                                                                         |
-| ![#2D353B][hl_bg0] | #2D353B | `bg0`         | Default Background, Line Numbers Background, Signs Background, Status Line Background (inactive), Tab Line Label (active) |
-| ![#343F44][hl_bg1] | #343F44 | `bg1`         | Cursor Line Background, Color Columns, Closed Folds Background, Status Line Background (active), Tab Line Background      |
-| ![#3D484D][hl_bg2] | #3D484D | `bg2`         | Popup Menu Background, Floating Window Background, Window Toolbar Background                                              |
-| ![#475258][hl_bg3] | #475258 | `bg3`         | List Chars, Special Keys, Tab Line Label Background (inactive)                                                            |
-| ![#4F585E][hl_bg4] | #4F585E | `bg4`         | Window Splits Separators, Whitespaces, Breaks                                                                             |
-| ![#56635f][hl_bg5] | #56635f | `bg5`         | _Not currently used_                                                                                                      |
-| ![#543A48][hl_bgv] | #543A48 | `bg_visual`   | Visual Selection                                                                                                          |
-| ![#514045][hl_bgr] | #514045 | `bg_red`      | Diff Deleted Line Background, Error Highlights                                                                            |
-| ![#4D4C43][hl_bgy] | #4D4C43 | `bg_yellow`   | Warning Highlights                                                                                                        |
-| ![#425047][hl_bgg] | #425047 | `bg_green`    | Diff Added Line Background, Hint Highlights                                                                               |
-| ![#3A515D][hl_bgb] | #3A515D | `bg_blue`     | Diff Changed Line Background, Info Highlights                                                                             |
-| ![#4A444E][hl_bgp] | #4A444E | `bg_purple`   |                                                                                                                           |
-| ![#D3C6AA][hl_fg]  | #D3C6AA | `fg`          | Default Foreground, Signs, [_Treesitter_: Constants, Variables, Function Parameters, Properties, Symbol Identifiers]      |
-| ![#E67E80][hl_red] | #E67E80 | `red`         | Conditional Keywords, Loop Keywords, Exception Keywords, Inclusion Keywords, Uncategorised Keywords, Diff Deleted Signs, Error Messages, Error Signs |
-| ![#E69875][hl_ora] | #E69875 | `orange`      | Operator Keywords, Operators, Labels, Storage Classes, Composite Types, Enumerated Types, Tags, Title, Debugging Statements |
-| ![#DBBC7F][hl_yel] | #DBBC7F | `yellow`      | Types, Special Characters, Warning Messages, Warning Signs, [_Treesitter_: Modules, Namespaces]                           |
+|                    | Hex     | Identifier    | Usages                                                                                                                                                                                                                                                  |
+| ------------------ | ------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![#232A2E][hl_bgd] | #232A2E | `bg_dim`      | Dimmed Background                                                                                                                                                                                                                                       |
+| ![#2D353B][hl_bg0] | #2D353B | `bg0`         | Default Background, Line Numbers Background, Signs Background, Status Line Background (inactive), Tab Line Label (active)                                                                                                                               |
+| ![#343F44][hl_bg1] | #343F44 | `bg1`         | Cursor Line Background, Color Columns, Closed Folds Background, Status Line Background (active), Tab Line Background                                                                                                                                    |
+| ![#3D484D][hl_bg2] | #3D484D | `bg2`         | Popup Menu Background, Floating Window Background, Window Toolbar Background                                                                                                                                                                            |
+| ![#475258][hl_bg3] | #475258 | `bg3`         | List Chars, Special Keys, Tab Line Label Background (inactive)                                                                                                                                                                                          |
+| ![#4F585E][hl_bg4] | #4F585E | `bg4`         | Window Splits Separators, Whitespaces, Breaks                                                                                                                                                                                                           |
+| ![#56635f][hl_bg5] | #56635f | `bg5`         | _Not currently used_                                                                                                                                                                                                                                    |
+| ![#543A48][hl_bgv] | #543A48 | `bg_visual`   | Visual Selection                                                                                                                                                                                                                                        |
+| ![#514045][hl_bgr] | #514045 | `bg_red`      | Diff Deleted Line Background, Error Highlights                                                                                                                                                                                                          |
+| ![#4D4C43][hl_bgy] | #4D4C43 | `bg_yellow`   | Warning Highlights                                                                                                                                                                                                                                      |
+| ![#425047][hl_bgg] | #425047 | `bg_green`    | Diff Added Line Background, Hint Highlights                                                                                                                                                                                                             |
+| ![#3A515D][hl_bgb] | #3A515D | `bg_blue`     | Diff Changed Line Background, Info Highlights                                                                                                                                                                                                           |
+| ![#4A444E][hl_bgp] | #4A444E | `bg_purple`   |                                                                                                                                                                                                                                                         |
+| ![#D3C6AA][hl_fg]  | #D3C6AA | `fg`          | Default Foreground, Signs, [_Treesitter_: Constants, Variables, Function Parameters, Properties, Symbol Identifiers]                                                                                                                                    |
+| ![#E67E80][hl_red] | #E67E80 | `red`         | Conditional Keywords, Loop Keywords, Exception Keywords, Inclusion Keywords, Uncategorised Keywords, Diff Deleted Signs, Error Messages, Error Signs                                                                                                    |
+| ![#E69875][hl_ora] | #E69875 | `orange`      | Operator Keywords, Operators, Labels, Storage Classes, Composite Types, Enumerated Types, Tags, Title, Debugging Statements                                                                                                                             |
+| ![#DBBC7F][hl_yel] | #DBBC7F | `yellow`      | Types, Special Characters, Warning Messages, Warning Signs, [_Treesitter_: Modules, Namespaces]                                                                                                                                                         |
 | ![#A7C080][hl_gre] | #A7C080 | `green`       | Function Names, Method Names, Strings, Characters, Hint Messages, Hint Signs, Search Highlights, [_Treesitter_: Constructors, Function Calls, Built-In Functions, Macro Functions, String Escapes, Regex Literals, Tag Delimiters, Non-Structured Text] |
-| ![#83C092][hl_aqu] | #83C092 | `aqua`        | Constants, Macros, [_Treesitter_: Strings, Characters]                                                                    |
-| ![#7FBBB3][hl_blu] | #7FBBB3 | `blue`        | Identifiers, Uncategorised Special Symbols, Diff Changed Text Background, Info Messages, Info Signs, [_Treesitter_: Fields, Special Punctuation, Math Environments] |
-| ![#D699B6][hl_pur] | #D699B6 | `purple`      | Booleans, Numbers, Preprocessors, [_Treesitter_: Built-In Constants, Built-In Variables, Macro-Defined Constants, Attributes/Annotations]                                                  |
-| ![#7A8478][hl_gr0] | #7A8478 | `grey0`       | Line Numbers, Fold Columns, Concealed Text, Foreground UI Elements                                                        |
-| ![#859289][hl_gr1] | #859289 | `grey1`       | Comments, Punctuation Delimiters, Closed Folds, Ignored/Disabled, UI Borders, Status Line Text                            |
-| ![#9DA9A0][hl_gr2] | #9DA9A0 | `grey2`       | Cursor Line Number, Tab Line Label (inactive)                                                                             |
-| ![#A7C080][hl_st1] | #A7C080 | `statusline1` | Menu Selection Background, Tab Line Label Background (active), Status Line Mode Indicator                                 |
-| ![#D3C6AA][hl_st2] | #D3C6AA | `statusline2` | Status Line Mode Indicator                                                                                                |
-| ![#E67E80][hl_st3] | #E67E80 | `statusline3` | Status Line Mode Indicator                                                                                                |
-
+| ![#83C092][hl_aqu] | #83C092 | `aqua`        | Constants, Macros, [_Treesitter_: Strings, Characters]                                                                                                                                                                                                  |
+| ![#7FBBB3][hl_blu] | #7FBBB3 | `blue`        | Identifiers, Uncategorised Special Symbols, Diff Changed Text Background, Info Messages, Info Signs, [_Treesitter_: Fields, Special Punctuation, Math Environments]                                                                                     |
+| ![#D699B6][hl_pur] | #D699B6 | `purple`      | Booleans, Numbers, Preprocessors, [_Treesitter_: Built-In Constants, Built-In Variables, Macro-Defined Constants, Attributes/Annotations]                                                                                                               |
+| ![#7A8478][hl_gr0] | #7A8478 | `grey0`       | Line Numbers, Fold Columns, Concealed Text, Foreground UI Elements                                                                                                                                                                                      |
+| ![#859289][hl_gr1] | #859289 | `grey1`       | Comments, Punctuation Delimiters, Closed Folds, Ignored/Disabled, UI Borders, Status Line Text                                                                                                                                                          |
+| ![#9DA9A0][hl_gr2] | #9DA9A0 | `grey2`       | Cursor Line Number, Tab Line Label (inactive)                                                                                                                                                                                                           |
+| ![#A7C080][hl_st1] | #A7C080 | `statusline1` | Menu Selection Background, Tab Line Label Background (active), Status Line Mode Indicator                                                                                                                                                               |
+| ![#D3C6AA][hl_st2] | #D3C6AA | `statusline2` | Status Line Mode Indicator                                                                                                                                                                                                                              |
+| ![#E67E80][hl_st3] | #E67E80 | `statusline3` | Status Line Mode Indicator                                                                                                                                                                                                                              |
 
 <!-- dark hard palette1 -->
+
 [1E2326]: https://fakeimg.ryd.tools/96/1E2326/D3C6AA/?text=%231E2326&font=noto&font_size=12 "bg_dim - #1E2326"
 [272E33]: https://fakeimg.ryd.tools/96/272E33/D3C6AA/?text=%23272E33&font=noto&font_size=12 "bg0 - #272E33"
 [2E383C]: https://fakeimg.ryd.tools/96/2E383C/D3C6AA/?text=%232E383C&font=noto&font_size=12 "bg1 - #2E383C"
@@ -122,6 +122,7 @@ contrast settings.
 [463F48]: https://fakeimg.ryd.tools/96/463F48/D3C6AA/?text=%23463F48&font=noto&font_size=12 "bg_purple - #463F48"
 
 <!-- dark medium palette1 -->
+
 [232A2E]: https://fakeimg.ryd.tools/96/232A2E/D3C6AA/?text=%23232A2E&font=noto&font_size=12 "bg_dim - #232A2E"
 [2D353B]: https://fakeimg.ryd.tools/96/2D353B/D3C6AA/?text=%232D353B&font=noto&font_size=12 "bg0 - #2D353B"
 [343F44]: https://fakeimg.ryd.tools/96/343F44/D3C6AA/?text=%23343F44&font=noto&font_size=12 "bg1 - #343F44"
@@ -137,6 +138,7 @@ contrast settings.
 [4A444E]: https://fakeimg.ryd.tools/96/4A444E/D3C6AA/?text=%234A444E&font=noto&font_size=12 "bg_purple - #4A444E"
 
 <!-- dark low palette1 -->
+
 [293136]: https://fakeimg.ryd.tools/96/293136/D3C6AA/?text=%23293136&font=noto&font_size=12 "bg_dim - #293136"
 [333C43]: https://fakeimg.ryd.tools/96/333C43/D3C6AA/?text=%23333C43&font=noto&font_size=12 "bg0 - #333C43"
 [3A464C]: https://fakeimg.ryd.tools/96/3A464C/D3C6AA/?text=%233A464C&font=noto&font_size=12 "bg1 - #3A464C"
@@ -152,6 +154,7 @@ contrast settings.
 [4E4953]: https://fakeimg.ryd.tools/96/4E4953/D3C6AA/?text=%234E4953&font=noto&font_size=12 "bg_purple - #4E4953"
 
 <!-- light hard palette1 -->
+
 [F2EFDF]: https://fakeimg.ryd.tools/96/F2EFDF/5C6A72/?text=%23F2EFDF&font=noto&font_size=12 "bg_dim/bg2 - #F2EFDF"
 [FFFBEF]: https://fakeimg.ryd.tools/96/FFFBEF/5C6A72/?text=%23FFFBEF&font=noto&font_size=12 "bg0 - #FFFBEF"
 [F8F5E4]: https://fakeimg.ryd.tools/96/F8F5E4/5C6A72/?text=%23F8F5E4&font=noto&font_size=12 "bg1 - #F8F5E4"
@@ -166,6 +169,7 @@ contrast settings.
 [FCECED]: https://fakeimg.ryd.tools/96/FCECED/5C6A72/?text=%23FCECED&font=noto&font_size=12 "bg_purple - #FCECED"
 
 <!-- light medium palette1 -->
+
 [EFEBD4]: https://fakeimg.ryd.tools/96/EFEBD4/5C6A72/?text=%23EFEBD4&font=noto&font_size=12 "bg_dim/bg2 - #EFEBD4"
 [FDF6E3]: https://fakeimg.ryd.tools/96/FDF6E3/5C6A72/?text=%23FDF6E3&font=noto&font_size=12 "bg0 - #FDF6E3"
 [F4F0D9]: https://fakeimg.ryd.tools/96/F4F0D9/5C6A72/?text=%23F4F0D9&font=noto&font_size=12 "bg1 - #F4F0D9"
@@ -180,6 +184,7 @@ contrast settings.
 [FAE8E2]: https://fakeimg.ryd.tools/96/FAE8E2/5C6A72/?text=%23FAE8E2&font=noto&font_size=12 "bg_purple - #FAE8E2"
 
 <!-- light low palette1 -->
+
 [E5DFC5]: https://fakeimg.ryd.tools/96/E5DFC5/5C6A72/?text=%23E5DFC5&font=noto&font_size=12 "bg_dim/bg2 - #E5DFC5"
 [F3EAD3]: https://fakeimg.ryd.tools/96/F3EAD3/5C6A72/?text=%23F3EAD3&font=noto&font_size=12 "bg0 - #F3EAD3"
 [EAE4CA]: https://fakeimg.ryd.tools/96/EAE4CA/5C6A72/?text=%23EAE4CA&font=noto&font_size=12 "bg1 - #EAE4CA"
@@ -194,6 +199,7 @@ contrast settings.
 [F1DDD4]: https://fakeimg.ryd.tools/96/F1DDD4/5C6A72/?text=%23F1DDD4&font=noto&font_size=12 "bg_purple - #F1DDD4"
 
 <!-- dark palette2 -->
+
 [D3C6AA]: https://fakeimg.ryd.tools/96/D3C6AA/2D353B/?text=%23D3C6AA&font=noto&font_size=12 "fg/statusline2 - #D3C6AA"
 [E67E80]: https://fakeimg.ryd.tools/96/E67E80/2D353B/?text=%23E67E80&font=noto&font_size=12 "red/statusline3 - #E67E80"
 [E69875]: https://fakeimg.ryd.tools/96/E69875/2D353B/?text=%23E69875&font=noto&font_size=12 "orange - #E69875"
@@ -207,6 +213,7 @@ contrast settings.
 [9DA9A0]: https://fakeimg.ryd.tools/96/9DA9A0/2D353B/?text=%239DA9A0&font=noto&font_size=12 "grey2 - #9DA9A0"
 
 <!-- light palette2 -->
+
 [5C6A72]: https://fakeimg.ryd.tools/96/5C6A72/FDF6E3/?text=%235C6A72&font=noto&font_size=12 "fg - #5C6A72"
 [F85552]: https://fakeimg.ryd.tools/96/F85552/FDF6E3/?text=%23F85552&font=noto&font_size=12 "red - #F85552"
 [F57D26]: https://fakeimg.ryd.tools/96/F57D26/FDF6E3/?text=%23F57D26&font=noto&font_size=12 "orange - #F57D26"
@@ -223,6 +230,7 @@ contrast settings.
 [E66868]: https://fakeimg.ryd.tools/96/E66868/FDF6E3/?text=%23E66868&font=noto&font_size=12 "statusline3 - #E66868"
 
 <!-- highlights descriptions (dark medium values) -->
+
 [hl_bgd]: https://fakeimg.ryd.tools/48/232A2E/232A2E/ "bg_dim - #232A2E"
 [hl_bg0]: https://fakeimg.ryd.tools/48/2D353B/2D353B/ "bg0 - #2D353B"
 [hl_bg1]: https://fakeimg.ryd.tools/48/343F44/343F44/ "bg1 - #343F44"
@@ -236,7 +244,7 @@ contrast settings.
 [hl_bgg]: https://fakeimg.ryd.tools/48/425047/425047/ "bg_green - #425047"
 [hl_bgb]: https://fakeimg.ryd.tools/48/3A515D/3A515D/ "bg_blue - #3A515D"
 [hl_bgp]: https://fakeimg.ryd.tools/48/4A444E/4A444E/ "bg_purple - #4A444E"
-[hl_fg]:  https://fakeimg.ryd.tools/48/D3C6AA/D3C6AA/ "fg - #D3C6AA"
+[hl_fg]: https://fakeimg.ryd.tools/48/D3C6AA/D3C6AA/ "fg - #D3C6AA"
 [hl_red]: https://fakeimg.ryd.tools/48/E67E80/E67E80/ "red - #E67E80"
 [hl_ora]: https://fakeimg.ryd.tools/48/E69875/E69875/ "orange - #E69875"
 [hl_yel]: https://fakeimg.ryd.tools/48/DBBC7F/DBBC7F/ "yellow - #DBBC7F"

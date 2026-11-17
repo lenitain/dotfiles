@@ -7,12 +7,6 @@
 
 local map = vim.keymap.set
 
--- ==================== 按显示行移动（wrap 模式） ====================
-
--- 当 wrap 开启时，gj/gk 按屏幕行移动而非逻辑行
-map({ "n", "v" }, "j", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true, desc = "按显示行向下移动" })
-map({ "n", "v" }, "k", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true, desc = "按显示行向上移动" })
-
 -- ==================== Undo 断点 ====================
 
 -- 在插入模式下对常用操作插入 undo 断点，使 undo 更精细
