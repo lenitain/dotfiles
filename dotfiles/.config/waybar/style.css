@@ -1,8 +1,9 @@
 /* ============================================================
    Waybar 样式 —— 实心底、无胶囊
    整条 bar 铺一层实心 #232A2E，模块自己不再画常驻底：
-   文字、图标直接压在 bar 底色上，选中态只用低透明度色块标记，
-   其余状态靠字色区分，底色只在悬停时出现。
+   文字、图标直接压在 bar 底色上，选中态用调色板的实心色块标记，
+   其余状态靠字色区分，底色只在悬停时出现。所有底色都直接取自
+   everforest 调色板的背景档，不做透明度叠加。
    米白 #d3c6aa 在该底色上对比度约 8.6:1，不需要文字阴影。
    ============================================================ */
 
@@ -34,7 +35,7 @@ window#waybar {
   color: #d3c6aa;
   font-weight: 500;
   padding: 0 12px;
-  /* 读数 label 会被拉到内容区高度；纵向不留 margin，悬停洗色
+  /* 读数 label 会被拉到内容区高度；纵向不留 margin，悬停底色
      因此铺满 30px。 */
 }
 
@@ -69,24 +70,24 @@ window#waybar {
   min-width: 40px;
 }
 
-/* active：淡绿底 + 米白数字。底色是 22% 的强调绿叠在 bar 底色上，
+/* active：淡绿底 + 米白数字。底色直接取调色板的 bg_green（#425047），
    一眼可辨，又不会变成一枚实心胶囊；数字同时提亮到米白。 */
 #workspaces.numbers button.niri-workspace.active {
   color: #d3c6aa;
-  background-color: rgba(167, 192, 128, 0.22);
+  background-color: #425047;
 }
 
-/* hover：未选中的格统一铺米白 10% 的洗色。
+/* hover：未选中的格统一铺调色板的 bg1（#343f44）。
    empty 不单独上色：空工作区与普通未激活一样暗。 */
 #workspaces.numbers button.niri-workspace:hover {
-  background-color: rgba(211, 198, 170, 0.1);
+  background-color: #343f44;
 }
 
-/* 悬停选中格：沿用 taskbar 里 focused 图标的做法——同一层绿再亮一档
-   （22% → 32%），越悬停越亮；不再被上面那层米白洗色压暗。
+/* 悬停选中格：bg_green 再亮一档，换成调色板里最亮的背景 bg5（#56635f），
+   越悬停越亮；不再被上面那层 bg1 压暗。
    特异性 (1,4,1) 压过 :hover 的 (1,3,1)，叠在 .active 之上。 */
 #workspaces.numbers button.niri-workspace.active:hover {
-  background-color: rgba(167, 192, 128, 0.32);
+  background-color: #56635f;
 }
 
 /* ---------- 当前工作区的 taskbar（#taskbar） ----------
@@ -138,21 +139,20 @@ window#waybar {
   min-width: 26px;
 }
 
-/* 悬停：只换底色，不动图标。 */
+/* 悬停：只换底色，不动图标。未选中格铺 bg1（#343f44）。 */
 #workspaces button.niri-workspace .niri-taskbar-btn:hover {
-  background-color: rgba(211, 198, 170, 0.1);
+  background-color: #343f44;
 }
 
-/* 当前聚焦窗口：整格铺一层 30% 的强调绿，作为「这是当前窗口」的
-   标记（工作区选中态已改为中性米白，绿色只留给这里和电池充电）。
-   30% 是绿色叠在 bar 深色底上的比例：一眼可辨，又不抢图标自己的颜色。 */
+/* 当前聚焦窗口：铺调色板的 bg_green（#425047），作为「这是当前窗口」
+   的标记，与工作区 active 同一档绿，一眼可辨又不抢图标自己的颜色。 */
 #workspaces button.niri-workspace .niri-taskbar-btn.focused {
-  background-color: rgba(167, 192, 128, 0.3);
+  background-color: #425047;
 }
 
-/* 聚焦格上的 hover：同一层绿再亮一档，悬停时仍有反馈。 */
+/* 聚焦格上的 hover：bg5（#56635f）比 bg_green 亮一档，悬停时仍有反馈。 */
 #workspaces button.niri-workspace .niri-taskbar-btn.focused:hover {
-  background-color: rgba(167, 192, 128, 0.4);
+  background-color: #56635f;
 }
 
 /* ---------- 当前窗口标题 ----------
@@ -200,7 +200,7 @@ window#waybar.empty #window {
 
 #tray > .active:hover,
 #tray > .needs-attention:hover {
-  background: rgba(211, 198, 170, 0.1);
+  background-color: #343f44;
 }
 
 /* ---------- 时钟 / 音量 / 电池 ----------
@@ -210,12 +210,12 @@ window#waybar.empty #window {
   margin-right: 2px;
 }
 
-/* 读数也保留悬停洗色（与工作区/托盘/idle 同一套：只换底色、不动字色），
+/* 读数也保留悬停底色（与工作区/托盘/idle 同一套：只换底色、不动字色），
    圆角 8px 与其它悬停形状一致。 */
 #clock:hover,
 #pulseaudio:hover,
 #battery:hover {
-  background-color: rgba(211, 198, 170, 0.1);
+  background-color: #343f44;
   border-radius: 8px;
 }
 
@@ -223,7 +223,7 @@ window#waybar.empty #window {
    waybar 0.16 的 custom 模块是 eventbox > box > label 三层：为兼容 0.15，
    #custom-idle-inhibit 这个名字落在 label 上；而鼠标进入时 waybar 只给
    eventbox 的直接子节点（中间那层匿名 box）打 :hover 状态，GTK 的 hover
-   不向下传 —— 所以 label 上的 :hover 永远不触发。hover 洗色只能画在
+   不向下传 —— 所以 label 上的 :hover 永远不触发。hover 底色只能画在
    box 上：它没有名字，按结构选。modules-right 里带 box 这层的只有
    tray（#tray）和这个 custom 模块，排除 tray 即唯一命中。
    每侧 12px 内距与托盘图标同档。
@@ -234,13 +234,13 @@ window#waybar.empty #window {
    自然高 26px 依然低于 30px 内容高。 */
 .modules-right > widget > box:not(#tray) {
   padding: 4px 12px 0;
-  /* 这层 box 会被拉满内容区高度；不设纵向 margin，悬停洗色铺满 30px。 */
+  /* 这层 box 会被拉满内容区高度；不设纵向 margin，悬停底色铺满 30px。 */
   margin: 0;
   border-radius: 8px;
 }
 
 .modules-right > widget > box:not(#tray):hover {
-  background: rgba(211, 198, 170, 0.1);
+  background-color: #343f44;
 }
 
 /* 字形与颜色留在 label（name 和 JSON 的 class 都在这一层）：
@@ -276,7 +276,7 @@ tooltip {
    要等内核改口才转绿，这就是「颜色慢一秒」的成因。
    收窄到 .discharging 后两个类互斥，插电即绿，不再红绿打架。
    告警只上字色：不铺底、不闪动；因为不占 background，悬停时照样是
-   常规的米白洗色（#battery:hover）。 */
+   常规的悬停底色（#battery:hover）。 */
 #battery.critical.discharging {
   color: #e67e80;
 }
