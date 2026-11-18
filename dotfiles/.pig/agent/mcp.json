@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "exa": {
+      "url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_search_advanced_exa,web_fetch_exa,company_research_exa,linkedin_search_exa,crawling_exa",
+      "description": "Exa 语义搜索与抓取：网页/公司/LinkedIn 检索、过滤式高级搜索、按 URL 取正文。免费通道限流，设置 EXA_API_KEY 后解除",
+      "exposure": "codemode",
+      "toolExposure": {
+        "web_search_exa": "direct",
+        "web_fetch_exa": "direct"
+      },
+      "timeout": 90
+    }
+  }
+}

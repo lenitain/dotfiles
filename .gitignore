@@ -27,11 +27,11 @@ xray/inventory.yml
 dotfiles/.pig/**
 !dotfiles/.pig/agent/
 !dotfiles/.pig/agent/AGENTS.md
+!dotfiles/.pig/agent/mcp.json
 !dotfiles/.pig/agent/models.json
 !dotfiles/.pig/agent/settings.json
 !dotfiles/.pig/agent/themes/
 !dotfiles/.pig/agent/themes/**
-!dotfiles/.pig/agent/web-search.json
 
 # bash conf.d 中的 API 密钥（按 *KEY.sh 命名约定自动忽略）
 dotfiles/.config/bash/conf.d/*KEY.sh

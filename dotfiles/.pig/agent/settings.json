@@ -20,7 +20,6 @@
     "--package-lock=false"
   ],
   "packages": [
-    "npm:pi-web-access",
     "npm:pi-polkit"
   ],
   "showCacheMissNotices": false,
@@ -37,7 +36,6 @@
   },
   "quietStartup": true,
   "extensionChangelogVersions": {
-    "{\"source\":\"npm:pi-web-access\",\"scope\":\"user\"}": "0.48.0",
     "{\"source\":\"npm:pi-polkit\",\"scope\":\"user\"}": "0.2.1"
   }
 }
