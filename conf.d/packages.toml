@@ -10,7 +10,6 @@
 "pacman:slurp" = "latest"
 "pacman:satty" = "latest"
 "pacman:gpu-screen-recorder" = "latest"
-"pacman:gsimplecal" = "latest"
 "pacman:xwayland-satellite" = "latest"
 "pacman:wl-clipboard" = "latest"
 "pacman:greetd-tuigreet" = "latest"

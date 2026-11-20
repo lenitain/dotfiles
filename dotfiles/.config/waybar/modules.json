@@ -54,8 +54,7 @@
   "clock": {
     "format": "{:%m-%d %a %H:%M}",
     "locale": "C",
-    "tooltip-format": "{:%Y-%m-%d · Week %V}",
-    "on-click": "~/.config/waybar/scripts/popup-wrapper gsimplecal"
+    "tooltip-format": "{:%Y-%m-%d · Week %V}"
   },
 
   // Battery
@@ -96,6 +95,8 @@
       "default": "",
       "default-muted": ""
     },
-    "on-click": "~/.config/waybar/scripts/popup-wrapper pavucontrol"
+    // 点音量图标开 pavucontrol。只开不关：pavucontrol 是 GTK 单实例应用，
+    // 再点一次只会把已有窗口叫到前面，不会开出第二个。
+    "on-click": "pavucontrol"
   }
 }

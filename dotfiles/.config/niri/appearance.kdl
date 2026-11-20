@@ -49,14 +49,8 @@ window-rule {
     default-column-width { proportion 1.0; }
 }
 
-// waybar 的 popup-wrapper 弹出的日历 / 音量小窗：浮动、按自身尺寸，不参与贴边铺满。
+// waybar 点音量图标弹出的音量小窗：浮动、按自身尺寸，不参与贴边铺满。
 // 浮窗不能带 maximized-to-edges（否则会被放进滚动布局），所以两项都要显式关掉。
-window-rule {
-    match app-id=r#"(^|\.)gsimplecal$"#
-    open-floating true
-    open-maximized-to-edges false
-    default-column-width {}
-}
 window-rule {
     match app-id=r#"(^|\.)pavucontrol$"#
     open-floating true
