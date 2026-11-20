@@ -111,7 +111,6 @@
 "pacman:gvfs-mtp" = "latest"
 "pacman:udiskie" = "latest"
 "pacman:onlyoffice-bin" = "latest"
-"pacman:kicad" = "latest"
 "pacman:ruff" = "latest"
 "pacman:typos" = "latest"
 "pacman:pnpm" = "latest"
