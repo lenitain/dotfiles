@@ -42,6 +42,8 @@ font=Noto Sans
 font-size=128
 
 # Indicator
+# 默认空闲时圆环会隐藏，这里让它常驻
+indicator-idle-visible
 # 尺寸单位是逻辑像素，实际渲染时会再乘以输出缩放（当前 1.25）
 # radius 是圆环中线半径，thickness 是环的宽度
 # 外径 = 2 * (radius + thickness) = 576，缩放后约 720 设备像素
