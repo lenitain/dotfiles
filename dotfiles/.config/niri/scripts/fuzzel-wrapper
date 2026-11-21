@@ -1,5 +1,9 @@
 #!/bin/bash
-# fuzzel wrapper - 永远单实例，先杀后开
+# fuzzel wrapper - 永远单实例，先杀后开；并且兜底指定默认 profile
+#
+# 三个 profile（launcher / clipboard / status）现在一律显式加载：调用方给了
+# --config 就用它的，没给（MOD+SPACE 这条）就补 launcher.ini。改名后不再有
+# 「靠 fuzzel 默认文件名被读到」的那一份，三种用途的名字才对得上。
 #
 # 旧实例要等它真的退出，而不是固定 sleep：原来每次按都白等 10ms，这里 pidof 拿
 # 一次 pid，kill 之后用 bash 内建的 kill -0 盯到进程消失，通常 1-2ms。
@@ -15,4 +19,9 @@ if [ -n "$pids" ]; then
     done
 fi
 
-exec /usr/bin/fuzzel "$@"
+for arg; do
+    case $arg in
+        --config | --config=*) exec /usr/bin/fuzzel "$@" ;;
+    esac
+done
+exec /usr/bin/fuzzel --config="${XDG_CONFIG_HOME:-$HOME/.config}/fuzzel/launcher.ini" "$@"
