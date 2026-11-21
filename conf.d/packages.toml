@@ -1,7 +1,6 @@
 # 声明式：判缺才装，不升级。别用 `packages upgrade` / `apply --update`（partial upgrade）。
 
 [bootstrap.packages]
-"pacman:waybar" = "latest"
 "pacman:fuzzel" = "latest"
 "pacman:swaylock" = "latest"
 "pacman:swayidle" = "latest"

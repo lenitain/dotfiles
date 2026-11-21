@@ -1,0 +1,116 @@
+#!/bin/bash
+# 状态面板：在 fuzzel 里看系统状态快照。取代原先「只在 overview 出现的 waybar」。
+#
+# 每行两列，tab 分隔：第 1 列是读数，第 2 列是回车时执行的动作（可空）。
+#   --with-nth=1     只显示读数列
+#   --accept-nth=2   回车只回报动作名 —— 读数怎么排版、带什么空格符号，
+#                    都进不了 shell，也就不需要转义
+#   --no-sort        固定顺序：每次打开读数都在同一行，扫视才有肌肉记忆
+#   --only-match     打到不匹配的字符串时，回车不给「把输入原样返回」的出口
+# 面板是快照，没有实时刷新：再按一次 MOD+I 就是刷新（fuzzel-wrapper 先杀后开），
+# 时钟也会跟着重新取值。
+
+set -u
+# %a 要英文星期，别跟桌面 locale 走（waybar 的 clock 模块当年也是 locale C）。
+export LC_TIME=C
+
+self=$(readlink -f -- "$0")
+dir=${self%/*}
+
+BAT=/sys/class/power_supply/BAT1
+
+# 电量：直接读 sysfs，一次 fork 都不花。充电/满电换成插头字形，与档位图标
+# 同宽，右边缘的位置不随状态跳动。
+battery() {
+    local cap status energy power secs icon
+    local icons=(󰁺 󰁼 󰁾 󰂀 󰂂)
+    [[ -r $BAT/capacity ]] || return 0
+    read -r cap < "$BAT/capacity"
+    read -r status < "$BAT/status"
+    case $status in
+        Charging | Full) icon=󰂄 ;;
+        *) icon=${icons[cap * 5 / 101]} ;;
+    esac
+    if [[ $status != Charging && $status != Full && -r $BAT/energy_now && -r $BAT/power_now ]]; then
+        read -r energy < "$BAT/energy_now"
+        read -r power < "$BAT/power_now"
+        if ((power > 0)); then
+            # 按半小时取整：瞬时功率一直在跳，精确到分钟会让每次打开面板都
+            # 显示不一样的数字，读起来不像「状态」而像「噪声」。
+            secs=$(((energy * 3600 / power) / 1800 * 1800))
+            printf -v icon '%s · %dh%02d' "$icon" $((secs / 3600)) $((secs % 3600 / 60))
+        fi
+    fi
+    printf '%s%% %s\n' "$cap" "$icon"
+}
+
+# 音量：wpctl 一次 fork（实测 20ms，是面板里最贵的一项）。
+volume() {
+    local out pct icon
+    out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null) || return 0
+    if [[ $out == *MUTED* ]]; then
+        printf '静音 󰖁\n'
+        return
+    fi
+    # "Volume: 0.36" → 36：去掉小数点就是百分数，10# 防止 036 被当八进制
+    out=${out#Volume: }
+    pct=$((10#${out/./}))
+    if ((pct == 0)); then icon=󰕿
+    elif ((pct < 50)); then icon=󰖀
+    else icon=󰕾
+    fi
+    printf '%d%% %s\n' "$pct" "$icon"
+}
+
+# 输入法：fcitx5-remote 只回 1/2（英/中）和组名（keyboard-us、rime…）。
+# 托盘没了以后，这里是「现在是中文还是英文」唯一的显示处。
+ime() {
+    local on
+    on=$(fcitx5-remote 2>/dev/null) || return 0
+    if [[ $on == 2 ]]; then
+        printf '中 · %s\n' "$(fcitx5-remote -n)"
+    else
+        printf '英 · %s\n' "$(fcitx5-remote -n)"
+    fi
+}
+
+# 熄屏抑制：判断交给 idle-inhibit 自己（它查的就是 swayidle 读的那把锁），
+# 别在这里复制一份 logind 查询逻辑。输出只认 on / off 两种，别的一律不显示。
+idle() {
+    case $("$dir/idle-inhibit" state 2>/dev/null) in
+        on) printf '熄屏抑制 · 开 󰍹\n' ;;
+        off) printf '熄屏抑制 · 关 󰍹\n' ;;
+    esac
+}
+
+clock() { printf '%(%m-%d %a %H:%M)T\n' -1; }
+
+# 取不到读数就整行不出现：宁可少一行，也不要一行空白占着位置。
+row() {
+    [[ -n $1 ]] || return 0
+    printf '%s\t%s\n' "$1" "${2-}"
+}
+
+snapshot() {
+    row "$(battery)"
+    row "$(volume)" volume
+    row "$(ime)" ime
+    row "$(idle)" idle
+    row "$(clock)"
+}
+
+# --print 只吐数据、不开窗，用来调试和核对读数。
+if [[ ${1-} == --print ]]; then
+    snapshot
+    exit
+fi
+
+action=$(snapshot | "$dir/fuzzel-wrapper" --dmenu --no-sort --only-match \
+    --with-nth=1 --accept-nth=2 \
+    --lines=5 --minimal-lines --width=32 --prompt='状态  ')
+
+case $action in
+    volume) niri msg action spawn -- pavucontrol ;;
+    ime) fcitx5-remote -t ;;
+    idle) "$dir/idle-inhibit" toggle ;;
+esac

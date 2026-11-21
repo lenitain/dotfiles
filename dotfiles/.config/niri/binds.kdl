@@ -3,6 +3,12 @@ binds {
     MOD+SHIFT+ESCAPE {
         show-hotkey-overlay
     }
+    // 状态面板：fuzzel 快照（电量 / 音量 / 输入法 / 熄屏抑制 / 时钟）。
+    // 再按一次是刷新，因为 fuzzel-wrapper 先杀后开。
+    // repeat=false：按住不放只会反复「杀 fuzzel、再开 fuzzel」，没有第二个意思。
+    MOD+I repeat=false hotkey-overlay-title="System status" {
+        spawn "~/.config/niri/scripts/status-panel"
+    }
 
     // Applications
     MOD+RETURN hotkey-overlay-title="Open terminal (plain)" {
@@ -268,7 +274,7 @@ binds {
     MOD+F repeat=false hotkey-overlay-title="Fill workspace to screen edges" {
         spawn "~/.config/niri/scripts/resize-workspace" "fill"
     }
-    // 真全屏（连 waybar 一起盖住）；与 Mod+Ctrl+F 同一个动作
+    // 真全屏；与 Mod+Ctrl+F 同一个动作
     MOD+SHIFT+F hotkey-overlay-title="Fullscreen window" {
         fullscreen-window
     }
