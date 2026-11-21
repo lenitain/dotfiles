@@ -10,6 +10,7 @@ default-command = "log"
 # 描述 / commit message 编辑器；$line 让 `jj resolve --tool :editor` 直接跳到冲突行
 editor = ["nvim", "+$line"]
 # hunk.nvim：交互式挑选 hunk / 行，空格+回车 写回 output，q 以非 0 退出即放弃
+# 默认全部选中（= 保留所有改动），要丢哪块就在 hunk 里按 a / A 取消
 # 路径经环境变量传入，TMPDIR / 仓库路径含空格也不会被 command 参数切碎
 diff-editor = [
   "env",

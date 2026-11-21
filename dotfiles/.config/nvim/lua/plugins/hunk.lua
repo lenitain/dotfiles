@@ -103,6 +103,35 @@ return {
     -- 文件树图标（可选依赖，这里显式声明以保证 require 时已在 rtp 中）
     "nvim-tree/nvim-web-devicons",
   },
+  config = function(_, opts)
+    -- 默认全选。hunk 原生默认「全不选」，而 jj diffedit 的语义是
+    -- 「output 目录里选中的部分才算数」，于是不勾就直接接受 = 把 @ 全部回退，
+    -- 跟 jj 内置编辑器（默认保留当前内容、只改右侧）正好相反，容易误操作。
+    -- 这里在 changeset 生成后把所有 hunk 行标为已选中：
+    -- 打开就是「全要」，之后按 a / A 是从全选往下取消。
+    local changeset = require("hunk.api.changeset")
+    local utils = require("hunk.utils")
+    local load_changeset = changeset.load_changeset
+    changeset.load_changeset = function(left, right)
+      local cs, files = load_changeset(left, right)
+      for _, change in pairs(cs) do
+        change.selected = true
+        for _, hunk in ipairs(change.hunks) do
+          for i in utils.hunk_lines(hunk.left) do
+            change.selected_lines.left[i] = true
+          end
+          for i in utils.hunk_lines(hunk.right) do
+            change.selected_lines.right[i] = true
+          end
+        end
+      end
+      return cs, files
+    end
+
+    -- lazy 只在 spec 没有 config 函数时才自动调 setup(opts)，
+    -- 有了 config 就得自己调，否则 opts（ui / hooks）全部丢失。
+    require("hunk").setup(opts)
+  end,
   init = function()
     -- 焦点一离开树（切到 diff 窗格、去选文本、换窗口）就收起
     vim.api.nvim_create_autocmd("WinEnter", {
