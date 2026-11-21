@@ -163,26 +163,6 @@ window#waybar {
   background-color: #56635f;
 }
 
-/* ---------- 当前窗口标题 ----------
-   标题是细节，不是与工作区/窗口图标并列的控件：裸字，不画底。
-   左侧 8px 与 taskbar 图标的内距同档。
-   标题没有长度上限：标签按整串标题申请宽度，左栏分到多少就显示多少，
-   被右簇挤到时才由 ellipsize 截断（niri/window 构造时默认打开）。 */
-#window {
-  background-color: transparent;
-  margin: 0 8px;
-  padding: 0 4px;
-  font-weight: 500;
-  color: #d3c6aa;
-}
-
-/* 没有聚焦窗口时 label 被隐藏，但 #window 的盒子还在；
-   用 niri/window 给整条 bar 打的 .empty class 把空壳收掉。 */
-window#waybar.empty #window {
-  margin: 0;
-  padding: 0;
-}
-
 /* ---------- 托盘 ----------
    图标裸排，间距由 image 自己的 padding 提供，这段空白因此也属于
    图标（可点、可 hover），不是 GTKBox 的 spacing。

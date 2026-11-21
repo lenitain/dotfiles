@@ -25,7 +25,7 @@
 
     // 工作区数字独占中栏，fixed-center 把它钉在屏幕正中
     // （实测徽章中心 767.6，屏幕中心 768，差在 0.5px 舍入内）。
-    // 代价：左右两组各只分到一半宽度，左栏的窗口标题会更早 ellipsize。
+    // 代价：左右两组各只分到一半宽度。
     "fixed-center": true,
 
     "include": [
@@ -33,8 +33,7 @@
     ],
 
     "modules-left": [
-        "niri/workspaces#taskbar",
-        "niri/window"
+        "niri/workspaces#taskbar"
     ],
 
     "modules-center": [

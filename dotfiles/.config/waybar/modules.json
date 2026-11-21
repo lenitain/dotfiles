@@ -21,15 +21,6 @@
     }
   },
 
-  // 当前聚焦窗口的标题（原生 niri/window，无脚本）。
-  // 不设 max-length：标签按整串标题申请自然宽度，左栏能占多宽就显示多宽，
-  // 只有被右簇挤到时才由 ellipsize 截断（niri/window 构造时默认打开，
-  // 配合 no-center 一路顶到右簇左沿）。
-  // 没有窗口时模块自动隐藏（show-empty 默认 false）。
-  "niri/window": {
-    "format": "{title}"
-  },
-
   // Idle Inhibit（desktop 图标；挂在 modules-right 的 tray 与 battery 之间）
   "custom/idle-inhibit": {
     "return-type": "json",
