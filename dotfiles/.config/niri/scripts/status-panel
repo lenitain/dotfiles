@@ -1,21 +1,24 @@
 #!/bin/bash
 # 状态面板：在 fuzzel 里看系统状态快照。取代原先「只在 overview 出现的 waybar」。
 #
+# 宽度 / 行数 / 排序 / namespace 这些跟用途走的项在
+# ~/.config/fuzzel/status.ini（和启动器、剪贴板共用 common.ini 的主题）；
+# 这里只管两件事：凑出读数，再把选中行翻译成动作。
+#
 # 每行两列，tab 分隔：第 1 列是读数，第 2 列是回车时执行的动作（可空）。
 #   --with-nth=1     只显示读数列
 #   --accept-nth=2   回车只回报动作名 —— 读数怎么排版、带什么空格符号，
 #                    都进不了 shell，也就不需要转义
-#   --no-sort        固定顺序：每次打开读数都在同一行，扫视才有肌肉记忆
 #   --only-match     打到不匹配的字符串时，回车不给「把输入原样返回」的出口
 # 面板是快照，没有实时刷新：再按一次 MOD+I 就是刷新（fuzzel-wrapper 先杀后开），
 # 时钟也会跟着重新取值。
 
 set -u
-# %a 要英文星期，别跟桌面 locale 走（waybar 的 clock 模块当年也是 locale C）。
+# %a 固定英文星期：本机 locale 是中文，会输出「六」；三字母宽度稳定，
+# 时间那列不会随星期长短左右跳。
 export LC_TIME=C
 
-self=$(readlink -f -- "$0")
-dir=${self%/*}
+dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 BAT=/sys/class/power_supply/BAT1
 
@@ -105,9 +108,9 @@ if [[ ${1-} == --print ]]; then
     exit
 fi
 
-action=$(snapshot | "$dir/fuzzel-wrapper" --dmenu --no-sort --only-match \
-    --with-nth=1 --accept-nth=2 \
-    --lines=5 --minimal-lines --width=32 --prompt='状态  ')
+action=$(snapshot | "$dir/fuzzel-wrapper" \
+    --config="${XDG_CONFIG_HOME:-$HOME/.config}/fuzzel/status.ini" \
+    --dmenu --prompt='状态  ' --with-nth=1 --accept-nth=2 --only-match)
 
 case $action in
     volume) niri msg action spawn -- pavucontrol ;;
