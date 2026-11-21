@@ -1,6 +1,8 @@
 // Startup commands
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 spawn-at-startup "~/.config/waybar/scripts/idle-inhibit.sh" "on"
+// waybar 只在 overview 里显示：订阅 niri 事件流，开关 overview 即 show / hide
+spawn-at-startup "~/.config/niri/scripts/waybar-overview"
 spawn-at-startup "foot" "--server"
 spawn-sh-at-startup "swaybg -i \"$HOME/.local/share/wallpapers/starry-night-sky.png\""
 prefer-no-csd

@@ -1,21 +1,13 @@
 #!/usr/bin/env sh
 
-# waybar 重启 / 热重载脚本（手动使用）
+# waybar 重启脚本（手动使用）
 #
-# - waybar 正在运行 → 发送 SIGUSR2 热重载：
-#     waybar v0.15 默认 SIGUSR2 = reload，重读 config + CSS，进程不退出、
-#     模块原地重建。比重启快，且没有 killall 的竞态窗口。
-# - waybar 未运行   → 交给 systemd 拉起（waybar.service 已 enable 到
-#     graphical-session.target）。别直接 `waybar &`：裸进程崩了不会自恢复，
-#     而且会和 service 在 systemd 视图里变成两个同名进程。
+# 没有热重载了：SIGUSR2 在 ~/.config/waybar/config 里被改成 on-sigusr2="hide"，
+# 好让 ~/.config/niri/scripts/waybar-overview 按 overview 状态幂等地下发
+# show / hide（SIGUSR1 = show）。默认的 `SIGUSR2 = reload` 被这个用途占掉了。
 #
-# 若 waybar 卡死导致热重载无效，再彻底重启：
-#   systemctl --user restart waybar.service
+# 于是改完 config / CSS 只能重启进程：起来时是 hidden（config 的 start_hidden），
+# 开 overview 才出现。别直接 `waybar &`：裸进程崩了不会自恢复，而且会和 service
+# 在 systemd 视图里变成两个同名进程。restart 在没有进程时就是 start，两个情况通用。
 
-if pgrep -x waybar >/dev/null; then
-    pkill -USR2 waybar
-    echo "waybar: SIGUSR2 热重载已发送"
-else
-    systemctl --user start waybar.service
-    echo "waybar: 未运行，已交给 systemctl --user start waybar.service"
-fi
+systemctl --user restart waybar.service
