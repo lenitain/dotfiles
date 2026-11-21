@@ -6,7 +6,7 @@ binds {
     // 状态面板：fuzzel 快照（电量 / 音量 / 输入法 / 熄屏抑制 / 时钟）。
     // 再按一次是刷新，因为 fuzzel-wrapper 先杀后开。
     // repeat=false：按住不放只会反复「杀 fuzzel、再开 fuzzel」，没有第二个意思。
-    MOD+I repeat=false hotkey-overlay-title="System status" {
+    MOD+SPACE repeat=false hotkey-overlay-title="System status" {
         spawn "~/.config/niri/scripts/status-panel"
     }
 
@@ -14,7 +14,7 @@ binds {
     MOD+RETURN hotkey-overlay-title="Open terminal (plain)" {
         spawn "footclient"
     }
-    MOD+SPACE hotkey-overlay-title="App launcher" {
+    MOD+W hotkey-overlay-title="App launcher" {
         spawn "~/.config/niri/scripts/fuzzel-wrapper"
     }
     MOD+B hotkey-overlay-title="Browser" {

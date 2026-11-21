@@ -49,7 +49,7 @@ window-rule {
     default-column-width { proportion 1.0; }
 }
 
-// 状态面板（MOD+I）里选中音量一行时弹出的音量小窗：浮动、按自身尺寸，不参与贴边铺满。
+// 状态面板（MOD+SPACE）里选中音量一行时弹出的音量小窗：浮动、按自身尺寸，不参与贴边铺满。
 // 浮窗不能带 maximized-to-edges（否则会被放进滚动布局），所以两项都要显式关掉。
 window-rule {
     match app-id=r#"(^|\.)pavucontrol$"#
