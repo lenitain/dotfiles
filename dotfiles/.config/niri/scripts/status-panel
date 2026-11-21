@@ -65,6 +65,87 @@ volume() {
     printf '%d%% %s\n' "$pct" "$icon"
 }
 
+# 亮度：两个后端，内置屏和外接显示器各走一条。
+#   brightnessctl — sysfs backlight（笔记本内置屏，amdgpu/intel…）
+#   ddcutil       — DDC/CI（外接显示器；笔记本内屏不支持，detect 会明说）
+# 两个后端都没有可用设备时整行不出现。
+brightness() {
+    local pct icon
+    pct=$(brightness_pct) || return 0
+    if ((pct < 30)); then icon=
+    else icon=
+    fi
+    printf '%d%% %s\n' "$pct" "$icon"
+}
+
+# brightnessctl 的机器可读输出：device,class,value,percentage%,max。
+# 百分比自己按 value/max 算，不靠那个 percentage 字段（各版本字段数不一样）。
+brightnessctl_pct() {
+    local info value max
+    info=$(brightnessctl -m info 2>/dev/null) || return 1
+    info=${info%%$'\n'*}
+    value=${info#*,}
+    value=${value#*,}
+    value=${value%%,*}
+    max=${info##*,}
+    [[ $value =~ ^[0-9]+$ && $max =~ ^[0-9]+$ ]] || return 1
+    ((max > 0)) || return 1
+    printf '%d\n' "$((value * 100 / max))"
+}
+
+# ddcutil：读 DDC/CI 亮度（VCP code 4）。没有支持 DDC/CI 的显示器时失败。
+# stdin 接 /dev/null：多块显示器时 ddcutil 会提示选屏并等输入，接了终端就会卡住。
+ddcutil_pct() {
+    local out
+    out=$(ddcutil getvcp 4 </dev/null 2>/dev/null) || return 1
+    out=${out#*Current brightness: }
+    out=${out%%,*}
+    out=${out// /}
+    [[ $out =~ ^[0-9]+$ ]] || return 1
+    printf '%s\n' "$out"
+}
+
+# 内置屏优先（它才是天天在用的那块屏），没有 backlight 再试外接显示器。
+brightness_pct() {
+    local pct
+    pct=$(brightnessctl_pct) && {
+        printf '%s\n' "$pct"
+        return 0
+    }
+    pct=$(ddcutil_pct) || return 1
+    printf '%s\n' "$pct"
+}
+
+# 写亮度：brightnessctl 只认原始值（它的百分比参数走指数曲线，写 50%
+# 读回来是 84%），所以自己按 max 换算，所见即所得；
+# ddcutil 用显示器自己的 0-100 刻度。
+brightness_set() {
+    local pct=$1 info device max value
+    if info=$(brightnessctl -m info 2>/dev/null); then
+        info=${info%%$'\n'*}
+        device=${info%%,*}
+        max=${info##*,}
+        if [[ $max =~ ^[0-9]+$ ]] && ((max > 0)); then
+            value=$((max * pct / 100))
+            brightnessctl -d "$device" set "$value" >/dev/null 2>&1 && return 0
+        fi
+    fi
+    ddcutil setvcp 4 "$pct" </dev/null >/dev/null 2>&1
+}
+
+# 回车：再弹一个 fuzzel 选亮度档位。面板是快照，改完得重开才看得到，
+# 给几档直接选，比无声地加 10% 更好按。
+brightness_pick() {
+    local choice
+    choice=$(printf '100%%\n75%%\n50%%\n25%%\n' | "$dir/fuzzel-wrapper" \
+        --config="${XDG_CONFIG_HOME:-$HOME/.config}/fuzzel/status.ini" \
+        --dmenu --prompt='亮度  ' --with-nth=1 --only-match) || return 0
+    choice=${choice%%%}
+    [[ $choice =~ ^[0-9]+$ ]] || return 0
+    brightness_set "$choice" || return 0
+    notify-send "亮度" "$choice%" || true
+}
+
 # 输入法：fcitx5-remote 只回 1/2（英/中）和组名（keyboard-us、rime…）。
 # 托盘没了以后，这里是「现在是中文还是英文」唯一的显示处。
 ime() {
@@ -95,11 +176,12 @@ row() {
 }
 
 snapshot() {
-    row "$(battery)"
+    row "$(clock)"
     row "$(volume)" volume
+    row "$(brightness)" brightness
+    row "$(battery)"
     row "$(ime)" ime
     row "$(idle)" idle
-    row "$(clock)"
 }
 
 # --print 只吐数据、不开窗，用来调试和核对读数。
@@ -114,6 +196,7 @@ action=$(snapshot | "$dir/fuzzel-wrapper" \
 
 case $action in
     volume) niri msg action spawn -- pavucontrol ;;
+    brightness) brightness_pick ;;
     ime) fcitx5-remote -t ;;
     idle) "$dir/idle-inhibit" toggle ;;
 esac
