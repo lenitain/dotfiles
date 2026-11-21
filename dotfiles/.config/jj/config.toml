@@ -82,8 +82,10 @@ patterns = ["all()"]
 i = { definition = ["git", "init", "--colocate"], doc = "Colocate-init a Git repo" }
 # jj d：查看改动（走 hunk）
 d = { definition = ["diff"], doc = "Show the changes in the working copy" }
-# jj de：编辑提交描述
-de = { definition = ["describe"], doc = "Edit the change description" }
+# jj de：交互式编辑改动内容（走 hunk diff editor）
+de = { definition = ["diffedit"], doc = "Interactively edit the changes in the working copy" }
+# jj dc：编辑提交描述
+dc = { definition = ["describe"], doc = "Edit the change description" }
 # jj n：新建空提交
 n = { definition = ["new"], doc = "Create a new empty change" }
 
