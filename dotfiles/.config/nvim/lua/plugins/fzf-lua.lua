@@ -1,8 +1,6 @@
 return {
   "ibhagwan/fzf-lua",
   -- 不锁版本，跟随 main 最新提交（作者只维护最新版）
-  -- optional for icon support
-  dependencies = { "nvim-tree/nvim-web-devicons" },
   cmd = "FzfLua",
   event = "VeryLazy",
   keys = {
@@ -105,8 +103,6 @@ return {
     files = {
       prompt = "Files❯ ",
       multiprocess = true,
-      file_icons = true,
-      color_icons = true,
       find_opts = [[-type f -not -path '*/\.git/*' -not -path '*/node_modules/*' -not -path '*/\.next/*']],
       fd_opts = [[--color=never --type f --hidden --follow --exclude .git --exclude node_modules --exclude .next]],
     },
@@ -114,15 +110,11 @@ return {
     grep = {
       prompt = "Rg❯ ",
       multiprocess = true,
-      file_icons = true,
-      color_icons = true,
       rg_opts = "--color=always --smart-case --hidden --glob '!.git' --glob '!node_modules' --glob '!.next'",
     },
     -- Buffer options
     buffers = {
       prompt = "Buffers❯ ",
-      file_icons = true,
-      color_icons = true,
       -- 必须显式关掉：默认 true 会把当前缓冲区当标题行（--header-lines 1），
       -- 导致 fzf 指针/选中错位
       sort_lastused = false,
@@ -134,8 +126,6 @@ return {
     -- LSP options
     lsp = {
       prompt = "LSP❯ ",
-      file_icons = true,
-      color_icons = true,
       git_status = true,
       severity = "hint",
       icons = {
@@ -150,8 +140,6 @@ return {
       status = {
         prompt = "GitStatus❯ ",
         cmd = "git status -su",
-        file_icons = true,
-        color_icons = true,
         preview_pager = "delta --width=$FZF_PREVIEW_COLUMNS",
       },
       commits = {

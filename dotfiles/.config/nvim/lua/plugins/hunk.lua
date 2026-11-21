@@ -100,8 +100,6 @@ return {
   cmd = { "HunkDiffView", "HunkDiffEditor" },
   dependencies = {
     "MunifTanjim/nui.nvim",
-    -- 文件树图标（可选依赖，这里显式声明以保证 require 时已在 rtp 中）
-    "nvim-tree/nvim-web-devicons",
   },
   config = function(_, opts)
     -- 默认全选。hunk 原生默认「全不选」，而 jj diffedit 的语义是
