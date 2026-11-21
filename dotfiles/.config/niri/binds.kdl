@@ -262,22 +262,24 @@ binds {
     MOD+R hotkey-overlay-title="Reset window height" {
         reset-window-height
     }
+    // 宽度预设作用于当前工作区的所有平铺窗口，而不是只改聚焦的那一列。
+    // repeat=false：按住不放没有意义，还会以按键重复率反复 spawn 脚本。
     // 展开：贴边占满。脚本只看一个布尔值，重复按不会缩回。
-    MOD+F hotkey-overlay-title="Fill column to screen edges" {
-        spawn "~/.config/niri/scripts/column-fill"
+    MOD+F repeat=false hotkey-overlay-title="Fill workspace to screen edges" {
+        spawn "~/.config/niri/scripts/resize-workspace" "fill"
     }
     // 真全屏（连 waybar 一起盖住）；与 Mod+Ctrl+F 同一个动作
     MOD+SHIFT+F hotkey-overlay-title="Fullscreen window" {
         fullscreen-window
     }
-    MOD+D hotkey-overlay-title="Set column width to 50%" {
-        set-column-width "50%"
+    MOD+D repeat=false hotkey-overlay-title="Set workspace columns to 50%" {
+        spawn "~/.config/niri/scripts/resize-workspace" "50%"
     }
-    MOD+S hotkey-overlay-title="Set column width to 33.3333%" {
-        set-column-width "33.3333%"
+    MOD+S repeat=false hotkey-overlay-title="Set workspace columns to 33.3333%" {
+        spawn "~/.config/niri/scripts/resize-workspace" "33.3333%"
     }
-    MOD+A hotkey-overlay-title="Set column width to 25%" {
-        set-column-width "25%"
+    MOD+A repeat=false hotkey-overlay-title="Set workspace columns to 25%" {
+        spawn "~/.config/niri/scripts/resize-workspace" "25%"
     }
 
     // Clipboard

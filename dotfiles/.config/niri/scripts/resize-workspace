@@ -1,0 +1,153 @@
+#!/usr/bin/luajit
+-- 把宽度预设一次应用到当前工作区的所有平铺窗口。
+--
+--   resize-workspace fill       每个窗口贴边铺满（Mod+F）
+--   resize-workspace 50%        每列宽度设为工作区的 50%（Mod+D）
+--   resize-workspace 33.3333%   ……（Mod+S）
+--   resize-workspace 25%        ……（Mod+A）
+--
+-- 直接走 niri 的 IPC socket（$NIRI_SOCKET），协议是「一行 JSON 请求，一行 JSON 回复」，
+-- 所以一次按键只有一个 luajit 进程 + 一次 connect，不起 bash/jq/niri msg 子进程。
+-- 动作都带窗口 id，不会改动聚焦。
+--
+-- 浮窗不参与：宽度预设对浮窗没有意义，贴边还会把浮窗拉进平铺布局。
+-- 贴边用的是 toggle，而 IPC 里没有 is_maximized 字段；贴边时边框被吃掉，
+-- window_offset_in_tile 从边框宽度变成 0 —— 用这个布尔值挡掉已经贴边的窗口，
+-- 所以连按 Mod+F 只会保持铺满，不会缩回去。
+
+local ffi = require("ffi")
+
+ffi.cdef [[
+int socket(int, int, int);
+int connect(int, const void *, unsigned int);
+long write(int, const char *, unsigned long);
+long read(int, char *, unsigned long);
+int close(int);
+
+struct sockaddr_un {
+    unsigned short sun_family;
+    char sun_path[108];
+};
+]]
+
+local AF_UNIX, SOCK_STREAM = 1, 1
+
+local function die(msg)
+    io.stderr:write("resize-workspace: ", msg, "\n")
+    os.exit(1)
+end
+
+local mode = arg[1]
+local proportion = mode and tonumber(mode:match("^(%d+%.?%d*)%%$") or "")
+if mode ~= "fill" and not proportion then
+    die("用法: resize-workspace fill|<百分比>")
+end
+
+local path = os.getenv("NIRI_SOCKET")
+if not path then die("NIRI_SOCKET 未设置，不在 niri 会话里？") end
+if #path >= 108 then die("NIRI_SOCKET 路径太长") end
+
+local fd = ffi.C.socket(AF_UNIX, SOCK_STREAM, 0)
+if fd < 0 then die("socket() 失败") end
+
+local addr = ffi.new("struct sockaddr_un")
+addr.sun_family = AF_UNIX
+ffi.copy(addr.sun_path, path) -- 结构体是零初始化的，结尾自带 \0
+local len = ffi.offsetof("struct sockaddr_un", "sun_path") + #path + 1
+if ffi.C.connect(fd, ffi.cast("const void *", addr), len) ~= 0 then
+    ffi.C.close(fd)
+    die("connect " .. path .. " 失败")
+end
+
+local buf = ffi.new("char[4096]")
+
+-- 发一行 JSON 请求，读回一行 JSON 回复；成功返回 Ok 里的内容，失败返回 nil 和错误
+local function request(json)
+    local req = json .. "\n"
+    if ffi.C.write(fd, req, #req) ~= #req then die("write 失败") end
+
+    local chunks = {}
+    while true do
+        local n = ffi.C.read(fd, buf, ffi.sizeof(buf))
+        if n <= 0 then break end
+        local chunk = ffi.string(buf, n)
+        local nl = chunk:find("\n", 1, true)
+        if nl then
+            chunks[#chunks + 1] = chunk:sub(1, nl - 1)
+            local reply = table.concat(chunks)
+            local ok = reply:match('^{"Ok":(.*)}$')
+            if ok then return ok end
+            return nil, reply:match('^{"Err":(.*)}$') or reply
+        end
+        chunks[#chunks + 1] = chunk
+    end
+    die("读取回复失败")
+end
+
+-- 把顶层 JSON 数组里的对象逐个切出来，跳过字符串里的括号和转义
+local function objects(json)
+    local result, depth, start, in_string, escaped = {}, 0, nil, false, false
+    for i = 1, #json do
+        local c = json:sub(i, i)
+        if in_string then
+            if escaped then escaped = false
+            elseif c == "\\" then escaped = true
+            elseif c == '"' then in_string = false end
+        elseif c == '"' then in_string = true
+        elseif c == "{" then
+            depth = depth + 1
+            if depth == 1 then start = i end
+        elseif c == "}" then
+            if depth == 1 then result[#result + 1] = json:sub(start, i) end
+            depth = depth - 1
+        end
+    end
+    return result
+end
+
+local function query(name)
+    local payload, err = request('"' .. name .. '"')
+    if not payload then die(name .. " 请求失败: " .. err) end
+    local array = payload:match('^{"' .. name .. '":(.*)}$')
+    if not array then die("解析 " .. name .. " 回复失败: " .. payload) end
+    return objects(array)
+end
+
+local focused_ws
+for _, workspace in ipairs(query("Workspaces")) do
+    if workspace:find('"is_focused":true', 1, true) then
+        focused_ws = tonumber(workspace:match('"id":(%d+)'))
+        break
+    end
+end
+if not focused_ws then die("找不到聚焦工作区") end
+
+local targets, columns = {}, {}
+for _, window in ipairs(query("Windows")) do
+    local id = tonumber(window:match('"id":(%d+)'))
+    local ws = tonumber(window:match('"workspace_id":(%d+)'))
+    if id and ws == focused_ws and window:find('"is_floating":false', 1, true) then
+        if mode == "fill" then
+            local offset = tonumber(window:match('"window_offset_in_tile":%[([^,]+),'))
+            if offset and offset ~= 0 then targets[#targets + 1] = id end
+        else
+            -- 宽度是每列一份，同一列只发一次
+            local column = window:match('"pos_in_scrolling_layout":%[(%d+),') or id
+            if not columns[column] then
+                columns[column] = true
+                targets[#targets + 1] = id
+            end
+        end
+    end
+end
+
+for _, id in ipairs(targets) do
+    local err
+    if mode == "fill" then
+        _, err = request('{"Action":{"MaximizeWindowToEdges":{"id":' .. id .. '}}}')
+    else
+        _, err = request('{"Action":{"SetWindowWidth":{"id":' .. id ..
+            ',"change":{"SetProportion":' .. proportion .. '}}}}')
+    end
+    if err then io.stderr:write("resize-workspace: ", err, "\n") end
+end
