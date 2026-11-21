@@ -2,7 +2,7 @@
 # fuzzel wrapper - 永远单实例，先杀后开；并且兜底指定默认 profile
 #
 # 三个 profile（launcher / clipboard / status）现在一律显式加载：调用方给了
-# --config 就用它的，没给（MOD+W 这条）就补 launcher.ini。改名后不再有
+# --config 就用它的，没给（MOD+R 这条）就补 launcher.ini。改名后不再有
 # 「靠 fuzzel 默认文件名被读到」的那一份，三种用途的名字才对得上。
 #
 # 旧实例要等它真的退出，而不是固定 sleep：原来每次按都白等 10ms，这里 pidof 拿

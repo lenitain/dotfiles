@@ -14,7 +14,7 @@ binds {
     MOD+RETURN hotkey-overlay-title="Open terminal (plain)" {
         spawn "footclient"
     }
-    MOD+W hotkey-overlay-title="App launcher" {
+    MOD+R hotkey-overlay-title="App launcher" {
         spawn "~/.config/niri/scripts/fuzzel-wrapper"
     }
     MOD+B hotkey-overlay-title="Browser" {
@@ -265,7 +265,9 @@ binds {
         set-window-height "+10%"
     }
 
-    MOD+R hotkey-overlay-title="Reset window height" {
+    // 原来在 MOD+R；R 让给启动器后挪到 SHIFT+R，和上面两条高度 ± 挤在一起，
+    // 重置高度反而比原来更好找。
+    MOD+SHIFT+R hotkey-overlay-title="Reset window height" {
         reset-window-height
     }
     // 宽度预设作用于当前工作区的所有平铺窗口，而不是只改聚焦的那一列。
