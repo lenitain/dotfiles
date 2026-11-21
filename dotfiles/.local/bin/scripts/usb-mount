@@ -1,0 +1,22 @@
+#!/bin/bash
+# 由 udev 触发的一次性挂载：挂上 /dev/$1 就退出，平时没有任何常驻进程。
+# 触发规则见 /etc/udev/rules.d/90-usb-automount.rules。
+
+set -u
+
+dev=/dev/${1:?usage: usb-mount <kernel-name>}
+[[ -b $dev ]] || exit 0
+
+# 一次插入可能收到多个 uevent，已挂载就安静退出，避免重复挂载和失败通知。
+if [[ -n $(findmnt -n -o TARGET --source "$dev" | head -n1) ]]; then
+    exit 0
+fi
+
+if out=$(udisksctl mount --no-user-interaction -b "$dev" 2>&1); then
+    where=$(findmnt -n -o TARGET --source "$dev" | head -n1)
+    notify-send -a udev -i drive-removable-media "已挂载 $1" "${where:-挂载点未知}"
+else
+    notify-send -a udev -u critical -i dialog-error "挂载 $1 失败" "$out"
+    printf '%s\n' "$out" >&2
+    exit 1
+fi

@@ -6,10 +6,19 @@ run = "command -v bat >/dev/null 2>&1 && bat cache --build || true"
 [bootstrap.hooks.final]
 run = """
   set -euo pipefail
+  . "{{ config_root }}/.config/mise/tasks/lib/log.sh"
+
+  # files 阶段只负责写盘；udevd 要 reload 后才重读规则表，否则新规则要等重启。
+  info "重载 udev 规则 ..."
+  if sudo udevadm control --reload; then
+    ok "udev 规则已重载"
+  else
+    warn "udev 规则重载失败，重启后生效"
+  fi
+
   if ! command -v flatpak >/dev/null 2>&1; then
     exit 0
   fi
-  . "{{ config_root }}/.config/mise/tasks/lib/log.sh"
   info "更新 flathub 用户应用 (hook: final) ..."
   if flatpak update --user -y 2>&1 | tail -3; then
     ok "flathub 应用已更新"

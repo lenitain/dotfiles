@@ -1,0 +1,6 @@
+[Unit]
+Description=Mount removable device /dev/%I
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/scripts/usb-mount %I

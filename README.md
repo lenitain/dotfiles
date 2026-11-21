@@ -158,6 +158,20 @@ mise run setup-tuning
 - 内核参数 `amd_pstate=active` 能让 amd-pstate 接管频率（比 `performance` governor 更细），
   但要改引导配置并重编 initramfs，`setup-tuning` 不碰 `/boot`。
 
+### U 盘自动挂载
+
+不用 udiskie：udev 只当触发器，插上后 systemd 拉起一次性单元挂载，挂完进程即退，空闲零常驻。
+
+| 内容       | 落点                                                              |
+| ---------- | ----------------------------------------------------------------- |
+| 触发规则   | `/etc/udev/rules.d/90-usb-automount.rules`（`conf.d/system.toml`）  |
+| 一次性单元 | `~/.config/systemd/user/removable-mount@.service`                 |
+| 挂载脚本   | `~/.local/bin/scripts/usb-mount`（`udisksctl mount` + mako 通知）  |
+
+设备挂到 `/run/media/<用户>/<卷标>`，yazi 里 `g u` 跳到 `/run/media`。同一设备多个 uevent
+由脚本里的 `findmnt` 预检去重；拔盘不卸载也由 udisks2 清理（已验证无残留）。
+不含 LUKS 密码框，加密盘不会自动挂载；需要的话得装回 udiskie。
+
 ### 电池充电上限
 
 本机（联想 81YN）用 udev：不同厂商接口各异，规则按机型写。

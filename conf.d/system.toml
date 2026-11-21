@@ -268,3 +268,15 @@ KERNEL=="hidraw*", GROUP="input", MODE="0660"
 owner = "root"
 group = "root"
 mode = "0644"
+
+# 插 U 盘即挂载, 挂完就退出：udev 只当触发器, 空闲时零常驻进程 (替代 udiskie)。
+# 设备出现在 /run/media/$USER/<卷标>, yazi 里 g u 跳过去。
+# 单元与脚本在 dotfiles 里：~/.config/systemd/user/removable-mount@.service +
+# ~/.local/bin/scripts/usb-mount。
+[bootstrap.files."/etc/udev/rules.d/90-usb-automount.rules"]
+content = """# 插上 U 盘 / 移动硬盘时，让当前用户启动一次性挂载单元；挂完就退出，不留常驻进程。
+ACTION=="add", SUBSYSTEM=="block", ENV{ID_BUS}=="usb", ENV{ID_FS_USAGE}=="filesystem", ENV{UDISKS_IGNORE}!="1", TAG+="systemd", ENV{SYSTEMD_USER_WANTS}+="removable-mount@%k.service"
+"""
+owner = "root"
+group = "root"
+mode = "0644"
