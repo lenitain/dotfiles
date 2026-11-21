@@ -8,12 +8,15 @@
 # 不会写入任何匹配位置，结果就是 fuzzel 没有 match.pos 可渲染，
 # 绿色高亮就不会出现。launcher 模式没有 --match-nth 的概念，所以不受影响。
 
-# 获取选择，保留完整的 ID\t内容 格式传给 fuzzel
-# 覆盖 ini 里的 exit-immediately-if-empty=yes：历史为空时也要弹出一个空窗口，
-# 否则 fuzzel 收到空输入会直接退出、不弹窗，按键看起来就像"完全没反应"。
-# （ini 里的全局设置保留给其它脚本化调用，比如电源菜单。）
+# 获取选择，保留完整的 ID\t内容 格式传给 fuzzel。
+# 剪贴板面板用独立的 clipboard profile：宽度 / 行数 / 排序策略与启动器不同，
+# 主题与键位仍共享 common.ini。该 profile 也覆盖了 exit-immediately-if-empty=no，
+# 历史为空时同样弹出空窗口，否则 fuzzel 收到空输入会直接退出，
+# 按键看起来就像"完全没反应"。
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-selected=$(cliphist list | "$SCRIPT_DIR/fuzzel-wrapper" --dmenu --prompt="Clipboard " --with-nth=2 --override=dmenu.exit-immediately-if-empty=no)
+selected=$(cliphist list | "$SCRIPT_DIR/fuzzel-wrapper" \
+    --config="${XDG_CONFIG_HOME:-$HOME/.config}/fuzzel/clipboard.ini" \
+    --dmenu --prompt="Clipboard " --with-nth=2)
 
 if [ -n "$selected" ]; then
   # 直接用选中的完整行(包含ID)进行decode
