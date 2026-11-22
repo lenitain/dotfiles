@@ -74,7 +74,6 @@ mise ls                # 已装工具
 | `setup-pig`           | PiG agent + 扩展                                             | 用户 |
 | `setup-rime-wanxiang` | 万象拼音 → fcitx5                                            | 用户 |
 | `setup-yazi`          | yazi 插件（simple-status / smart-enter）                     | 用户 |
-| `uninstall-help`      | 各生态卸载命令清单（只打印，不删）                           | —    |
 
 `setup-boot` 只新建 / 收敛，不卸载现有引导器；检测到 Limine / GRUB / UKI 接管内核安装会中止
 并提示先 `pacman -Rns`。
