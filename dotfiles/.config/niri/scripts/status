@@ -5,16 +5,13 @@
 # ~/.config/fuzzel/status.ini（和启动器、剪贴板共用 common.ini 的主题）；
 # 这里只管两件事：凑出读数，再把选中行翻译成动作。
 #
-# 每行两列，tab 分隔：第 1 列是读数（多数以图标开头），第 2 列是回车时执行的动作（可空）。
+# 每行两列，tab 分隔：第 1 列是读数（以图标开头），第 2 列是回车时执行的动作（可空）。
 #   --with-nth=1     只显示读数列
 #   --accept-nth=2   回车只回报动作名 —— 读数怎么排版、带什么空格符号，
 #                    都进不了 shell，也就不需要转义
 #   --only-match     打到不匹配的字符串时，回车不给「把输入原样返回」的出口
 # 面板是快照，没有实时刷新：再按一次 MOD+SPACE 就是刷新（fuzzel-wrapper 先杀后开），
 # 时钟也会跟着重新取值。
-#
-# 最下面一段是托盘：谁注册了托盘图标（QQ、输入法……）就列一行，行数跟着走 ——
-# 面板几行就显示几行，不写死。
 
 set -u
 # %a 固定英文星期：本机 locale 是中文，会输出「六」；三字母宽度稳定，
@@ -43,17 +40,31 @@ ICON_MUTE=󰖁
 ICON_BATTERY=(󰁺 󰁼 󰁾 󰂀 󰂂)
 ICON_CHARGING=󰂄
 
-# 电量：直接读 sysfs，一次 fork 都不花。充电/满电换成插头字形，与档位图标
-# 同宽，图标列的位置不随状态跳动。
+# AC 适配器通没通电：sysfs 的 online。适配器名字各机不同
+# （AC / AC0 / ACAD…），glob 找带 online 的那个；多路适配器任一路通电即算接通。
+ac_online() {
+    local file online
+    for file in /sys/class/power_supply/AC*/online; do
+        [[ -r $file ]] || continue
+        read -r online < "$file"
+        [[ $online == 1 ]] && return 0
+    done
+    return 1
+}
+
+# 电量：直接读 sysfs，一次 fork 都不花。
+# 图标只回答「电源接没接」：插着电是带闪电的电池，没插电是电量档位 —— 两者同宽，
+# 图标列的位置不随状态跳动。「在不在充」不看图标（设了充电上限时插着电也是
+# Not charging），接没接电由图标自己说。
 battery() {
-    local cap status icon
+    local cap icon
     [[ -r $BAT/capacity ]] || return 0
     read -r cap < "$BAT/capacity"
-    read -r status < "$BAT/status"
-    case $status in
-        Charging | Full) icon=$ICON_CHARGING ;;
-        *) icon=${ICON_BATTERY[cap * 5 / 101]} ;;
-    esac
+    if ac_online; then
+        icon=$ICON_CHARGING
+    else
+        icon=${ICON_BATTERY[cap * 5 / 101]}
+    fi
     printf '%s  %d%%\n' "$icon" "$cap"
 }
 
@@ -154,7 +165,7 @@ brightness_pick() {
 }
 
 # 输入法：fcitx5-remote 只回 1/2（英/中）和组名（keyboard-us、rime…）。
-# 托盘那一段只写「输入法」三个字，看不出现在是中文还是英文 —— 这里是唯一的显示处。
+# 托盘没了以后，这里是「现在是中文还是英文」唯一的显示处（显示成 EN / ZH）。
 ime() {
     local on
     on=$(fcitx5-remote 2>/dev/null) || return 0
@@ -175,42 +186,6 @@ idle() {
 }
 
 clock() { printf '%s  %(%m-%d %a %H:%M)T\n' "$ICON_CALENDAR" -1; }
-
-# 托盘：本机没有托盘宿主，托盘项由 sni-watcher 挂在总线上（见该脚本），
-# 这里去问它「现在谁注册了托盘图标」。每行一个托盘项：
-#   名字 <TAB> 总线名 <TAB> 对象路径 <TAB> 应用 id
-# 名字优先用应用自己报的 Title；QQ 那种只给图标不给名字的，按进程反查
-# desktop 文件里的 Name（com.qq.QQ -> QQ）。
-tray() {
-    "$dir/tray-items" 2>/dev/null
-}
-
-# 这个应用在 niri 里的窗口 id：先按 app_id 全等匹配，再退一步只比最后一段 ——
-# flatpak 的应用 id 是 com.qq.QQ，窗口报的 app_id 却只是 QQ。
-tray_window() {
-    local appid=${1-}
-    [[ -n $appid ]] || return 0
-    niri msg --json windows 2>/dev/null | jq -r --arg app "$appid" '
-        [ .[]
-          | select((.app_id | ascii_downcase) == ($app | ascii_downcase)
-                   or ((.app_id | split(".") | last | ascii_downcase)
-                       == ($app | split(".") | last | ascii_downcase))) ]
-        | .[0].id // empty'
-}
-
-# 回车：把这个托盘项的应用叫到前面来。
-# 先找它的窗口，找到就聚焦（QQ 的托盘项是个假图标，SNI 的 Activate 它不理，
-# 靠窗口才叫得动）；没有窗口的纯托盘程序才退回 Activate。
-tray_activate() {
-    local service=${1-} path=${2-} appid=${3-}
-    local window
-    window=$(tray_window "$appid")
-    if [[ -n $window ]]; then
-        niri msg action focus-window --id "$window" >/dev/null 2>&1 && return 0
-    fi
-    [[ -n $service && -n $path ]] || return 0
-    "$dir/tray-items" activate "$service" "$path" 2>/dev/null || true
-}
 
 # 工作区行：niri 的工作区号，当前所在的用方括号标出来。
 #
@@ -245,19 +220,12 @@ row() {
 
 snapshot() {
     row "$(workspaces)"
+    row "$(ime)" ime
     row "$(clock)"
     row "$(volume)" volume
     row "$(brightness)" brightness
     row "$(idle)" idle
     row "$(battery)"
-    row "$(ime)" ime
-
-    # 托盘放在最后：谁有托盘图标谁就在最下面一行往下排
-    local name service path appid
-    while IFS=$'\t' read -r name service path appid; do
-        [[ -n $name ]] || continue
-        row "$name" "tray $service $path $appid"
-    done < <(tray)
 }
 
 # --print 只吐数据、不开窗，用来调试和核对读数。
@@ -275,5 +243,4 @@ case $action in
     brightness) brightness_pick ;;
     ime) fcitx5-remote -t ;;
     idle) "$dir/idle-inhibit" toggle ;;
-    tray\ *) tray_activate ${action#tray } ;;
 esac
