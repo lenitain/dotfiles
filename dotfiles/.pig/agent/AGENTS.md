@@ -8,10 +8,6 @@
 
 - Before executing a non-trivial task, scan the available skills for one that matches the work; if found, load it (read its SKILL.md) and follow it. Skills encode established practice - check them before writing new code. If none applies or the task is trivial, proceed directly.
 
-## Planning
-
-- A `planning-tasks` skill offers a mindset for breaking work into a visible checked-box checklist. Let the task's real scope decide: when it might benefit from structure, offer a checklist; when it's simple enough to just do, skip it.
-
 ## Style
 
 - Follow nearby code and use idiomatic code in the project's languages.
