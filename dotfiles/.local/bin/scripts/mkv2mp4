@@ -1,0 +1,141 @@
+#!/bin/bash
+# MKV 转 MP4：视频流直拷不二次压缩，音频 Opus 转 AAC，索引前置（faststart）。
+#
+# 录屏（~/.config/niri/scripts/record）只产出 MKV，转换单独放在这里：
+# 录制不因转码而卡住，转码失败也牵连不到原始录像。
+#
+# 用法:
+#   mkv2mp4 [文件...]   转换指定的 MKV；不给文件则取录像目录里最新录的那个
+#   mkv2mp4 --all       转换录像目录里的全部 MKV
+#   mkv2mp4 --dir DIR   换录像目录（默认 ~/videos）
+#
+# 同名 .mp4 已存在就跳过，不覆盖；源 MKV 始终保留。
+# 只在终端输出结果，不发桌面通知。
+
+set -uo pipefail
+
+VIDEOS_DIR="${VIDEOS_DIR:-$HOME/videos}"
+ALL=0
+SOURCES=()
+
+usage() {
+    cat <<'EOF'
+用法: mkv2mp4 [--all] [--dir DIR] [文件...]
+  --all        转换录像目录里的全部 MKV
+  --dir DIR    录像目录（默认 ~/videos）
+  文件...      要转换的 MKV（不给则取目录里最新的一个）
+EOF
+}
+
+while (( $# )); do
+    case $1 in
+        --all)
+            ALL=1
+            shift
+            ;;
+        --dir)
+            VIDEOS_DIR=${2:?--dir 需要目录参数}
+            shift 2
+            ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            SOURCES+=("$@")
+            break
+            ;;
+        -*)
+            echo "未知选项: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+        *)
+            SOURCES+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if ! command -v ffmpeg >/dev/null 2>&1; then
+    echo "错误: 未找到 ffmpeg" >&2
+    exit 127
+fi
+
+# 录像目录里的 .mkv，按修改时间从新到旧排（新的在前）。
+mkvs_in_dir() {
+    find "$VIDEOS_DIR" -maxdepth 1 -type f -name '*.mkv' -printf '%T@\t%p\n' 2>/dev/null \
+        | sort -rn | cut -f2-
+}
+
+if (( ALL )); then
+    while IFS= read -r mkv; do
+        SOURCES+=("$mkv")
+    done < <(mkvs_in_dir)
+fi
+
+if (( ! ${#SOURCES[@]} )); then
+    newest=$(mkvs_in_dir | head -n1)
+    if [[ -z $newest ]]; then
+        echo "没有找到可转换的 MKV: $VIDEOS_DIR" >&2
+        exit 1
+    fi
+    SOURCES=("$newest")
+fi
+
+# 转换单个文件；成功时把生成的 MP4 路径打到 stdout，失败信息走 stderr。
+# 返回值: 0=已转换，1=跳过（同名 MP4 已存在），2=失败
+convert() {
+    local src=$1 dir base dst part
+    dir=$(dirname -- "$src")
+    base=$(basename -- "$src" .mkv)
+    dst="$dir/$base.mp4"
+    part="$dir/.$base.mp4.part"
+
+    if [[ ! -f $src ]]; then
+        echo "跳过（不存在）: $src" >&2
+        return 2
+    fi
+    if [[ -e $dst ]]; then
+        echo "跳过（已存在）: $dst" >&2
+        return 1
+    fi
+
+    # 字幕流进不了 MP4（ASS、图片字幕等），失败就丢掉字幕再试一次。
+    if ! ffmpeg -hide_banner -loglevel error -y \
+            -i "$src" -c:v copy -c:a aac -c:s mov_text -movflags +faststart -f mp4 "$part"; then
+        if ! ffmpeg -hide_banner -loglevel error -y \
+                -i "$src" -c:v copy -c:a aac -sn -movflags +faststart -f mp4 "$part"; then
+            rm -f -- "$part"
+            echo "转换失败: $src" >&2
+            return 2
+        fi
+    fi
+
+    mv -- "$part" "$dst"
+    echo "$dst"
+}
+
+skipped=0
+failed=0
+converted=()
+for src in "${SOURCES[@]}"; do
+    out=$(convert "$src")
+    case $? in
+        0) converted+=("$out") ;;
+        1) skipped=$((skipped + 1)) ;;
+        *) failed=$((failed + 1)) ;;
+    esac
+done
+
+if (( ${#converted[@]} )); then
+    echo "已转换 ${#converted[@]} 个文件: ${converted[*]}"
+fi
+if (( skipped )); then
+    echo "跳过 $skipped 个文件（同名 MP4 已存在）"
+fi
+if (( failed )); then
+    echo "$failed 个文件没有转换成功" >&2
+    exit 1
+fi

@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# 录屏脚本 - gpu-screen-recorder：直接录制到磁盘，停止后自动转封装 MP4
+# 录屏脚本 - gpu-screen-recorder：直接录制到磁盘，产出 MKV
 #
 # 子命令:
 #   record start   区域选择并开始录制
 #   record stop    停止当前录制（向录制进程发 SIGINT，等待其正常收尾）
 #   record state   只打印当前状态：REC / BUSY / IDLE（status 通过 lib.lua 共用判定）
-#                  BUSY = 没有 gsr 进程但单例锁被占着（通常是停止后的 MP4 转封装）
+#                  BUSY = 没有 gsr 进程但单例锁被占着（停止时正在等录制进程收尾）
 #   record toggle  在录就停、没录就开（状态面板那一行的回车动作）
+#
+# 只管录制，格式转换不归这里：MKV -> MP4 由 ~/.local/bin/scripts/mkv2mp4 单独做，
+# 录制因此不会被转码拖住，转码失败也牵连不到原始录像。
 #
 # 单例语义:
 #   全局同一时刻只允许一个录制。已在录制时 `record start` 不做任何事，
@@ -19,8 +22,8 @@
 #
 # 流程:
 #   录制写入 ~/videos/Record_*.mkv（H.264 硬编 CQP + Opus）
-#   停止时 SIGINT 收尾，再由 ffmpeg 视频直拷、音频转 AAC、+faststart 封装为同名 .mp4
-#   转换失败则提示并保留原始 MKV；全程不覆盖已有文件、不做二次压缩
+#   停止时 SIGINT 收尾，等录制进程写完文件即结束；全程不覆盖已有文件
+#   要 MP4 就事后单独跑 mkv2mp4（视频直拷、音频转 AAC、+faststart），原 MKV 保留
 #
 # 为什么用 gpu-screen-recorder（而不是 wl-screenrec）:
 #   wl-screenrec 硬编只有 VAAPI 一条路（实测其二进制内置编码器名仅 h264_vaapi 一系），
@@ -74,7 +77,6 @@ CAPTURE_CURSOR="no"
 SLURP_FMT="%wx%h+%x+%y"
 
 # ===== 行为开关 =====
-AUTO_CONVERT_TO_MP4="1"                   # 1=停止后自动转 MP4；0=只保留 MKV
 STOP_TIMEOUT_SEC=20                       # 等待录制进程收尾的最长秒数
 
 # notify / copy_path / copy_stream 在 lib.sh 里，子进程都带 `9>&-`。
@@ -136,7 +138,7 @@ find_recorder() {
     return 1
 }
 
-# 单例锁被占但找不到 gsr：多半是 stop 正在 ffmpeg 转封装。
+# 单例锁被占但找不到 gsr：多半是 stop 正在等录制进程收尾写文件。
 recording_busy() {
     command -v flock >/dev/null 2>&1 || return 1
     ! flock -n "$LOCKFILE" true 2>/dev/null
@@ -157,8 +159,8 @@ do_start() {
         exit 0
     fi
     if recording_busy; then
-        notify "录屏提示" "上一段录制仍在处理中（MP4 转封装），请稍后再试"
-        echo "上一段录制仍在处理中" >&2
+        notify "录屏提示" "上一段录制仍在收尾，请稍后再试"
+        echo "上一段录制仍在收尾" >&2
         exit 0
     fi
 
@@ -272,39 +274,12 @@ do_stop() {
         exit 1
     fi
 
-    if [ "$AUTO_CONVERT_TO_MP4" != "1" ]; then
-        notify "录屏已停止" "已保留中间文件：$REC_FILE"
-        exit 0
-    fi
-
-    local base final part
-    base="$(basename "$REC_FILE" .mkv)"
-    final="$RECORD_DIR/$base.mp4"
-    part="$RECORD_DIR/.$base.mp4.part"
-    if [ -e "$final" ]; then
-        notify "目标文件已存在" "未覆盖 $final；新录像保留在 $REC_FILE"
-        exit 2
-    fi
-    if [ -e "$part" ]; then
-        part="$RECORD_DIR/.$base.$$.mp4.part"
-    fi
-
-    # 视频直拷不二次压缩；音频 Opus->AAC；faststart 把索引挪到片头利于流式播放
-    if ffmpeg -hide_banner -loglevel error -y \
-            -i "$REC_FILE" -c:v copy -c:a aac -movflags +faststart -f mp4 "$part"; then
-        mv "$part" "$final"
-        copy_path "$final" || true
-        notify "录屏已保存" "$final"
-        exit 0
-    else
-        rm -f "$part"
-        copy_path "$REC_FILE" || true
-        notify "自动转换失败" "已保留原始录像：$REC_FILE"
-        exit 1
-    fi
+    # 收尾完成就完事：录像路径进剪贴板，需要 MP4 时再单独跑 mkv2mp4。
+    copy_path "$REC_FILE" || true
+    notify "录屏已保存" "$REC_FILE"
 }
 
-# 正在录 → "REC"，转封装中 → "BUSY"，没在录 → "IDLE"。
+# 正在录 → "REC"，收尾中 → "BUSY"，没在录 → "IDLE"。
 # 时长不报：面板要的是当前状态，不是录了多久。
 # 录制器没装且没有进行中的录制时什么都不输出：面板上那一行不出现。
 # 判定逻辑放在 lib.lua，和 status 共用同一份实现。
@@ -315,15 +290,15 @@ do_state() {
     printf '%s\n' "$state"
 }
 
-# 状态面板那一行的回车动作：在录就停（收尾并转封装），转封装中就先别开新录制，
+# 状态面板那一行的回车动作：在录就停（收尾保存 MKV），收尾中就先别开新录制，
 # 没录就选区开录。判定仍由 find_recorder / recording_busy 给，与 start/stop
 # 用的是同一份事实。
 do_toggle() {
     if find_recorder >/dev/null; then
         do_stop
     elif recording_busy; then
-        notify "录屏提示" "上一段录制仍在处理中（MP4 转封装），请稍后再试"
-        echo "上一段录制仍在处理中" >&2
+        notify "录屏提示" "上一段录制仍在收尾，请稍后再试"
+        echo "上一段录制仍在收尾" >&2
         exit 0
     else
         do_start

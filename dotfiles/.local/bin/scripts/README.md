@@ -82,3 +82,4 @@ virtio-vga 的 EDID 只上报一条首选模式（设备属性 `xres`/`yres`）�
 | `qb-server`              | qutebrowser 常驻实例                                                     |
 | `proxy-on` / `proxy-off` | 开关本地代理（sing-box + qutebrowser 的 content.proxy）                  |
 | `xdg-terminal-exec`      | 终端兜底：默认用 foot，可用 `$TERMINAL` 覆盖                             |
+| `mkv2mp4`                | MKV 转 MP4（视频直拷、音频转 AAC、faststart），录屏只产 MKV，转换单独跑   |
