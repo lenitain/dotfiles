@@ -21,6 +21,8 @@
 #   例外: mise install/upgrade 里的 aqua 工具 (zls/gofumpt/golangci-lint/lua-ls/
 #   stylua/ruff) 也走 GitHub, 但它同时是 setup-pig 等步骤的工具前置 (pig 由 mise
 #   提供), 挪到末尾会顺序倒挂, 故留在第 2 步。
+#   例外: setup-build (编译本地产物) 不走网络, 但仍排在最后 —— 它只依赖 dotfiles
+#     已就位的源码, 前面的步骤失败不该挡住编译, 而编译产物本身就是收尾产物。
 
 set -euo pipefail
 
@@ -70,5 +72,8 @@ run_step setup-pig            "PiG agent + 扩展"
 run_step setup-fonts          "Maple Mono"
 run_step setup-rime-wanxiang  "万象拼音"
 run_step setup-yazi           "yazi 插件/配色"
+
+# ── 收尾: 本地产物编译 (无网络依赖; 成品已是最新则跳过) ──
+run_step setup-build          "qb-open 编译 + 壁纸导出"
 
 ok "bootstrap 完成: 系统+工具+配置已同步到最新 (失败项见上方 warn)"

@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+#MISE description="编译本地产物: qb-open (musl 静态) + 壁纸 SVG→PNG 导出 (成品已存在则跳过)"
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/log.sh"
+
+SCRIPTS_DIR="$HOME/.local/bin/scripts"
+WALLPAPER_DIR="$HOME/.local/share/wallpapers"
+
+failed=0
+
+# ── 1. qb-open: 静态编译 ──
+# 成品 (qb-open) 已存在 → 不重复编译
+build_qb_open() {
+  local src="$SCRIPTS_DIR/qb-open.c"
+  local bin="$SCRIPTS_DIR/qb-open"
+
+  if [[ ! -f "$src" ]]; then
+    err "缺少 $src (应由 dotfiles 部署)"
+    return 1
+  fi
+  if [[ -x "$bin" ]]; then
+    info "qb-open 已存在 ($(date -r "$bin" '+%F %T')), 跳过编译"
+    return 0
+  fi
+
+  local missing=()
+  command -v make &>/dev/null || missing+=("make")
+  command -v musl-gcc &>/dev/null || missing+=("musl-gcc (musl)")
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    err "缺少依赖: ${missing[*]}"
+    err "  → sudo pacman -S --needed make musl"
+    return 1
+  fi
+
+  info "编译 qb-open (musl 静态) ..."
+  if ! make -C "$SCRIPTS_DIR" c-static; then
+    err "qb-open 编译失败"
+    return 1
+  fi
+}
+
+# ── 2. 壁纸: SVG 生成 + PNG 导出 ──
+# 成品已存在 → 不重复导出 (resvg+oxipng 约十几秒, 值得跳过)
+export_wallpaper() {
+  local svg="$WALLPAPER_DIR/starry-night-sky.svg"
+  local png="$WALLPAPER_DIR/starry-night-sky.png"
+  local build="$WALLPAPER_DIR/build_all.py"
+  local derive="$WALLPAPER_DIR/derive.sh"
+
+  if [[ ! -f "$build" || ! -f "$derive" ]]; then
+    err "缺少壁纸构建脚本 (应由 dotfiles 部署)"
+    return 1
+  fi
+
+  if [[ ! -f "$svg" ]]; then
+    if ! command -v python3 &>/dev/null; then
+      err "缺少依赖: python3"
+      return 1
+    fi
+    info "生成壁纸 SVG (build_all.py) ..."
+    if ! (cd "$WALLPAPER_DIR" && python3 build_all.py); then
+      err "壁纸 SVG 生成失败"
+      return 1
+    fi
+  else
+    info "壁纸 SVG 已存在 ($(date -r "$svg" '+%F %T')), 跳过生成"
+  fi
+
+  if [[ ! -f "$png" ]]; then
+    local missing=()
+    command -v resvg &>/dev/null || missing+=("resvg")
+    command -v oxipng &>/dev/null || missing+=("oxipng")
+    if [[ ${#missing[@]} -gt 0 ]]; then
+      err "缺少依赖: ${missing[*]}"
+      err "  → sudo pacman -S --needed resvg oxipng"
+      return 1
+    fi
+    info "导出壁纸 PNG (3840×2160, resvg → oxipng) ..."
+    if ! "$derive"; then
+      err "壁纸 PNG 导出失败"
+      return 1
+    fi
+  else
+    info "壁纸 PNG 已存在 ($(date -r "$png" '+%F %T')), 跳过导出"
+  fi
+}
+
+info "编译 qb-open ..."
+build_qb_open || failed=1
+
+info "导出壁纸 ..."
+export_wallpaper || failed=1
+
+if [[ $failed -ne 0 ]]; then
+  err "部分产物未完成 (见上方 err), 可单独重跑: mise run setup-build"
+  exit 1
+fi
+ok "本地产物已就绪 (qb-open + 壁纸)"

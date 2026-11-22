@@ -33,8 +33,8 @@ mise ls                # 已装工具
 ```
 
 `setup-all` 依次跑：`mise bootstrap` → `mise install` + `mise upgrade` → `setup-tuning` →
-`setup-desktop` → `setup-pig` → `setup-fonts` → `setup-rime-wanxiang` → `setup-yazi`。
-更新类步骤软失败：挂了只 warn，不中断后面的收敛。
+`setup-desktop` → `setup-pig` → `setup-fonts` → `setup-rime-wanxiang` → `setup-yazi` →
+`setup-build`。更新类步骤软失败：挂了只 warn，不中断后面的收敛。
 
 升级只在 `setup-all` 里做：它先 `sudo pacman -Syu --noconfirm` 再装声明里的包
 （`pre-packages` hook，见 `conf.d/hooks.toml`）。mise 装包只发 `pacman -S --needed`，
@@ -74,6 +74,7 @@ mise ls                # 已装工具
 | `setup-pig`           | PiG agent + 扩展                                             | 用户 |
 | `setup-rime-wanxiang` | 万象拼音 → fcitx5                                            | 用户 |
 | `setup-yazi`          | yazi 插件（simple-status / smart-enter）                     | 用户 |
+| `setup-build`         | 本地产物编译：qb-open 静态编译 + 壁纸 SVG→PNG 导出            | 用户 |
 
 `setup-boot` 只新建 / 收敛，不卸载现有引导器；检测到 Limine / GRUB / UKI 接管内核安装会中止
 并提示先 `pacman -Rns`。
@@ -196,7 +197,8 @@ ACTION=="add", SUBSYSTEM=="power_supply", ATTR{type}=="Battery", ATTR{charge_typ
 ### 壁纸
 
 `dotfiles/.local/share/wallpapers/`：`build_all.py` 生成 SVG，`derive.sh` 用 resvg + oxipng 导出
-3840×2160 PNG（产物都不入库）。
+3840×2160 PNG（产物都不入库）。`mise run setup-build` 只看成品在不在：在就不重跑，
+不在才生成 SVG 并导出 PNG。
 
 ```bash
 cd ~/.local/share/wallpapers && python3 build_all.py && ./derive.sh
@@ -205,7 +207,8 @@ cd ~/.local/share/wallpapers && python3 build_all.py && ./derive.sh
 ### qb-open
 
 qutebrowser 的毫秒级启动器：往常驻 qb-server 的 IPC socket 写 JSON，不起 Python/Qt；
-server 没跑就回退冷启动。
+server 没跑就回退冷启动。`mise run setup-build` 编译的是 musl 静态版；成品 `qb-open`
+已存在就不重复编译。
 
 ```bash
 cd ~/.local/bin/scripts && make c-static   # 或 make c-dynamic
