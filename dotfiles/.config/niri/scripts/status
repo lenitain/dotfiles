@@ -13,7 +13,7 @@
 # 面板是快照，没有实时刷新：再按一次 MOD+SPACE 就是刷新（fuzzel-wrapper 先杀后开），
 # 时钟也会跟着重新取值。
 #
-# 第一行的录制读数是个开关：REC <时长> 表示正在录，回车就停（收尾转 MP4）；
+# 第一行的录制读数是个开关：REC 表示正在录，回车就停（收尾转 MP4）；
 # IDLE 表示没在录，回车就选区开录。
 
 set -u
@@ -230,12 +230,13 @@ idle() {
 }
 
 # 录制状态：判断交给 record 自己（它查的就是 gsr 进程），别在这里复制一份。
-# 输出 REC <时长> 或 IDLE；录制器没装时 record 不出声，这一行也就不出现。
+# record state 只回 REC / IDLE 两个记号，面板原样显示；不显示时长：面板要的
+# 是当前状态，不是录了多久。录制器没装时 record 不出声，这一行也就不出现。
 recording() {
     local state
     state=$("$dir/record" state 2>/dev/null) || return 0
     case $state in
-        REC*) printf '%s  %s\n' "$ICON_RECORD" "$state" ;;
+        REC) printf '%s  %s\n' "$ICON_RECORD" "$state" ;;
         IDLE) printf '%s  %s\n' "$ICON_VIDEO" "$state" ;;
     esac
 }
