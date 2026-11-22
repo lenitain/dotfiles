@@ -52,6 +52,7 @@ SCRIPT="$(readlink -f "$0")"
 pids_by_comm() {
     local d comm
     for d in /proc/[0-9]*; do
+        [[ -O $d ]] || continue
         read -r comm 2>/dev/null < "$d/comm" || continue
         [ "$comm" = "$1" ] && echo "${d#/proc/}"
     done
@@ -62,14 +63,18 @@ pids_by_comm() {
 # busctl 输出的元组是 a(ssssuu)：what who why mode uid pid，pid 是最后一个字段；
 # 用 what+who 双字段锚定，免得被别人 why 里的同名片段误匹配。
 inhibitor_pids() {
-    busctl --system call org.freedesktop.login1 /org/freedesktop/login1 \
-        org.freedesktop.login1.Manager ListInhibitors 2>/dev/null \
+    local out
+    out=$(busctl --system call org.freedesktop.login1 /org/freedesktop/login1 \
+        org.freedesktop.login1.Manager ListInhibitors 2>/dev/null) || return 1
+    printf '%s\n' "$out" \
         | grep -o "\"idle\" \"${WHO}\" \"[^\"]*\" \"[^\"]*\" [0-9][0-9]* [0-9][0-9]*" \
         | awk '{print $NF}'
 }
 
 state() {
-    if [ -n "$(inhibitor_pids)" ]; then
+    local pids
+    pids=$(inhibitor_pids) || return 1
+    if [ -n "$pids" ]; then
         echo "on"
     else
         echo "off"
@@ -78,10 +83,11 @@ state() {
 
 # 熄屏：swayidle 的 timeout 命令跑的就是它。
 # 熄不熄屏由这把锁决定 —— 锁在（常亮）就什么都不做；锁不在就照常熄屏。
+# 查询失败时选择不熄屏：宁可多亮一会儿，也不要因为 logind 抽风误熄屏。
 blank() {
-    if [ "$(state)" = "on" ]; then
-        return 0
-    fi
+    local current
+    current=$(state) || return 0
+    [ "$current" = on ] && return 0
     niri msg action power-off-monitors
 }
 
@@ -99,8 +105,24 @@ start_swayidle() {
     if [ -n "$(pids_by_comm swayidle)" ]; then
         return 0
     fi
-    niri msg action spawn -- swayidle -w timeout 300 "$SCRIPT blank" \
-        before-sleep "swaylock -f"
+    if ! command -v swayidle >/dev/null 2>&1; then
+        echo "idle-inhibit: 未找到 swayidle" >&2
+        return 1
+    fi
+    if ! niri msg action spawn -- swayidle -w timeout 300 "$SCRIPT blank" \
+            before-sleep "swaylock -f"; then
+        return 1
+    fi
+    # niri 的 spawn 在 fork 之前就返回 Ok，不等命令 exec；短暂确认一下。
+    # 没看到只告警不阻止挂锁：锁本身仍能保证“不熄屏”，
+    # 启动初期慢一拍不该让 on 整体失败。
+    local i
+    for i in {1..5}; do
+        [ -n "$(pids_by_comm swayidle)" ] && return 0
+        sleep 0.02
+    done
+    echo "idle-inhibit: swayidle 未在 100ms 内出现，继续挂锁" >&2
+    return 0
 }
 
 on() {
@@ -108,8 +130,12 @@ on() {
     start_swayidle || return 1
     # on = 确保锁在：已经开着就什么都不做，不叠第二条锁。幂等，
     # 所以 niri 开机那行可以无条件调。
-    if [ "$(state)" = "on" ]; then
-        return 0
+    local current
+    if current=$(state); then
+        [ "$current" = on ] && return 0
+    else
+        echo "idle-inhibit: 无法查询 logind 抑制器" >&2
+        return 1
     fi
     # 就绪握手：systemd-inhibit 的顺序是「先 Inhibit、再 fork/exec 命令」，
     # 所以 sh 里那句 echo ready 只可能在锁已拿到之后执行 —— 读到它就是
@@ -130,8 +156,11 @@ on() {
 
 off() {
     # 关闭抑制：一次清掉所有属于我们的抑制器（重复实例也收干净）
-    local pids pid
-    pids=$(inhibitor_pids)
+    local pids pid remaining
+    if ! pids=$(inhibitor_pids); then
+        echo "idle-inhibit: 无法查询 logind 抑制器" >&2
+        return 1
+    fi
     [ -n "$pids" ] || return 0
     printf '%s\n' "$pids" | xargs -r kill 2>/dev/null
     # 死亡确认：kill 成功投递 ≠ 已死。上限按墙钟毫秒算（EPOCHREALTIME 去掉
@@ -148,14 +177,23 @@ off() {
     # 锁摘没摘：以总线为准 —— 进程一退出 fd 就关，logind 随即删条目。
     # 还没摘掉就不硬改状态，交给 state 如实回答（面板上仍是「开」）
     while :; do
-        [ -z "$(inhibitor_pids)" ] && return 0
+        if ! remaining=$(inhibitor_pids); then
+            echo "idle-inhibit: 无法查询 logind 抑制器" >&2
+            return 1
+        fi
+        [ -z "$remaining" ] && return 0
         (( ${EPOCHREALTIME/[^0-9]/} >= deadline )) && return 1
         sleep 0.001
     done
 }
 
 toggle() {
-    if [ "$(state)" = "on" ]; then
+    local current
+    if ! current=$(state); then
+        echo "idle-inhibit: 无法查询 logind 抑制器" >&2
+        return 1
+    fi
+    if [ "$current" = on ]; then
         off
     else
         # on 失败已在内部收干净：state 仍是 off —— 面板上还是「关」，

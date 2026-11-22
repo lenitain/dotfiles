@@ -4,16 +4,17 @@
 # 子命令:
 #   record start   区域选择并开始录制
 #   record stop    停止当前录制（向录制进程发 SIGINT，等待其正常收尾）
-#   record state   只打印当前状态：REC 或 IDLE（状态面板读它）
+#   record state   只打印当前状态：REC / BUSY / IDLE（状态面板读它）
+#                  BUSY = 没有 gsr 进程但单例锁被占着（通常是停止后的 MP4 转封装）
 #   record toggle  在录就停、没录就开（状态面板那一行的回车动作）
 #
 # 单例语义:
 #   全局同一时刻只允许一个录制。已在录制时 `record start` 不做任何事，
 #   只提示"已在录制中"（绝不误停正在进行的录制）。
 #
-#   实现上不保存 PID：`stop` 每次现场扫描 /proc 按 exe 认定录制进程，
-#   输出路径也从该进程的 cmdline 反查。因此不存在状态文件陈旧、
-#   跨用户覆盖、PID 被复用后误杀等问题。
+#   实现上不保存 PID：`stop` 每次现场扫描 /proc，按 exe inode 认定录制进程
+#   （升级/卸载后用 comm + "<path> (deleted)" 回退），输出路径也从该进程的
+#   cmdline 反查。因此不存在状态文件陈旧、跨用户覆盖、PID 被复用后误杀等问题。
 #   并发保护由 flock 独占锁提供（两个 start 同时跑也只有一个能进入）。
 #
 # 流程:
@@ -34,6 +35,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib.sh"
 
 RECORD_DIR="$HOME/videos"
 mkdir -p "$RECORD_DIR"
@@ -75,17 +77,9 @@ SLURP_FMT="%wx%h+%x+%y"
 AUTO_CONVERT_TO_MP4="1"                   # 1=停止后自动转 MP4；0=只保留 MKV
 STOP_TIMEOUT_SEC=20                       # 等待录制进程收尾的最长秒数
 
-# 注意：下面两个函数以及录制器启动处都带 `9>&-`。
-# 那把单例锁占用 fd 9，而子进程默认会继承它 —— 只要有一个后台子进程攥着，
-# 锁在脚本退出后依然处于持有状态，后续的 start/stop 会被自己的闸门挡住。
-# （实测被 gsr 与 wl-copy 各泄漏过一次，故对这些调用点显式关闭。）
-notify() { notify-send "$1" "$2" 9>&- || true; }
-
-# 复制路径到剪贴板。
-# wl-copy 会 fork 一个后台进程持有剪贴板所有权，并继承调用者的 stdout/stderr。
-# 若不把两者全部重定向，该进程会一直攥着管道，导致 "record stop | 任何命令"、
-# 命令替换 $(record stop)、以及任何自动化调用永久挂起（实测 exit=124 超时）。
-copy_path() { printf '%s' "$1" | wl-copy >/dev/null 2>&1 9>&- || notify "复制失败" "无法写入剪贴板"; }
+# notify / copy_path / copy_stream 在 lib.sh 里，子进程都带 `9>&-`。
+# 单例锁占用 fd 9，gsr / notify-send / wl-copy 等后台子进程一旦继承并攥住它，
+# 锁会在脚本退出后继续被持有，后续 start/stop 就被自己的闸门挡死。
 
 # 前置检查：录制器是否可用（比"起录后才发现失败"体验好）
 require_recorder() {
@@ -106,34 +100,46 @@ require_recorder() {
 # 录制器路径：find_recorder 拿它跟 /proc/<pid>/exe 比对，必须是真实路径。
 # command -v 是 shell 内建（不 fork）；找不到就留空 —— 面板的录制行也就不出现。
 RECORDER_BIN="${RECORDER_BIN:-$(command -v gpu-screen-recorder || true)}"
+if [[ -n $RECORDER_BIN ]]; then
+    RECORDER_BIN="$(readlink -f -- "$RECORDER_BIN" 2>/dev/null || printf '%s' "$RECORDER_BIN")"
+fi
 
 find_recorder() {
-    local d
-    # 没装录制器时没什么可找的，直接回绝（否则下面的 readlink 兜底会把
-    # 整个 /proc 扫一遍，只为确认「没有」）
+    local d comm exe comm_name
     [[ -n $RECORDER_BIN ]] || return 1
-    # 用 bash 内建的 [[ -ef ]] 比较 inode（同一文件即视为同一程序）。
-    # 不要用 readlink：每次迭代都会 fork 一个外部进程，实测 352 个进程时
-    # 单次扫描要 1.1 秒；-ef 是内建判断，同样条件只要 5 毫秒（约 200 倍）。
-    #
-    # 仅在 -ef 不可用（例如本机没装该程序，无 inode 可比）时，
-    # 才回退到逐路径比较。两条路径都不会被进程的假名字骗到。
-    if [ -e "$RECORDER_BIN" ]; then
-        for d in /proc/[0-9]*; do
-            if [ -e "$d/exe" ] && [[ "$d/exe" -ef "$RECORDER_BIN" ]]; then
-                printf '%s\n' "${d#/proc/}"
-                return 0
-            fi
-        done
-    else
-        for d in /proc/[0-9]*; do
-            if [ "$(readlink -f "$d/exe" 2>/dev/null)" = "$RECORDER_BIN" ]; then
-                printf '%s\n' "${d#/proc/}"
-                return 0
-            fi
-        done
-    fi
+    # /proc/<pid>/comm 是 executable 的 basename，内核截断到 15 字节。
+    comm_name=${RECORDER_BIN##*/}
+    comm_name=${comm_name:0:15}
+
+    # 快路径：用 bash 内建的 [[ -ef ]] 比较 inode。不要逐进程 readlink，
+    # 实测 352 个进程时一次全扫要 1.1 秒；-ef 只要约 5ms。
+    for d in /proc/[0-9]*; do
+        [[ -O $d ]] || continue
+        if [ -e "$d/exe" ] && [[ "$d/exe" -ef "$RECORDER_BIN" ]]; then
+            printf '%s\n' "${d#/proc/}"
+            return 0
+        fi
+    done
+
+    # 升级/卸载录制器时，正在录的进程仍指向旧 inode，/proc/<pid>/exe 变成
+    # "<path> (deleted)"。先按 comm 预筛，只对候选进程 readlink，
+    # 避免空闲时全量 fork。
+    for d in /proc/[0-9]*; do
+        [[ -O $d ]] || continue
+        read -r comm 2>/dev/null < "$d/comm" || continue
+        [[ $comm == "$comm_name" ]] || continue
+        exe=$(readlink "$d/exe" 2>/dev/null) || continue
+        [[ ${exe% (deleted)} == "$RECORDER_BIN" ]] || continue
+        printf '%s\n' "${d#/proc/}"
+        return 0
+    done
     return 1
+}
+
+# 单例锁被占但找不到 gsr：多半是 stop 正在 ffmpeg 转封装。
+recording_busy() {
+    command -v flock >/dev/null 2>&1 || return 1
+    ! flock -n "$LOCKFILE" true 2>/dev/null
 }
 
 # 从进程的 cmdline 取 -o 的输出路径（录制器启动后命令行就固定了）
@@ -144,6 +150,24 @@ recorder_output_path() {
 do_start() {
     require_recorder
 
+    # 已在录制则拒绝，绝不误停正在进行的录制
+    local existing
+    if existing="$(find_recorder)"; then
+        notify "录屏提示" "已在录制中（PID ${existing}）；如需重录请先 record stop"
+        exit 0
+    fi
+    if recording_busy; then
+        notify "录屏提示" "上一段录制仍在处理中（MP4 转封装），请稍后再试"
+        echo "上一段录制仍在处理中" >&2
+        exit 0
+    fi
+
+    # 框选放到临界区外：flock 一旦跨过用户交互，stop / 重新框选都会被挡住。
+    # 两个 start 同时框选时，后一个的 slurp-wrapper 会杀掉前一个，前者拿到空选区退出。
+    local geom
+    geom="$("$SCRIPT_DIR/slurp-wrapper" -f "$SLURP_FMT")" || exit 1
+    [ -n "$geom" ] || exit 0
+
     # 单例闸门：flock 独占锁。即使两个 start 并发也只有一个能进入临界区。
     # 用 -w 3（最多等 3 秒）而不是 -n：并发时让后来者短暂等待而不是直接失败。
     exec 9>"$LOCKFILE"
@@ -153,24 +177,17 @@ do_start() {
         exit 0
     fi
 
-    # 严格单例：已在录制则拒绝，绝不误停正在进行的录制
-    local existing
+    # 框选期间可能已有别的 start 抢先，进锁后复查一次
     if existing="$(find_recorder)"; then
         notify "录屏提示" "已在录制中（PID ${existing}）；如需重录请先 record stop"
         exit 0
     fi
 
-    # 区域框选（经 wrapper：单实例，先杀后开）
-    GEOM="$("$SCRIPT_DIR/slurp-wrapper" -f "$SLURP_FMT")" || exit 1
-    if [ -z "${GEOM:-}" ]; then
-        # 用户按 Esc 取消框选
-        exit 0
-    fi
-
-    FILENAME="$RECORD_DIR/Record_$(date +%Y%m%d_%H%M%S).mkv"
+    local filename
+    filename="$RECORD_DIR/Record_$(date +%Y%m%d_%H%M%S).mkv"
 
     # 组装参数。区域直接作为 -w 的值传入；-region 已被上游标记为 deprecated。
-    ARGS=(-w "$GEOM"
+    local -a args=(-w "$geom"
           -k "$VIDEO_CODEC"
           -q "$QUALITY_PRESET"
           -bm "$BITRATE_MODE"
@@ -179,35 +196,35 @@ do_start() {
           -a "$AUDIO_SOURCE"
           -cursor "$CAPTURE_CURSOR"
           -fallback-cpu-encoding "$FALLBACK_CPU"
-          -o "$FILENAME")
+          -o "$filename")
 
     # 录制器的 stderr 落日志：启动即失败时（编码器不可用/区域非法/音频设备缺失）
     # 否则用户只会看到一句"启动失败"，无从排查。
-    #
-    # 9>&- 至关重要：必须让子进程关闭继承来的锁 fd。
-    # 否则 gsr 会一直攥着 flock，锁在 start 返回后永不释放，
-    # 之后的 record stop 会被自己的闸门挡在门外（实测踩过）。
+    # 9>&- 让 gsr 关闭继承来的锁 fd，否则锁会被它攥到进程退出。
     local logfile="${XDG_RUNTIME_DIR:-/tmp}/record.log"
-    gpu-screen-recorder "${ARGS[@]}" >"$logfile" 2>&1 9>&- &
-    WF_PID=$!
+    "$RECORDER_BIN" "${args[@]}" >"$logfile" 2>&1 9>&- &
+    local wf_pid=$!
 
     # 启动很快失败时明确报错，而不是留下一个"看起来在录"的假象
     sleep 1
-    if ! kill -0 "$WF_PID" 2>/dev/null; then
-        wait "$WF_PID" 2>/dev/null || true
+    if ! kill -0 "$wf_pid" 2>/dev/null; then
+        wait "$wf_pid" 2>/dev/null || true
         local reason
-        reason="$(grep -iE 'error|fail|not supported|missing' "$logfile" 2>/dev/null | head -2 | tr '\n' ' ')"
+        # 没匹配到关键词时 grep 退出 1；pipefail + set -e 不能让错误提示本身把脚本带走。
+        reason="$(grep -iE 'error|fail|not supported|missing' "$logfile" 2>/dev/null \
+            | head -2 | tr '\n' ' ' || true)"
         notify "录屏失败" "${reason:-录制进程启动即退出（详见 $logfile）}"
         echo "录屏失败: ${reason:-启动即退出}" >&2
         echo "完整日志: $logfile" >&2
         exit 1
     fi
 
-    notify "录屏开始" "区域录制（$VIDEO_CODEC/$QUALITY_PRESET 硬编）：$FILENAME"
+    notify "录屏开始" "区域录制（$VIDEO_CODEC/$QUALITY_PRESET 硬编）：$filename"
 }
 
 do_stop() {
-    require_recorder
+    # 不要求 RECORDER_BIN 当前仍可执行：录制中卸载/升级了录制器时，
+    # 仍需靠 find_recorder 的 comm/path 回退找到并停掉旧进程。
 
     # 单例闸门（与 start 共用同一把锁）。start 的临界区很短（约 1 秒），
     # 所以这里短暂等待即可，避免"恰好撞上 start 就静默不干活"。
@@ -229,7 +246,7 @@ do_stop() {
     # 输出路径取自进程自己的 cmdline —— 这是最可信的来源，
     # 因为它就是录制器真正写文件用的那个路径。
     local REC_FILE
-    REC_FILE="$(recorder_output_path "$PID")"
+    REC_FILE="$(recorder_output_path "$PID" || true)"
     if [ -z "$REC_FILE" ]; then
         notify "录屏停止异常" "无法从进程 ${PID} 的 cmdline 读取输出路径"
         exit 1
@@ -276,35 +293,45 @@ do_stop() {
     if ffmpeg -hide_banner -loglevel error -y \
             -i "$REC_FILE" -c:v copy -c:a aac -movflags +faststart -f mp4 "$part"; then
         mv "$part" "$final"
-        copy_path "$final"
+        copy_path "$final" || true
         notify "录屏已保存" "$final"
         exit 0
     else
         rm -f "$part"
-        copy_path "$REC_FILE"
+        copy_path "$REC_FILE" || true
         notify "自动转换失败" "已保留原始录像：$REC_FILE"
         exit 1
     fi
 }
 
-# 状态面板读它：正在录 → "REC"，没在录 → "IDLE"。时长不报：面板要的是
-# 当前状态，不是录了多久。
-# 录制器没装时什么都不输出：面板上那一行直接不出现，
-# 与其余读数「取不到就不占位置」的规矩一致。
+# 状态面板读它：正在录 → "REC"，转封装中 → "BUSY"，没在录 → "IDLE"。
+# 时长不报：面板要的是当前状态，不是录了多久。
+# 录制器没装且没有进行中的录制时什么都不输出：面板上那一行不出现。
 do_state() {
-    [[ -n $RECORDER_BIN && -e $RECORDER_BIN ]] || exit 0
+    [[ -n $RECORDER_BIN ]] || exit 0
     if find_recorder >/dev/null; then
         printf 'REC\n'
-    else
+        return
+    fi
+    if recording_busy; then
+        printf 'BUSY\n'
+        return
+    fi
+    if [[ -e $RECORDER_BIN ]]; then
         printf 'IDLE\n'
     fi
 }
 
-# 状态面板那一行的回车动作：在录就停（收尾并转封装），没录就选区开录。
-# 判定仍由 find_recorder 给，与 start/stop 用的是同一份事实。
+# 状态面板那一行的回车动作：在录就停（收尾并转封装），转封装中就先别开新录制，
+# 没录就选区开录。判定仍由 find_recorder / recording_busy 给，与 start/stop
+# 用的是同一份事实。
 do_toggle() {
     if find_recorder >/dev/null; then
         do_stop
+    elif recording_busy; then
+        notify "录屏提示" "上一段录制仍在处理中（MP4 转封装），请稍后再试"
+        echo "上一段录制仍在处理中" >&2
+        exit 0
     else
         do_start
     fi

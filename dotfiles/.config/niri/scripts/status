@@ -1,6 +1,4 @@
 #!/bin/bash
-# 状态面板：在 fuzzel 里看系统状态快照。取代原先「只在 overview 出现的 waybar」。
-#
 # 宽度 / 行数 / 排序 / namespace 这些跟用途走的项在
 # ~/.config/fuzzel/status.ini（和启动器、剪贴板共用 common.ini 的主题）；
 # 这里只管两件事：凑出读数，再把选中行翻译成动作。
@@ -14,6 +12,7 @@
 # 时钟也会跟着重新取值。
 #
 # 第一行的录制读数是个开关：REC 表示正在录，回车就停（收尾转 MP4）；
+# BUSY 表示停止后的转封装还没结束，此时回车只提示稍后再试；
 # IDLE 表示没在录，回车就选区开录。
 
 set -u
@@ -23,7 +22,14 @@ export LC_TIME=C
 
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-BAT=/sys/class/power_supply/BAT1
+# 电池路径按 type 识别，不写死 BAT1；没电池的机器上 battery() 直接不出行。
+BAT=
+for d in /sys/class/power_supply/*; do
+    [[ -r $d/type ]] || continue
+    [[ $(<"$d/type") == Battery ]] || continue
+    BAT=$d
+    break
+done
 
 # 图标：Nerd Font 字形（Maple Mono NF CN 自带）。每行读数的第一个字符就是图标，
 # 图标列对齐成一条竖线，扫一眼就知道这一行是什么，不用逐字读。
@@ -49,12 +55,16 @@ ICON_BATTERY=(󰁺 󰁼 󰁾 󰂀 󰂂)
 ICON_CHARGING=󰂄
 
 # AC 适配器通没通电：sysfs 的 online。适配器名字各机不同
-# （AC / AC0 / ACAD…），glob 找带 online 的那个；多路适配器任一路通电即算接通。
+# （AC / AC0 / ACAD / ADP1…），所以按 type 找 Mains/USB；多路适配器任一路通电即算接通。
 ac_online() {
-    local file online
-    for file in /sys/class/power_supply/AC*/online; do
+    local file power_dir kind online
+    for file in /sys/class/power_supply/*/online; do
         [[ -r $file ]] || continue
-        read -r online < "$file"
+        power_dir=${file%/online}
+        [[ -r $power_dir/type ]] || continue
+        read -r kind < "$power_dir/type" || continue
+        [[ $kind == Mains || $kind == USB ]] || continue
+        read -r online < "$file" || continue
         [[ $online == 1 ]] && return 0
     done
     return 1
@@ -65,13 +75,16 @@ ac_online() {
 # 图标列的位置不随状态跳动。「在不在充」不看图标（设了充电上限时插着电也是
 # Not charging），接没接电由图标自己说。
 battery() {
-    local cap icon
-    [[ -r $BAT/capacity ]] || return 0
-    read -r cap < "$BAT/capacity"
+    local cap icon index
+    [[ -n $BAT && -r $BAT/capacity ]] || return 0
+    read -r cap < "$BAT/capacity" || return 0
+    [[ $cap =~ ^[0-9]+$ ]] || return 0
     if ac_online; then
         icon=$ICON_CHARGING
     else
-        icon=${ICON_BATTERY[cap * 5 / 101]}
+        index=$((10#$cap * 5 / 101))
+        ((index > 4)) && index=4
+        icon=${ICON_BATTERY[index]}
     fi
     printf '%s  %d%%\n' "$icon" "$cap"
 }
@@ -86,6 +99,8 @@ volume() {
     fi
     # "Volume: 0.36" → 36：去掉小数点就是百分数，10# 防止 036 被当八进制
     out=${out#Volume: }
+    out=${out// /}
+    [[ $out =~ ^[0-9]+(\.[0-9]+)?$ ]] || return 0
     pct=$((10#${out/./}))
     if ((pct == 0)); then
         printf '%s  0%%\n' "$ICON_VOLUME_ZERO"
@@ -150,6 +165,7 @@ brightness() {
 output_names() {
     niri msg --json outputs 2>/dev/null | jq -r '
         to_entries
+        | map(select(.value.logical != null))
         | sort_by([(.value.logical.y // 0), (.value.logical.x // 0)])
         | .[].key'
 }
@@ -177,8 +193,9 @@ backlight_pct() {
 # DRM connector → I2C 总线，只收 DDC/CI 说得通的屏。
 # 笔记本内屏会被 detect 判成 "Invalid display"（它根本没有 DDC/CI），那一块跳过。
 # stdin 接 /dev/null：ddcutil 在该问用户选屏时会等输入，接了终端就卡住。
+# 加 timeout：坏线/休眠中的外接屏能让 DDC/CI 探测卡很久，面板不能跟着卡住。
 ddc_buses() {
-    ddcutil detect --brief </dev/null 2>/dev/null | awk -F': *' '
+    timeout 2 ddcutil detect --brief </dev/null 2>/dev/null | awk -F': *' '
         /^Invalid display/ { valid = 0; next }
         /^Display / { valid = 1; next }
         /^ *I2C bus:/ { bus = $2; sub(/[ \t]+$/, "", bus) }
@@ -196,7 +213,7 @@ ddc_buses() {
 ddc_pct() {
     local out value max
     [[ -n ${1-} ]] || return 1
-    out=$(ddcutil getvcp 4 --bus "$1" </dev/null 2>/dev/null) || return 1
+    out=$(timeout 1 ddcutil getvcp 4 --bus "$1" </dev/null 2>/dev/null) || return 1
     value=${out##*current value = }
     value=${value%%,*}
     max=${out##*max value = }
@@ -229,14 +246,16 @@ idle() {
     esac
 }
 
-# 录制状态：判断交给 record 自己（它查的就是 gsr 进程），别在这里复制一份。
-# record state 只回 REC / IDLE 两个记号，面板原样显示；不显示时长：面板要的
-# 是当前状态，不是录了多久。录制器没装时 record 不出声，这一行也就不出现。
+# 录制状态：判断交给 record 自己（它查 gsr 进程、单例锁），别在这里复制一份。
+# record state 只回 REC / BUSY / IDLE；BUSY 是停止后的 MP4 转封装还没结束。
+# 不显示时长：面板要的是当前状态，不是录了多久。录制器没装时 record 不出声，
+# 这一行也就不出现。
 recording() {
     local state
     state=$("$dir/record" state 2>/dev/null) || return 0
     case $state in
         REC) printf '%s  %s\n' "$ICON_RECORD" "$state" ;;
+        BUSY) printf '%s  %s\n' "$ICON_VIDEO" "$state" ;;
         IDLE) printf '%s  %s\n' "$ICON_VIDEO" "$state" ;;
     esac
 }

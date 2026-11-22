@@ -1,6 +1,7 @@
 #!/bin/bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib.sh"
 
 REGION=$("$SCRIPT_DIR/slurp-wrapper")
 if [ -z "$REGION" ]; then
@@ -9,7 +10,11 @@ fi
 
 TMP=$(mktemp /tmp/ocr_XXXXXX)
 grim -g "$REGION" "$TMP"
-TEXT=$(tesseract "$TMP" stdout -l chi_sim+eng 2>/dev/null | xargs)
+# 不能用 xargs：它把引号/反斜杠当语法，OCR 文本里一个撇号就会让整段输出丢失。
+TEXT=$(tesseract "$TMP" stdout -l chi_sim+eng 2>/dev/null \
+    | tr -s '[:space:]' ' ')
+TEXT=${TEXT# }
+TEXT=${TEXT% }
 rm -f "$TMP"
 
 if [ -z "$TEXT" ]; then
@@ -17,5 +22,6 @@ if [ -z "$TEXT" ]; then
   exit 1
 fi
 
-echo -n "$TEXT" | wl-copy
-notify-send "OCR(copied to clipboard): " "${TEXT}"
+if copy_path "$TEXT"; then
+  notify-send "OCR(copied to clipboard): " "${TEXT}"
+fi

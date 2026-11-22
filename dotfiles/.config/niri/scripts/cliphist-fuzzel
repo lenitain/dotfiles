@@ -14,11 +14,12 @@
 # 历史为空时同样弹出空窗口，否则 fuzzel 收到空输入会直接退出，
 # 按键看起来就像"完全没反应"。
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib.sh"
 selected=$(cliphist list | "$SCRIPT_DIR/fuzzel-wrapper" \
     --config="${XDG_CONFIG_HOME:-$HOME/.config}/fuzzel/clipboard.ini" \
-    --dmenu --prompt="Clipboard " --with-nth=2)
+    --dmenu --prompt="Clipboard " --with-nth=2 --only-match)
 
 if [ -n "$selected" ]; then
   # 直接用选中的完整行(包含ID)进行decode
-  echo "$selected" | cliphist decode | wl-copy
+  printf '%s\n' "$selected" | cliphist decode | copy_stream
 fi

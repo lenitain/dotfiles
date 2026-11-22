@@ -14,6 +14,11 @@
 -- 贴边用的是 toggle，而 IPC 里没有 is_maximized 字段；贴边时边框被吃掉，
 -- window_offset_in_tile 从边框宽度变成 0 —— 用这个布尔值挡掉已经贴边的窗口，
 -- 所以连按 Mod+F 只会保持铺满，不会缩回去。
+-- 前提是 layout.border 非 off / width 非 0；否则普通窗口的 offset 也是 0，
+-- 与贴边不可区分。本配置 border on / width 1。
+--
+-- MaximizeWindowToEdges 是 toggle：普通多窗口列会被 niri 拆成一列一个窗口再最大化，
+-- 标签列则整列一起最大化。fill 因此逐窗口处理并重新统计；宽度预设才按列去重。
 
 local ffi = require("ffi")
 
@@ -28,9 +33,22 @@ struct sockaddr_un {
     unsigned short sun_family;
     char sun_path[108];
 };
+
+struct timespec {
+    long tv_sec;
+    long tv_nsec;
+};
+int nanosleep(const struct timespec *, struct timespec *);
 ]]
 
 local AF_UNIX, SOCK_STREAM = 1, 1
+
+local function sleep_ms(ms)
+    local ts = ffi.new("struct timespec")
+    ts.tv_sec = 0
+    ts.tv_nsec = ms * 1000000
+    ffi.C.nanosleep(ts, nil)
+end
 
 local function die(msg)
     io.stderr:write("resize-workspace: ", msg, "\n")
@@ -105,6 +123,71 @@ local function objects(json)
     return result
 end
 
+-- 取字段值，跳过字符串里的内容（标题里出现 "is_floating":false 这种字面量时不误判）。
+-- 只处理本脚本用到的取值：数字、true/false、数组。
+local function value_at(json, i)
+    local c = json:sub(i, i)
+    if c == '"' then
+        local j, escaped = i + 1, false
+        while j <= #json do
+            local d = json:sub(j, j)
+            if escaped then escaped = false
+            elseif d == "\\" then escaped = true
+            elseif d == '"' then return json:sub(i + 1, j - 1) end
+            j = j + 1
+        end
+    elseif c == "[" or c == "{" then
+        local open, close = c, c == "[" and "]" or "}"
+        local depth, in_string, escaped = 0, false, false
+        local j = i
+        while j <= #json do
+            local d = json:sub(j, j)
+            if in_string then
+                if escaped then escaped = false
+                elseif d == "\\" then escaped = true
+                elseif d == '"' then in_string = false end
+            elseif d == '"' then in_string = true
+            elseif d == open then depth = depth + 1
+            elseif d == close then
+                depth = depth - 1
+                if depth == 0 then return json:sub(i, j) end
+            end
+            j = j + 1
+        end
+    else
+        local j = i
+        while j <= #json and not json:sub(j, j):match("[,}%]]") do j = j + 1 end
+        return json:sub(i, j - 1)
+    end
+end
+
+local function field(json, name)
+    local key = '"' .. name .. '"'
+    local in_string, escaped = false, false
+    local i = 1
+    while i <= #json do
+        local c = json:sub(i, i)
+        if in_string then
+            if escaped then escaped = false
+            elseif c == "\\" then escaped = true
+            elseif c == '"' then in_string = false end
+        elseif c == '"' and json:sub(i, i + #key - 1) == key then
+            local j = i + #key
+            while json:sub(j, j):match("%s") do j = j + 1 end
+            if json:sub(j, j) == ":" then
+                j = j + 1
+                while json:sub(j, j):match("%s") do j = j + 1 end
+                return value_at(json, j)
+            end
+            in_string = true
+        elseif c == '"' then
+            in_string = true
+        end
+        i = i + 1
+    end
+    return nil
+end
+
 local function query(name)
     local payload, err = request('"' .. name .. '"')
     if not payload then die(name .. " 请求失败: " .. err) end
@@ -115,39 +198,81 @@ end
 
 local focused_ws
 for _, workspace in ipairs(query("Workspaces")) do
-    if workspace:find('"is_focused":true', 1, true) then
-        focused_ws = tonumber(workspace:match('"id":(%d+)'))
+    if field(workspace, "is_focused") == "true" then
+        focused_ws = tonumber(field(workspace, "id"))
         break
     end
 end
 if not focused_ws then die("找不到聚焦工作区") end
 
-local targets, columns = {}, {}
-for _, window in ipairs(query("Windows")) do
-    local id = tonumber(window:match('"id":(%d+)'))
-    local ws = tonumber(window:match('"workspace_id":(%d+)'))
-    if id and ws == focused_ws and window:find('"is_floating":false', 1, true) then
-        if mode == "fill" then
-            local offset = tonumber(window:match('"window_offset_in_tile":%[([^,]+),'))
-            if offset and offset ~= 0 then targets[#targets + 1] = id end
-        else
-            -- 宽度是每列一份，同一列只发一次
-            local column = window:match('"pos_in_scrolling_layout":%[(%d+),') or id
+-- 统计工作区里还没贴边的平铺窗口，返回第一个 id 和总数。
+local function fill_state(workspace_id)
+    local target, count = nil, 0
+    for _, window in ipairs(query("Windows")) do
+        local id = tonumber(field(window, "id"))
+        local ws = tonumber(field(window, "workspace_id"))
+        if id and ws == workspace_id and field(window, "is_floating") == "false" then
+            local offset = tonumber((field(window, "window_offset_in_tile") or ""):match("%[%s*([^,]+),"))
+            if offset and offset ~= 0 then
+                count = count + 1
+                if not target then target = id end
+            end
+        end
+    end
+    return target, count
+end
+
+-- MaximizeWindowToEdges 是 toggle：普通多窗口列会被 niri 拆成一列一个窗口再最大化，
+-- 标签列则整列一起最大化。所以不能简单按列去重（会漏掉堆叠窗口），
+-- 也不能对每个窗口盲发（标签列会被第二次请求取消）。
+-- 每次只处理一个窗口，动作后重新统计，直到没有未贴边的窗口。
+local function fill_workspace(workspace_id)
+    local attempts = 0
+    while attempts < 128 do
+        local target, before = fill_state(workspace_id)
+        if not target then return end
+        local _, err = request('{"Action":{"MaximizeWindowToEdges":{"id":' .. target .. '}}}')
+        if err then
+            io.stderr:write("resize-workspace: ", err, "\n")
+            return
+        end
+        -- niri 的 action 回复早于布局事务落地，立刻查会看到旧 offset。
+        -- 最多等 200ms，看到未贴边数量下降再处理下一个窗口。
+        local after = before
+        for _ = 1, 20 do
+            _, after = fill_state(workspace_id)
+            if after < before then break end
+            sleep_ms(10)
+        end
+        if after >= before then
+            io.stderr:write("resize-workspace: fill 未生效，可能有全屏/固定尺寸窗口\n")
+            return
+        end
+        attempts = attempts + 1
+    end
+    io.stderr:write("resize-workspace: fill 迭代次数过多\n")
+end
+
+if mode == "fill" then
+    fill_workspace(focused_ws)
+else
+    -- 宽度是每列一份，同一列只发一次；标题里的字面量不会被 field 命中
+    local targets, columns = {}, {}
+    for _, window in ipairs(query("Windows")) do
+        local id = tonumber(field(window, "id"))
+        local ws = tonumber(field(window, "workspace_id"))
+        if id and ws == focused_ws and field(window, "is_floating") == "false" then
+            local column = (field(window, "pos_in_scrolling_layout") or ""):match("%[(%d+),") or id
             if not columns[column] then
                 columns[column] = true
                 targets[#targets + 1] = id
             end
         end
     end
-end
 
-for _, id in ipairs(targets) do
-    local err
-    if mode == "fill" then
-        _, err = request('{"Action":{"MaximizeWindowToEdges":{"id":' .. id .. '}}}')
-    else
-        _, err = request('{"Action":{"SetWindowWidth":{"id":' .. id ..
+    for _, id in ipairs(targets) do
+        local _, err = request('{"Action":{"SetWindowWidth":{"id":' .. id ..
             ',"change":{"SetProportion":' .. proportion .. '}}}}')
+        if err then io.stderr:write("resize-workspace: ", err, "\n") end
     end
-    if err then io.stderr:write("resize-workspace: ", err, "\n") end
 end

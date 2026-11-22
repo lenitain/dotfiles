@@ -4,8 +4,11 @@
 # 保存后直接使用 satty 输出的 PNG（satty 无压缩等级选项，无额外工具链）
 #
 # 通知归属: satty 自带的 save/copy 通知文案是硬编码英文且无法配置, 故用
-# --disable-notifications 让它闭嘴, 通知统一由本脚本 notify() 发出(格式对齐 record)。
+# --disable-notifications 让它闭嘴, 通知统一由共享 lib.sh 的 notify() 发出。
 # 代价: 按 satty 的「复制」按钮(图片进剪贴板但不落盘)时不再有通知。
+#
+# 保存检测范围: ~/pictures 下的 PNG（含 Screenshots 及子目录）。satty 不回传
+# 对话框里最终选择的路径，所以存到 ~/pictures 之外时仍只能静默保存。
 #
 # 用法:
 #   screenshot     # 区域选择（slurp 框选）
@@ -13,27 +16,18 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib.sh"
 
-SCREENSHOT_DIR="$HOME/pictures/Screenshots"
+PICTURES_DIR="$HOME/pictures"
+SCREENSHOT_DIR="$PICTURES_DIR/Screenshots"
 mkdir -p "$SCREENSHOT_DIR"
 
-# 通知统一入口，与 record 的 notify() 同名同构，第三个参数为可选图标。
-# || true 是必需的：本脚本开了 set -euo pipefail，notify-send 失败
-# （mako 未运行 / D-Bus 抽风）会让整个脚本非零退出；
-# 但通知纯属提示，不该因此把「截图已成功」变成失败。
-notify() {
-    local -a args=("$1" "$2")
-    [ -n "${3:-}" ] && args+=("-i" "$3")
-    notify-send "${args[@]}" || true
+# 目录指纹：完整路径 + mtime + 字节数。用于判定「哪个文件是本次 satty 写下的」，
+# 详见下方 SAVED 的求取。扫描整个 ~/pictures，覆盖用户在对话框里换到同级目录的情况。
+snapshot() {
+    find "$PICTURES_DIR" -maxdepth 3 -type f -name '*.png' \
+        -printf '%p\t%T@\t%s\n' 2>/dev/null | sort
 }
-
-# 复制文件路径到剪贴板。必须重定向：wl-copy 会 fork 后台进程继承 stdout/stderr，
-# 不重定向它会一直攥着管道，使 "screenshot | 任何命令" 永久挂起。
-copy_path() { printf '%s' "$1" | wl-copy >/dev/null 2>&1 || notify "复制失败" "无法写入剪贴板"; }
-
-# 目录指纹：文件名 + mtime + 字节数。用于判定「哪个文件是本次 satty 写下的」，
-# 详见下方 SAVED 的求取。
-snapshot() { find "$SCREENSHOT_DIR" -maxdepth 1 -name '*.png' -printf '%f\t%T@\t%s\n' 2>/dev/null | sort; }
 
 # 生成默认文件名（satty 里可再改保存位置）
 FILENAME="$SCREENSHOT_DIR/Screenshot_$(date +%Y%m%d_%H%M%S).png"
@@ -61,14 +55,14 @@ grim -g "$GEOM" - | satty --filename - --fullscreen --output-filename "$FILENAME
 #
 # --early-exit 保证 satty 存一次就退出，理论上至多命中一个；保险起见只取第一个。
 SAVED=""
-while IFS=$'\t' read -r name _rest; do
-    [ -n "$name" ] || continue
-    SAVED="$SCREENSHOT_DIR/$name"
+while IFS=$'\t' read -r path _; do
+    [ -n "$path" ] || continue
+    SAVED="$path"
     break
 done < <(snapshot | comm -13 <(printf '%s\n' "$BEFORE") -)
 
 # satty 直接输出的 PNG 即最终文件（satty 用 image crate 默认压缩级别保存，无更高压缩选项）
 if [ -n "$SAVED" ]; then
-    copy_path "$SAVED"
+    copy_path "$SAVED" || true
     notify "截图已保存" "$SAVED" "$SAVED"
 fi
