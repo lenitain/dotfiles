@@ -26,6 +26,7 @@ xray/inventory.yml
 #     新增要跟踪的文件时, 在下面加一条 !dotfiles/.pig/agent/<文件>
 dotfiles/.pig/**
 !dotfiles/.pig/agent/
+!dotfiles/.pig/agent/bin/
 !dotfiles/.pig/agent/AGENTS.md
 !dotfiles/.pig/agent/mcp.json
 !dotfiles/.pig/agent/models.json
