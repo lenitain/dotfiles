@@ -1,5 +1,5 @@
 #!/bin/bash
-# 熄屏抑制开关。状态面板（status-panel）里的一行读数，选中即切换；
+# 熄屏抑制开关。状态面板（status）里的一行读数，选中即切换；
 # niri 开机的 spawn-at-startup 也调它（on），保证每次开机都是常亮起点。
 #   注意：niri 侧 idle 只熄屏、从不锁屏（只有合盖和 before-sleep 才 swaylock），
 #   所以这个开关的语义是「不熄屏」，不是「不锁屏」。

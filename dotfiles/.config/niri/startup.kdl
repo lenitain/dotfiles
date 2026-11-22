@@ -1,6 +1,10 @@
 // Startup commands
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
 spawn-at-startup "~/.config/niri/scripts/idle-inhibit" "on"
+// 托盘：会话总线上得有人挂着 org.kde.StatusNotifierWatcher，应用才会上报自己的
+// 托盘图标（QQ 那种不挂就什么都不说）。它不画图标，只把「谁有托盘图标」报出来，
+// 状态面板（MOD+SPACE）据此在最下面列出托盘项。
+spawn-at-startup "~/.config/niri/scripts/sni-watcher"
 spawn-at-startup "foot" "--server"
 spawn-sh-at-startup "swaybg -i \"$HOME/.local/share/wallpapers/starry-night-sky.png\""
 prefer-no-csd

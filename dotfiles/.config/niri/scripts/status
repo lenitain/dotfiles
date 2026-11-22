@@ -5,13 +5,16 @@
 # ~/.config/fuzzel/status.ini（和启动器、剪贴板共用 common.ini 的主题）；
 # 这里只管两件事：凑出读数，再把选中行翻译成动作。
 #
-# 每行两列，tab 分隔：第 1 列是读数，第 2 列是回车时执行的动作（可空）。
+# 每行两列，tab 分隔：第 1 列是读数（多数以图标开头），第 2 列是回车时执行的动作（可空）。
 #   --with-nth=1     只显示读数列
 #   --accept-nth=2   回车只回报动作名 —— 读数怎么排版、带什么空格符号，
 #                    都进不了 shell，也就不需要转义
 #   --only-match     打到不匹配的字符串时，回车不给「把输入原样返回」的出口
 # 面板是快照，没有实时刷新：再按一次 MOD+SPACE 就是刷新（fuzzel-wrapper 先杀后开），
 # 时钟也会跟着重新取值。
+#
+# 最下面一段是托盘：谁注册了托盘图标（QQ、输入法……）就列一行，行数跟着走 ——
+# 面板几行就显示几行，不写死。
 
 set -u
 # %a 固定英文星期：本机 locale 是中文，会输出「六」；三字母宽度稳定，
@@ -22,47 +25,54 @@ dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 BAT=/sys/class/power_supply/BAT1
 
+# 图标：Nerd Font 字形（Maple Mono NF CN 自带）。每行读数的第一个字符就是图标，
+# 图标列对齐成一条竖线，扫一眼就知道这一行是什么，不用逐字读。
+ICON_CALENDAR=󰃭   # nf-md-calendar
+ICON_SUN=󰖨        # nf-md-white-balance-sunny
+ICON_LANGUAGE=󰗊   # nf-md-translate
+ICON_MONITOR=󰍹    # nf-md-monitor
+# 工作区：3×3 的方块 —— 工作区切换器的老记号（一个方块一个工作区）
+ICON_WORKSPACE=󰀻  # nf-md-apps
+# 音量统一用「大声」那档图标，音量大小交给百分数表达；静音另有一个
+ICON_VOLUME=󰕾
+# 音量为 0（但没静音）用「喇叭不出声」那档：没有波形，也不是静音那把斜杠，
+# 跟静音一眼分得开
+ICON_VOLUME_ZERO=󰕿
+ICON_MUTE=󰖁
+# 电量五档：10 / 30 / 50 / 70 / 90，充电另有一个
+ICON_BATTERY=(󰁺 󰁼 󰁾 󰂀 󰂂)
+ICON_CHARGING=󰂄
+
 # 电量：直接读 sysfs，一次 fork 都不花。充电/满电换成插头字形，与档位图标
-# 同宽，右边缘的位置不随状态跳动。
+# 同宽，图标列的位置不随状态跳动。
 battery() {
-    local cap status energy power secs icon
-    local icons=(󰁺 󰁼 󰁾 󰂀 󰂂)
+    local cap status icon
     [[ -r $BAT/capacity ]] || return 0
     read -r cap < "$BAT/capacity"
     read -r status < "$BAT/status"
     case $status in
-        Charging | Full) icon=󰂄 ;;
-        *) icon=${icons[cap * 5 / 101]} ;;
+        Charging | Full) icon=$ICON_CHARGING ;;
+        *) icon=${ICON_BATTERY[cap * 5 / 101]} ;;
     esac
-    if [[ $status != Charging && $status != Full && -r $BAT/energy_now && -r $BAT/power_now ]]; then
-        read -r energy < "$BAT/energy_now"
-        read -r power < "$BAT/power_now"
-        if ((power > 0)); then
-            # 按半小时取整：瞬时功率一直在跳，精确到分钟会让每次打开面板都
-            # 显示不一样的数字，读起来不像「状态」而像「噪声」。
-            secs=$(((energy * 3600 / power) / 1800 * 1800))
-            printf -v icon '%s · %dh%02d' "$icon" $((secs / 3600)) $((secs % 3600 / 60))
-        fi
-    fi
-    printf '%s%% %s\n' "$cap" "$icon"
+    printf '%s  %d%%\n' "$icon" "$cap"
 }
 
 # 音量：wpctl 一次 fork（实测 20ms，是面板里最贵的一项）。
 volume() {
-    local out pct icon
+    local out pct
     out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null) || return 0
     if [[ $out == *MUTED* ]]; then
-        printf '静音 󰖁\n'
+        printf '%s  Muted\n' "$ICON_MUTE"
         return
     fi
     # "Volume: 0.36" → 36：去掉小数点就是百分数，10# 防止 036 被当八进制
     out=${out#Volume: }
     pct=$((10#${out/./}))
-    if ((pct == 0)); then icon=󰕿
-    elif ((pct < 50)); then icon=󰖀
-    else icon=󰕾
+    if ((pct == 0)); then
+        printf '%s  0%%\n' "$ICON_VOLUME_ZERO"
+        return
     fi
-    printf '%d%% %s\n' "$pct" "$icon"
+    printf '%s  %d%%\n' "$ICON_VOLUME" "$pct"
 }
 
 # 亮度：两个后端，内置屏和外接显示器各走一条。
@@ -70,12 +80,9 @@ volume() {
 #   ddcutil       — DDC/CI（外接显示器；笔记本内屏不支持，detect 会明说）
 # 两个后端都没有可用设备时整行不出现。
 brightness() {
-    local pct icon
+    local pct
     pct=$(brightness_pct) || return 0
-    if ((pct < 30)); then icon=
-    else icon=
-    fi
-    printf '%d%% %s\n' "$pct" "$icon"
+    printf '%s  %d%%\n' "$ICON_SUN" "$pct"
 }
 
 # brightnessctl 的机器可读输出：device,class,value,percentage%,max。
@@ -139,22 +146,22 @@ brightness_pick() {
     local choice
     choice=$(printf '100%%\n75%%\n50%%\n25%%\n' | "$dir/fuzzel-wrapper" \
         --config="${XDG_CONFIG_HOME:-$HOME/.config}/fuzzel/status.ini" \
-        --dmenu --prompt='亮度  ' --with-nth=1 --only-match) || return 0
+        --dmenu --prompt="Brightness " --with-nth=1 --only-match) || return 0
     choice=${choice%%%}
     [[ $choice =~ ^[0-9]+$ ]] || return 0
     brightness_set "$choice" || return 0
-    notify-send "亮度" "$choice%" || true
+    notify-send "Brightness" "$choice%" || true
 }
 
 # 输入法：fcitx5-remote 只回 1/2（英/中）和组名（keyboard-us、rime…）。
-# 托盘没了以后，这里是「现在是中文还是英文」唯一的显示处。
+# 托盘那一段只写「输入法」三个字，看不出现在是中文还是英文 —— 这里是唯一的显示处。
 ime() {
     local on
     on=$(fcitx5-remote 2>/dev/null) || return 0
     if [[ $on == 2 ]]; then
-        printf '中 · %s\n' "$(fcitx5-remote -n)"
+        printf '%s  ZH · %s\n' "$ICON_LANGUAGE" "$(fcitx5-remote -n)"
     else
-        printf '英 · %s\n' "$(fcitx5-remote -n)"
+        printf '%s  EN · %s\n' "$ICON_LANGUAGE" "$(fcitx5-remote -n)"
     fi
 }
 
@@ -162,12 +169,73 @@ ime() {
 # 别在这里复制一份 logind 查询逻辑。输出只认 on / off 两种，别的一律不显示。
 idle() {
     case $("$dir/idle-inhibit" state 2>/dev/null) in
-        on) printf '熄屏抑制 · 开 󰍹\n' ;;
-        off) printf '熄屏抑制 · 关 󰍹\n' ;;
+        on) printf '%s  on\n' "$ICON_MONITOR" ;;
+        off) printf '%s  off\n' "$ICON_MONITOR" ;;
     esac
 }
 
-clock() { printf '%(%m-%d %a %H:%M)T\n' -1; }
+clock() { printf '%s  %(%m-%d %a %H:%M)T\n' "$ICON_CALENDAR" -1; }
+
+# 托盘：本机没有托盘宿主，托盘项由 sni-watcher 挂在总线上（见该脚本），
+# 这里去问它「现在谁注册了托盘图标」。每行一个托盘项：
+#   名字 <TAB> 总线名 <TAB> 对象路径 <TAB> 应用 id
+# 名字优先用应用自己报的 Title；QQ 那种只给图标不给名字的，按进程反查
+# desktop 文件里的 Name（com.qq.QQ -> QQ）。
+tray() {
+    "$dir/tray-items" 2>/dev/null
+}
+
+# 这个应用在 niri 里的窗口 id：先按 app_id 全等匹配，再退一步只比最后一段 ——
+# flatpak 的应用 id 是 com.qq.QQ，窗口报的 app_id 却只是 QQ。
+tray_window() {
+    local appid=${1-}
+    [[ -n $appid ]] || return 0
+    niri msg --json windows 2>/dev/null | jq -r --arg app "$appid" '
+        [ .[]
+          | select((.app_id | ascii_downcase) == ($app | ascii_downcase)
+                   or ((.app_id | split(".") | last | ascii_downcase)
+                       == ($app | split(".") | last | ascii_downcase))) ]
+        | .[0].id // empty'
+}
+
+# 回车：把这个托盘项的应用叫到前面来。
+# 先找它的窗口，找到就聚焦（QQ 的托盘项是个假图标，SNI 的 Activate 它不理，
+# 靠窗口才叫得动）；没有窗口的纯托盘程序才退回 Activate。
+tray_activate() {
+    local service=${1-} path=${2-} appid=${3-}
+    local window
+    window=$(tray_window "$appid")
+    if [[ -n $window ]]; then
+        niri msg action focus-window --id "$window" >/dev/null 2>&1 && return 0
+    fi
+    [[ -n $service && -n $path ]] || return 0
+    "$dir/tray-items" activate "$service" "$path" 2>/dev/null || true
+}
+
+# 工作区行：niri 的工作区号，当前所在的用方括号标出来。
+#
+# 本来想给当前的那个染成绿色，但 fuzzel 的正文整行只有一种字色：能上色的只有
+# 「被搜索词匹配上的字符」，而匹配的字符同时决定哪些行会被留下（实测预填
+# 当前工作区号会把其余读数全滤掉），两者没法兼得，只能另做个记号。
+workspaces() {
+    local list current numbers='' index
+    local -a indices=()
+    list=$(niri msg --json workspaces 2>/dev/null) || return 0
+    current=$(jq -r 'map(select(.is_focused)) | .[0].idx // empty' <<< "$list")
+    [[ -n $current ]] || return 0
+    mapfile -t indices < <(jq -r 'sort_by(.idx) | .[].idx' <<< "$list")
+    ((${#indices[@]})) || return 0
+
+    for index in "${indices[@]}"; do
+        [[ -n $numbers ]] && numbers+=' '
+        if [[ $index == "$current" ]]; then
+            numbers+="[$index]"
+        else
+            numbers+="$index"
+        fi
+    done
+    printf '%s  %s\n' "$ICON_WORKSPACE" "$numbers"
+}
 
 # 取不到读数就整行不出现：宁可少一行，也不要一行空白占着位置。
 row() {
@@ -176,12 +244,20 @@ row() {
 }
 
 snapshot() {
+    row "$(workspaces)"
     row "$(clock)"
     row "$(volume)" volume
     row "$(brightness)" brightness
+    row "$(idle)" idle
     row "$(battery)"
     row "$(ime)" ime
-    row "$(idle)" idle
+
+    # 托盘放在最后：谁有托盘图标谁就在最下面一行往下排
+    local name service path appid
+    while IFS=$'\t' read -r name service path appid; do
+        [[ -n $name ]] || continue
+        row "$name" "tray $service $path $appid"
+    done < <(tray)
 }
 
 # --print 只吐数据、不开窗，用来调试和核对读数。
@@ -192,11 +268,12 @@ fi
 
 action=$(snapshot | "$dir/fuzzel-wrapper" \
     --config="${XDG_CONFIG_HOME:-$HOME/.config}/fuzzel/status.ini" \
-    --dmenu --prompt='状态  ' --with-nth=1 --accept-nth=2 --only-match)
+    --dmenu --prompt="Status " --with-nth=1 --accept-nth=2 --only-match)
 
 case $action in
     volume) niri msg action spawn -- pavucontrol ;;
     brightness) brightness_pick ;;
     ime) fcitx5-remote -t ;;
     idle) "$dir/idle-inhibit" toggle ;;
+    tray\ *) tray_activate ${action#tray } ;;
 esac
