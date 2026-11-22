@@ -164,15 +164,16 @@ brightness_pick() {
     notify-send "Brightness" "$choice%" || true
 }
 
-# 输入法：fcitx5-remote 只回 1/2（英/中）和组名（keyboard-us、rime…）。
+# 输入法：fcitx5-remote 只回 1/2（英/中）。
 # 托盘没了以后，这里是「现在是中文还是英文」唯一的显示处（显示成 EN / ZH）。
+# 组名（keyboard-us、rime…）不显示：面板要的是状态，不是输入法配置。
 ime() {
     local on
     on=$(fcitx5-remote 2>/dev/null) || return 0
     if [[ $on == 2 ]]; then
-        printf '%s  ZH · %s\n' "$ICON_LANGUAGE" "$(fcitx5-remote -n)"
+        printf '%s  ZH\n' "$ICON_LANGUAGE"
     else
-        printf '%s  EN · %s\n' "$ICON_LANGUAGE" "$(fcitx5-remote -n)"
+        printf '%s  EN\n' "$ICON_LANGUAGE"
     fi
 }
 
