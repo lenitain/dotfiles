@@ -27,6 +27,7 @@ xray/inventory.yml
 dotfiles/.pig/**
 !dotfiles/.pig/agent/
 !dotfiles/.pig/agent/bin/
+!dotfiles/.pig/agent/bin/**
 !dotfiles/.pig/agent/AGENTS.md
 !dotfiles/.pig/agent/mcp.json
 !dotfiles/.pig/agent/models.json
