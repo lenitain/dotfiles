@@ -1,28 +1,5 @@
-#!/bin/bash
-# fuzzel wrapper - 永远单实例，先杀后开；并且兜底指定默认 profile
-#
-# 三个 profile（launcher / clipboard / status）现在一律显式加载：调用方给了
-# --config 就用它的，没给（MOD+R 这条）就补 launcher.ini。改名后不再有
-# 「靠 fuzzel 默认文件名被读到」的那一份，三种用途的名字才对得上。
-#
-# 旧实例要等它真的退出。fuzzel 自己有 $XDG_RUNTIME_DIR/fuzzel-*.lock，
-# 旧实例没释放锁时新实例会直接退出；200 次空转 kill -0 只有约 4ms，负载高时
-# 不够，所以每次探测后睡 1ms，最多等 100ms。
-
-pids=$(pidof fuzzel 2>/dev/null)
-if [ -n "$pids" ]; then
-    kill $pids 2>/dev/null
-    for pid in $pids; do
-        for _ in {1..100}; do
-            kill -0 "$pid" 2>/dev/null || break
-            sleep 0.001
-        done
-    done
-fi
-
-for arg; do
-    case $arg in
-        --config | --config=*) exec /usr/bin/fuzzel "$@" ;;
-    esac
-done
-exec /usr/bin/fuzzel --config="${XDG_CONFIG_HOME:-$HOME/.config}/fuzzel/launcher.ini" "$@"
+#!/usr/bin/luajit
+-- fuzzel 单实例包装器：先杀旧实例，再补上 launcher profile 并 exec。
+local dir = arg[0]:match("^(.*)/") or "."
+package.path = dir .. "/?.lua;" .. package.path
+require("single-instance").run("/usr/bin/fuzzel", true)

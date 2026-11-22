@@ -4,7 +4,7 @@
 # 子命令:
 #   record start   区域选择并开始录制
 #   record stop    停止当前录制（向录制进程发 SIGINT，等待其正常收尾）
-#   record state   只打印当前状态：REC / BUSY / IDLE（状态面板读它）
+#   record state   只打印当前状态：REC / BUSY / IDLE（status 通过 lib.lua 共用判定）
 #                  BUSY = 没有 gsr 进程但单例锁被占着（通常是停止后的 MP4 转封装）
 #   record toggle  在录就停、没录就开（状态面板那一行的回车动作）
 #
@@ -304,22 +304,15 @@ do_stop() {
     fi
 }
 
-# 状态面板读它：正在录 → "REC"，转封装中 → "BUSY"，没在录 → "IDLE"。
+# 正在录 → "REC"，转封装中 → "BUSY"，没在录 → "IDLE"。
 # 时长不报：面板要的是当前状态，不是录了多久。
 # 录制器没装且没有进行中的录制时什么都不输出：面板上那一行不出现。
+# 判定逻辑放在 lib.lua，和 status 共用同一份实现。
 do_state() {
     [[ -n $RECORDER_BIN ]] || exit 0
-    if find_recorder >/dev/null; then
-        printf 'REC\n'
-        return
-    fi
-    if recording_busy; then
-        printf 'BUSY\n'
-        return
-    fi
-    if [[ -e $RECORDER_BIN ]]; then
-        printf 'IDLE\n'
-    fi
+    local state
+    state=$(RECORDER_BIN="$RECORDER_BIN" "$SCRIPT_DIR/state.lua" record 2>/dev/null) || exit 0
+    printf '%s\n' "$state"
 }
 
 # 状态面板那一行的回车动作：在录就停（收尾并转封装），转封装中就先别开新录制，

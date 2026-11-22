@@ -1,19 +1,5 @@
-#!/bin/bash
-# slurp wrapper - 单实例框选，先杀后开（新截取替换旧截取）
-# 与 fuzzel-wrapper 同一模式：任何新的框选请求都会顶掉正在进行的旧框选
-#
-# 等旧实例真的退出：pidof 拿一次 pid，kill 之后用 bash 内建的 kill -0 盯到
-# 进程消失，每次探测后睡 1ms，最多等 100ms；旧实例卡住也不会把按键拖很久。
-
-pids=$(pidof slurp 2>/dev/null)
-if [ -n "$pids" ]; then
-    kill $pids 2>/dev/null
-    for pid in $pids; do
-        for _ in {1..100}; do
-            kill -0 "$pid" 2>/dev/null || break
-            sleep 0.001
-        done
-    done
-fi
-
-exec /usr/bin/slurp "$@"
+#!/usr/bin/luajit
+-- slurp 单实例包装器：先杀旧框选，再 exec 新的。
+local dir = arg[0]:match("^(.*)/") or "."
+package.path = dir .. "/?.lua;" .. package.path
+require("single-instance").run("/usr/bin/slurp", false)

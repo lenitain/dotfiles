@@ -37,7 +37,7 @@
 #         它 —— 每次开机都是常亮起点。
 #   off = 解除抑制：锁一放，5 分钟自动熄屏立刻恢复。
 #   toggle = on/off 来回切（状态面板里选中这一行就是它）。
-#   state  = 只打印 on / off（状态面板读它）。
+#   state  = 只打印 on / off（status 通过 lib.lua 共用判定；blank 也用它）。
 #   blank = swayidle 的 timeout 命令：熄不熄屏由这把锁决定。
 
 WHO="idle-inhibit"
@@ -45,6 +45,7 @@ WHO="idle-inhibit"
 # 自己的绝对路径：swayidle 的 timeout 命令要拿它当 argv 传过去，而那条命令是
 # swayidle 用 sh -c 跑的 —— 相对路径会在别的 cwd 下失效。
 SCRIPT="$(readlink -f "$0")"
+SCRIPT_DIR=${SCRIPT%/*}
 
 # 找出 comm 精确等于给定名字的进程 pid（一行一个；没有则为空）。
 # 不用 pgrep：pgrep -x 要全量扫 /proc（实测 20~46ms，本机 313 个进程），
@@ -72,13 +73,7 @@ inhibitor_pids() {
 }
 
 state() {
-    local pids
-    pids=$(inhibitor_pids) || return 1
-    if [ -n "$pids" ]; then
-        echo "on"
-    else
-        echo "off"
-    fi
+    "$SCRIPT_DIR/state.lua" idle
 }
 
 # 熄屏：swayidle 的 timeout 命令跑的就是它。

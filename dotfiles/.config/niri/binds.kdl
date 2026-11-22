@@ -318,3 +318,17 @@ binds {
         toggle-overview
     }
 }
+
+// 窗口切换（MRU，带缩略图）。
+// niri 的 MRU 按键只能写在 recent-windows 块里，不能放进上面的 binds。
+// 切换器的外观（highlight / previews / 延时）见 appearance.kdl 的 recent-windows。
+recent-windows {
+    binds {
+        // scope 决定范围：workspace = 只看当前工作区的窗口
+        // filter 决定应用范围：app-id = 只看与焦点窗口同一个应用的窗口
+        Alt+Tab         { next-window     scope="workspace"; }
+        Alt+Shift+Tab   { previous-window scope="workspace"; }
+        Mod+Tab         { next-window     scope="workspace" filter="app-id"; }
+        Mod+Shift+Tab   { previous-window scope="workspace" filter="app-id"; }
+    }
+}
