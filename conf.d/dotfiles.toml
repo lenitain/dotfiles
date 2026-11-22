@@ -33,7 +33,6 @@
 "~/.config/user-dirs.dirs" = {}
 "~/.config/uv" = {}
 "~/.config/video-note" = {}
-"~/.config/waybar" = {}
 "~/.config/xdg-desktop-portal" = {}
 "~/.config/xdg-desktop-portal-wlr" = {}
 "~/.config/yazi" = {}
@@ -50,3 +49,4 @@
 "~/.pig/agent/models.json" = {}
 "~/.pig/agent/settings.json" = {}
 "~/.pig/agent/themes" = {}
+"~/.pig/agent/bin" = {}
