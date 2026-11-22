@@ -4,6 +4,8 @@
 # 子命令:
 #   record start   区域选择并开始录制
 #   record stop    停止当前录制（向录制进程发 SIGINT，等待其正常收尾）
+#   record state   只打印当前状态：REC <时长> 或 IDLE（状态面板读它）
+#   record toggle  在录就停、没录就开（状态面板那一行的回车动作）
 #
 # 单例语义:
 #   全局同一时刻只允许一个录制。已在录制时 `record start` 不做任何事，
@@ -87,7 +89,7 @@ copy_path() { printf '%s' "$1" | wl-copy >/dev/null 2>&1 9>&- || notify "复制�
 
 # 前置检查：录制器是否可用（比"起录后才发现失败"体验好）
 require_recorder() {
-    if ! command -v gpu-screen-recorder >/dev/null 2>&1; then
+    if [[ -z $RECORDER_BIN || ! -x $RECORDER_BIN ]]; then
         notify "录屏不可用" "未找到 gpu-screen-recorder，请先安装"
         echo "错误: 未找到 gpu-screen-recorder" >&2
         exit 127
@@ -101,10 +103,15 @@ require_recorder() {
 #   - 单例约束下"找到任意 gsr"就是"找到我们的录制"，无需再区分是哪一个实例。
 #   - 输出路径从进程自己的 cmdline 反查，因此不落任何状态文件，
 #     也就不存在陈旧状态、跨用户覆盖、PID 复用误杀这些问题。
-RECORDER_BIN="${RECORDER_BIN:-/usr/bin/gpu-screen-recorder}"
+# 录制器路径：find_recorder 拿它跟 /proc/<pid>/exe 比对，必须是真实路径。
+# command -v 是 shell 内建（不 fork）；找不到就留空 —— 面板的录制行也就不出现。
+RECORDER_BIN="${RECORDER_BIN:-$(command -v gpu-screen-recorder || true)}"
 
 find_recorder() {
     local d
+    # 没装录制器时没什么可找的，直接回绝（否则下面的 readlink 兜底会把
+    # 整个 /proc 扫一遍，只为确认「没有」）
+    [[ -n $RECORDER_BIN ]] || return 1
     # 用 bash 内建的 [[ -ef ]] 比较 inode（同一文件即视为同一程序）。
     # 不要用 readlink：每次迭代都会 fork 一个外部进程，实测 352 个进程时
     # 单次扫描要 1.1 秒；-ef 是内建判断，同样条件只要 5 毫秒（约 200 倍）。
@@ -132,6 +139,33 @@ find_recorder() {
 # 从进程的 cmdline 取 -o 的输出路径（录制器启动后命令行就固定了）
 recorder_output_path() {
     tr '\0' '\n' < "/proc/$1/cmdline" 2>/dev/null | awk '/^-o$/{getline; print; exit}'
+}
+
+# 录制时长：录制器一起步就是开录 —— /proc/<pid>/stat 的 starttime 是内核
+# 记账的进程起点，比文件的 mtime 稳，也不必另存「起始时间」。
+# stat 的第 2 个字段是 comm（带括号、可能含空格），starttime 是第 22 个字段：
+# 先按最后一个 ') ' 切掉 comm，剩下的第 20 个字段才是 starttime。
+recorder_elapsed() {
+    local pid=$1 stat rest ticks hz uptime elapsed
+    local -a fields=()
+    [[ -r /proc/$pid/stat ]] || { printf '00:00\n'; return 0; }
+    stat=$(<"/proc/$pid/stat") || stat=''
+    rest=${stat##*') '}
+    read -ra fields <<< "$rest"
+    ticks=${fields[19]:-}
+    [[ $ticks =~ ^[0-9]+$ ]] || { printf '00:00\n'; return 0; }
+    hz=$(getconf CLK_TCK 2>/dev/null) || hz=100
+    [[ $hz =~ ^[0-9]+$ && $hz -gt 0 ]] || hz=100
+    read -r uptime _ < /proc/uptime || uptime=0
+    elapsed=$(( ${uptime%%.*} - ticks / hz ))
+    if ((elapsed < 0)); then
+        elapsed=0
+    fi
+    if ((elapsed >= 3600)); then
+        printf '%d:%02d:%02d\n' $((elapsed / 3600)) $((elapsed % 3600 / 60)) $((elapsed % 60))
+    else
+        printf '%02d:%02d\n' $((elapsed / 60)) $((elapsed % 60))
+    fi
 }
 
 do_start() {
@@ -280,6 +314,30 @@ do_stop() {
     fi
 }
 
+# 状态面板读它：正在录 → "REC <时长>"，没在录 → "IDLE"。
+# 录制器没装时什么都不输出：面板上那一行直接不出现，
+# 与其余读数「取不到就不占位置」的规矩一致。
+do_state() {
+    [[ -n $RECORDER_BIN && -e $RECORDER_BIN ]] || exit 0
+    local pid elapsed
+    if pid="$(find_recorder)"; then
+        elapsed=$(recorder_elapsed "$pid")
+        printf 'REC %s\n' "$elapsed"
+    else
+        printf 'IDLE\n'
+    fi
+}
+
+# 状态面板那一行的回车动作：在录就停（收尾并转封装），没录就选区开录。
+# 判定仍由 find_recorder 给，与 start/stop 用的是同一份事实。
+do_toggle() {
+    if find_recorder >/dev/null; then
+        do_stop
+    else
+        do_start
+    fi
+}
+
 case "${1:-}" in
     start)
         do_start
@@ -287,8 +345,14 @@ case "${1:-}" in
     stop)
         do_stop
         ;;
+    state)
+        do_state
+        ;;
+    toggle)
+        do_toggle
+        ;;
     *)
-        echo "用法: record {start|stop}" >&2
+        echo "用法: record {start|stop|state|toggle}" >&2
         exit 1
         ;;
 esac

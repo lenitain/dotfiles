@@ -12,6 +12,9 @@
 #   --only-match     打到不匹配的字符串时，回车不给「把输入原样返回」的出口
 # 面板是快照，没有实时刷新：再按一次 MOD+SPACE 就是刷新（fuzzel-wrapper 先杀后开），
 # 时钟也会跟着重新取值。
+#
+# 第一行的录制读数是个开关：REC <时长> 表示正在录，回车就停（收尾转 MP4）；
+# IDLE 表示没在录，回车就选区开录。
 
 set -u
 # %a 固定英文星期：本机 locale 是中文，会输出「六」；三字母宽度稳定，
@@ -24,10 +27,15 @@ BAT=/sys/class/power_supply/BAT1
 
 # 图标：Nerd Font 字形（Maple Mono NF CN 自带）。每行读数的第一个字符就是图标，
 # 图标列对齐成一条竖线，扫一眼就知道这一行是什么，不用逐字读。
-ICON_CALENDAR=󰃭   # nf-md-calendar
-ICON_SUN=󰖨        # nf-md-white-balance-sunny
+ICON_CLOCK=󰥔     # nf-md-clock
+# 亮度图标固定就这一个（太阳）：百分比再低也不换记号 —— MDI 那套
+# brightness_1..7 里 2/3 画的是月亮，绝不用；亮暗交给后面的百分数表达。
+ICON_BRIGHTNESS=󰖨  # nf-md-white-balance-sunny
 ICON_LANGUAGE=󰗊   # nf-md-translate
 ICON_MONITOR=󰍹    # nf-md-monitor
+# 录制：录着用「红点」那个记号，没录用摄像机 —— 两个图标一眼分得开
+ICON_RECORD=󰑊   # nf-md-record
+ICON_VIDEO=󰕧    # nf-md-video
 # 工作区：3×3 的方块 —— 工作区切换器的老记号（一个方块一个工作区）
 ICON_WORKSPACE=󰀻  # nf-md-apps
 # 音量统一用「大声」那档图标，音量大小交给百分数表达；静音另有一个
@@ -90,10 +98,11 @@ volume() {
 #   brightnessctl — sysfs backlight（笔记本内置屏，amdgpu/intel…）
 #   ddcutil       — DDC/CI（外接显示器；笔记本内屏不支持，detect 会明说）
 # 两个后端都没有可用设备时整行不出现。
+# 这一行只报读数：回车没有动作，也不弹二级面板。
 brightness() {
     local pct
     pct=$(brightness_pct) || return 0
-    printf '%s  %d%%\n' "$ICON_SUN" "$pct"
+    printf '%s  %d%%\n' "$ICON_BRIGHTNESS" "$pct"
 }
 
 # brightnessctl 的机器可读输出：device,class,value,percentage%,max。
@@ -134,36 +143,6 @@ brightness_pct() {
     printf '%s\n' "$pct"
 }
 
-# 写亮度：brightnessctl 只认原始值（它的百分比参数走指数曲线，写 50%
-# 读回来是 84%），所以自己按 max 换算，所见即所得；
-# ddcutil 用显示器自己的 0-100 刻度。
-brightness_set() {
-    local pct=$1 info device max value
-    if info=$(brightnessctl -m info 2>/dev/null); then
-        info=${info%%$'\n'*}
-        device=${info%%,*}
-        max=${info##*,}
-        if [[ $max =~ ^[0-9]+$ ]] && ((max > 0)); then
-            value=$((max * pct / 100))
-            brightnessctl -d "$device" set "$value" >/dev/null 2>&1 && return 0
-        fi
-    fi
-    ddcutil setvcp 4 "$pct" </dev/null >/dev/null 2>&1
-}
-
-# 回车：再弹一个 fuzzel 选亮度档位。面板是快照，改完得重开才看得到，
-# 给几档直接选，比无声地加 10% 更好按。
-brightness_pick() {
-    local choice
-    choice=$(printf '100%%\n75%%\n50%%\n25%%\n' | "$dir/fuzzel-wrapper" \
-        --config="${XDG_CONFIG_HOME:-$HOME/.config}/fuzzel/status.ini" \
-        --dmenu --prompt="Brightness " --with-nth=1 --only-match) || return 0
-    choice=${choice%%%}
-    [[ $choice =~ ^[0-9]+$ ]] || return 0
-    brightness_set "$choice" || return 0
-    notify-send "Brightness" "$choice%" || true
-}
-
 # 输入法：fcitx5-remote 只回 1/2（英/中）。
 # 托盘没了以后，这里是「现在是中文还是英文」唯一的显示处（显示成 EN / ZH）。
 # 组名（keyboard-us、rime…）不显示：面板要的是状态，不是输入法配置。
@@ -186,7 +165,18 @@ idle() {
     esac
 }
 
-clock() { printf '%s  %(%m-%d %a %H:%M)T\n' "$ICON_CALENDAR" -1; }
+# 录制状态：判断交给 record 自己（它查的就是 gsr 进程），别在这里复制一份。
+# 输出 REC <时长> 或 IDLE；录制器没装时 record 不出声，这一行也就不出现。
+recording() {
+    local state
+    state=$("$dir/record" state 2>/dev/null) || return 0
+    case $state in
+        REC*) printf '%s  %s\n' "$ICON_RECORD" "$state" ;;
+        IDLE) printf '%s  %s\n' "$ICON_VIDEO" "$state" ;;
+    esac
+}
+
+clock() { printf '%s  %(%m-%d %a %H:%M)T\n' "$ICON_CLOCK" -1; }
 
 # 工作区行：niri 的工作区号，当前所在的用方括号标出来。
 #
@@ -220,13 +210,14 @@ row() {
 }
 
 snapshot() {
-    row "$(workspaces)"
-    row "$(ime)" ime
-    row "$(clock)"
-    row "$(volume)" volume
-    row "$(brightness)" brightness
+    row "$(recording)" record
     row "$(idle)" idle
+    row "$(ime)" ime
     row "$(battery)"
+    row "$(brightness)"
+    row "$(volume)" volume
+    row "$(workspaces)"
+    row "$(clock)"
 }
 
 # --print 只吐数据、不开窗，用来调试和核对读数。
@@ -241,7 +232,7 @@ action=$(snapshot | "$dir/fuzzel-wrapper" \
 
 case $action in
     volume) niri msg action spawn -- pavucontrol ;;
-    brightness) brightness_pick ;;
     ime) fcitx5-remote -t ;;
     idle) "$dir/idle-inhibit" toggle ;;
+    record) "$dir/record" toggle ;;
 esac

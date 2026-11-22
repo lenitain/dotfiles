@@ -3,7 +3,8 @@ binds {
     MOD+SHIFT+ESCAPE {
         show-hotkey-overlay
     }
-    // 状态面板：fuzzel 快照（工作区 / 时钟 / 音量 / 亮度 / 熄屏抑制 / 电量 / 输入法）。
+    // 状态面板：fuzzel 快照（录制 / 熄屏抑制 / 输入法 / 电量 / 亮度 / 音量 / 工作区 /
+    // 时钟）。录制一行在面板最上面：回车即开始/停止录制。
     // 再按一次是刷新，因为 fuzzel-wrapper 先杀后开。
     // repeat=false：按住不放只会反复「杀 fuzzel、再开 fuzzel」，没有第二个意思。
     MOD+SPACE repeat=false hotkey-overlay-title="System status" {
@@ -302,14 +303,6 @@ binds {
     // Screenshots
     MOD+P hotkey-overlay-title="Screenshot" {
         spawn "~/.config/niri/scripts/screenshot"
-    }
-
-    // Recording
-    CTRL+SHIFT+2 hotkey-overlay-title="Record Start" {
-        spawn "~/.config/niri/scripts/record" "start"
-    }
-    CTRL+SHIFT+3 hotkey-overlay-title="Record Stop" {
-        spawn "~/.config/niri/scripts/record" "stop"
     }
 
     // Emergency escape
