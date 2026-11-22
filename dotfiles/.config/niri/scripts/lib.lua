@@ -179,25 +179,28 @@ function M.pids_by_comm(name, owned_only)
     return pids
 end
 
--- 与 record state 的语义一致：REC > BUSY > IDLE，录制器不存在时返回 nil。
+-- 与 record state 的语义一致：BUSY > REC > IDLE，录制器不存在时返回 nil。
 function M.recording_state(recorder)
     recorder = recorder or M.recorder_path()
     if not recorder or recorder == "" then return nil end
 
-    -- gsr 的 comm 被内核截断到 15 字节（"gpu-screen-reco"）。
-    local comm = recorder:match("([^/]+)$") or recorder
-    comm = comm:sub(1, 15)
-    local pids = M.pids_by_comm(comm, true)
-    if #pids > 0 then return "REC" end
-
     local busy = false
     local lock = (os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/record.lock"
-    local fd = ffi.C.open(lock, O_WRONLY + O_CREAT, 420)
+    -- open 是可变参数函数：Lua number 在 varargs 里按 double 传，mode 会变成 0，
+    -- 锁文件因此不可写。这里必须显式传 int cdata。
+    local fd = ffi.C.open(lock, O_WRONLY + O_CREAT, ffi.new("int", 420))
     if fd >= 0 then
         if ffi.C.flock(fd, LOCK_EX + LOCK_NB) ~= 0 then busy = true end
         ffi.C.close(fd)
     end
+    -- 锁被占：stop 正在收尾旧进程，或 start 正在启动新录制。
+    -- 两种都不该显示成可以再停一次的 REC。
     if busy then return "BUSY" end
+
+    -- gsr 的 comm 被内核截断到 15 字节（"gpu-screen-reco"）。
+    local comm = recorder:match("([^/]+)$") or recorder
+    comm = comm:sub(1, 15)
+    if #M.pids_by_comm(comm, true) > 0 then return "REC" end
 
     -- 与 do_state 的 [[ -e $RECORDER_BIN ]] 一致：路径不存在就不占面板一行。
     if ffi.C.access(recorder, F_OK) == 0 then return "IDLE" end

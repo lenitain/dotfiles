@@ -5,15 +5,16 @@
 #   record start   区域选择并开始录制
 #   record stop    停止当前录制（向录制进程发 SIGINT，等待其正常收尾）
 #   record state   只打印当前状态：REC / BUSY / IDLE（status 通过 lib.lua 共用判定）
-#                  BUSY = 没有 gsr 进程但单例锁被占着（停止时正在等录制进程收尾）
+#                  BUSY = 单例锁被占着（stop 正在收尾，或 start 正在启动）
 #   record toggle  在录就停、没录就开（状态面板那一行的回车动作）
 #
 # 只管录制，格式转换不归这里：MKV -> MP4 由 ~/.local/bin/scripts/mkv2mp4 单独做，
 # 录制因此不会被转码拖住，转码失败也牵连不到原始录像。
 #
 # 单例语义:
-#   全局同一时刻只允许一个录制。已在录制时 `record start` 不做任何事，
-#   只提示"已在录制中"（绝不误停正在进行的录制）。
+#   全局同一时刻只允许一个录制。锁空闲时仍有录制进程，`record start` 不做任何事，
+#   只提示"已在录制中"（绝不误停正在进行的录制）。锁被占用时，start 会等锁释放
+#   再复查；正在收尾的旧进程退出后即可开新录，不要求用户手动重试。
 #
 #   实现上不保存 PID：`stop` 每次现场扫描 /proc，按 exe inode 认定录制进程
 #   （升级/卸载后用 comm + "<path> (deleted)" 回退），输出路径也从该进程的
@@ -78,6 +79,8 @@ SLURP_FMT="%wx%h+%x+%y"
 
 # ===== 行为开关 =====
 STOP_TIMEOUT_SEC=20                       # 等待录制进程收尾的最长秒数
+# start 等 stop 收尾释放锁的上限：stop 自身最多等 STOP_TIMEOUT_SEC，再留 3 秒收尾
+START_LOCK_TIMEOUT_SEC=$((STOP_TIMEOUT_SEC + 3))
 
 # notify / copy_path / copy_stream 在 lib.sh 里，子进程都带 `9>&-`。
 # 单例锁占用 fd 9，gsr / notify-send / wl-copy 等后台子进程一旦继承并攥住它，
@@ -138,7 +141,9 @@ find_recorder() {
     return 1
 }
 
-# 单例锁被占但找不到 gsr：多半是 stop 正在等录制进程收尾写文件。
+# 单例锁是否被占用。start 的临界区约 1 秒；stop 的临界区覆盖整个收尾等待。
+# 找到 gsr 且锁被占，多半是 stop 正在收尾它；也可能是另一个 start 刚拉起、
+# 还在 1 秒临界区内的录制。两种都先继续，框选后加锁复查时再区分。
 recording_busy() {
     command -v flock >/dev/null 2>&1 || return 1
     ! flock -n "$LOCKFILE" true 2>/dev/null
@@ -152,15 +157,12 @@ recorder_output_path() {
 do_start() {
     require_recorder
 
-    # 已在录制则拒绝，绝不误停正在进行的录制
+    # 锁空闲时仍有录制进程 = 正在录，拒绝，绝不误停。
+    # 锁被占用时继续往下走：可能是 stop 在等它退出，也可能是另一个 start
+    # 刚拉起它；两种情况都在框选后加锁复查时决定。
     local existing
-    if existing="$(find_recorder)"; then
+    if existing="$(find_recorder)" && ! recording_busy; then
         notify "录屏提示" "已在录制中（PID ${existing}）；如需重录请先 record stop"
-        exit 0
-    fi
-    if recording_busy; then
-        notify "录屏提示" "上一段录制仍在收尾，请稍后再试"
-        echo "上一段录制仍在收尾" >&2
         exit 0
     fi
 
@@ -171,11 +173,12 @@ do_start() {
     [ -n "$geom" ] || exit 0
 
     # 单例闸门：flock 独占锁。即使两个 start 并发也只有一个能进入临界区。
-    # 用 -w 3（最多等 3 秒）而不是 -n：并发时让后来者短暂等待而不是直接失败。
+    # 等待时间要覆盖 stop 等录制器退出的上限：上一段还在收尾时按 start，
+    # 会在这里等到旧进程退出、stop 释放锁，然后继续。
     exec 9>"$LOCKFILE"
-    if ! flock -w 3 9; then
-        notify "录屏提示" "另一处录制操作未结束，本次忽略"
-        echo "另一处录制操作未结束，本次忽略" >&2
+    if ! flock -w "$START_LOCK_TIMEOUT_SEC" 9; then
+        notify "录屏提示" "上一段录制仍在收尾，本次忽略"
+        echo "上一段录制仍在收尾，本次忽略" >&2
         exit 0
     fi
 
@@ -290,16 +293,12 @@ do_state() {
     printf '%s\n' "$state"
 }
 
-# 状态面板那一行的回车动作：在录就停（收尾保存 MKV），收尾中就先别开新录制，
-# 没录就选区开录。判定仍由 find_recorder / recording_busy 给，与 start/stop
-# 用的是同一份事实。
+# 状态面板那一行的回车动作：锁空闲且找到录制进程 = 正在录，回车就停；
+# 锁被占用或没有进程 = 没在录（或正在收尾），回车就选区开录。
+# 判定与 start/stop 共用 find_recorder / recording_busy。
 do_toggle() {
-    if find_recorder >/dev/null; then
+    if find_recorder >/dev/null && ! recording_busy; then
         do_stop
-    elif recording_busy; then
-        notify "录屏提示" "上一段录制仍在收尾，请稍后再试"
-        echo "上一段录制仍在收尾" >&2
-        exit 0
     else
         do_start
     fi
