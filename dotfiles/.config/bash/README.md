@@ -140,13 +140,18 @@ flyline 是 bash 的 loadable builtin（不是独立进程），但它和 bash �
 widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
 
 ```
-[zmx] [docker] user@host  ~/path  main* ≡ 2 ⇡ 1 ⇣ 3   ← 会话段 + cwd(蓝) + git/jj(暗灰/青)
+[zmx] [docker] user@host  ~/path  main* ≡ 2 ⇡ 1 ⇣ 3   ← 会话段 + cwd(蓝) + 仓库段(暗灰/青)
 # ❄impure (venv) |0|1 ❯                               ← 上下文(红/青/暗灰) + 退出码(红) + 符号(洋红)
 ```
 
-- git/jj 段由 `widgets/repo.sh` 输出（jj 仓库优先，否则 git）：git 是
+- 仓库段由 `widgets/repo.sh` 输出，看最近一层仓库根上的标记：共置仓库（`.jj` 与
+  `.git` 在同一个根）jj、git 两段都画，jj 在前、中间两个空格，例如
+  `r main~1*  main* ≡ 1`；只有一种标记就只画那一种，父目录里的 git 分支不会混进来。
+  git 段是
   branch / dirty(`*`) / stash(`≡ N`) / `⇡ N` `⇣ N`（分支、dirty、上游、ahead/behind
-  都来自同一次 `git status --porcelain=v2 --branch`，stash 另查一次）；jj 是变更 id / 最近的祖先书签
+  都来自同一次 `git status --porcelain=v2 --branch`，stash 另查一次），detached HEAD 画
+  name-rev 的名字（`main~1`），jj 的记账 ref（`refs/jj/*`）不参与取名，没有名字就画短哈希。
+  jj 是变更 id / 最近的祖先书签
   （`~N` 距离）/ `(empty)`，以及 @ 的冲突 `×` 和 divergent `≠`。
   jj 的书签只在 @ 的 20 个祖先提交内查找，距离是从 @ 沿父边走过去的边数
   （空 @ 不计一步），最近的本地书签超出这个范围就不显示；merge 时同一距离上的
@@ -155,9 +160,8 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
   只有 snapshot 能发现文件变化（没有 git status 那种只读查询），所以 `(empty)` / `*`
   和 `jj st` 永远一致。代价是文件改过的那次提示符会写一条 snapshot 操作；没变化时
   只做一次 stat 扫描，大仓库可以装 watchman 并设 `fsmonitor.backend = "watchman"` 提速。
-  jj 自己失败时（工作副本陈旧、配置错、锁）画红色的 `jj!`，不退回 git：共置仓库里
-  git 会给出一份看着正常的分支名，把真正的错误藏住；报错细节跑一次 `jj st` 看。
-  只有仓库里有 `.jj` 但没装 jj 时才退回 git。
+  jj 自己失败时（工作副本陈旧、配置错、锁）jj 段画红色的 `jj!`，报错细节跑一次
+  `jj st` 看；共置仓库里 git 段照画，`jj!` 说明是 jj 那边出的错。没装 jj 时没有 jj 段。
   jj 往 stderr 写警告时（典型是超过 `snapshot.max-new-file-size` 的新文件被拒绝，
   权限错误同理）段尾画黄色 `!`：命令本身成功，但那个文件没进 jj，不标的话提示符是
   一份看起来正常的 `(empty)`；原文跑 `jj st` 看（一次性的提示也会亮一次，比如共置仓库里
@@ -180,7 +184,7 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
   cgroup v2 只有一行 `0::/`，rootless 运行时只能由 PID 1 兜底，那时只能给出泛称 `[container]`。
 - 命令耗时默认不显示。想打开就取消 `conf.d/flyline.sh` 里的 `last-command-duration` 注册，
   并把 `FLYLINE_DURATION` 补回 `PS1`（记得同时为它留 8 列宽度）。
-- 宽度：仓库里第一条提示符按上限 43 列预留；widget 每次把实际可见宽度写进
+- 宽度：仓库里第一条提示符按上限 43 列预留（jj、git 两段合计）；widget 每次把实际可见宽度写进
   `$XDG_RUNTIME_DIR/bash-prompt-repo-width.<shell pid>`，之后 cwd 按 `COLUMNS` 减去
   这个实际值决定是否缩略成 `…/尾段`（切仓库后的第一条提示符用上一个仓库的宽度）。
   第 2 行不参与这个预算。
@@ -205,7 +209,7 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
   git 段里符号与数字之间因此留一个空格；`❄` 同样走回退字体，但按 pure 的样式仍紧贴 shell 名。
   jj 段的 `×` `≠` `~` `*` `!` 都在主字体里，不存在这个问题。
 - 仓库段的宽度缓存按 shell 而不是按仓库：刚 `cd` 进另一个仓库时，第一条提示符用的是
-  上一个仓库的实际宽度；第一次进仓库（没有缓存）用 43 列上限。仓库段超过预算
+  上一个仓库的实际宽度；第一次进仓库（没有缓存）用 43 列上限（jj、git 两段合计）。仓库段超过预算
   （超长分支名、多个书签）时第一行仍可能折行一次。
 - Tab 补全/历史搜索 UI 由 flyline 提供。
 - 历史后端用 bash 原生（`histappend` + 提示符后 `history -a`）；换成 flyline 的 JSONL 后端会
@@ -220,8 +224,8 @@ bash -n ~/.bashrc ~/.bash_profile ~/.config/bash/init.sh \
     ~/.config/bash/conf.d/*.sh ~/.config/bash/functions/*.sh \
     ~/.config/bash/prompt/*.sh ~/.config/bash/widgets/*.sh \
     ~/.config/bash/scripts/*.sh
-~/.config/bash/scripts/repo_check.sh    # repo 段：模板段数契约 + 端到端场景（参考点、merge、符号链接、未 snapshot 的改动、snapshot 警告、书签冲突、jj 报错），退出码必须是 0
-~/.config/bash/scripts/git_check.sh     # git 段：分支/dirty/stash/上游/detached/bare/空仓库 + 宽度缓存，退出码必须是 0
+~/.config/bash/scripts/repo_check.sh    # repo 段：模板段数契约 + 端到端场景（参考点、merge、符号链接、未 snapshot 的改动、snapshot 警告、书签冲突、jj 报错、共置仓库的两段、jj 段嵌在 git 工作树里），退出码必须是 0
+~/.config/bash/scripts/git_check.sh     # git 段：分支/dirty/stash/上游/detached/jj 记账 ref/bare/空仓库 + 宽度缓存，退出码必须是 0
 ~/.config/bash/widgets/repo.sh          # 仓库里输出单行、仓库外输出空，两种情况退出码都必须是 0
 bash -i -c 'type ll; flyline settings; flyline key list'   # 需要 pty
 mise bootstrap dotfiles status

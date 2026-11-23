@@ -1,20 +1,54 @@
-# 仓库段数据：jj 仓库优先，否则回退 git，结果写进 $repo_ansi。
+# 仓库段数据：最近一层仓库根上有什么标记就画哪几段，结果写进 $repo_ansi。
+# 共置仓库（`.jj` 与 `.git` 在同一个根）jj、git 两段都画，只有一种就只画那一种。
 # 由 widgets/repo.sh 在子进程里调用，每个提示符一次。
 . "${BASH_SOURCE[0]%/*}/lib.sh"
 
+# 最近一层仓库根上的标记写进 REPLY：jj / git / "jj git"，不在仓库里返回 1。
+# 只看最近一层：jj 仓库嵌在别的 git 工作树里时，父仓库的分支不属于这份工作副本。
+# 按物理路径向上找：$PWD 是逻辑路径，jj/git 自己按物理路径解析。
+__bash_prompt_repo_kinds() {
+    local dir parent
+    dir=$(pwd -P)
+    while :; do
+        if [ -e "$dir/.jj" ] || [ -e "$dir/.git" ]; then
+            REPLY=''
+            [ -e "$dir/.jj" ] && REPLY=jj
+            [ -e "$dir/.git" ] && REPLY="${REPLY:+$REPLY }git"
+            return 0
+        fi
+        parent=${dir%/*}
+        [ -n "$parent" ] || return 1
+        dir=$parent
+    done
+}
+
+# jj 段先跑：共置仓库里 jj 的 snapshot 可能挪动 git HEAD，随后 git 段看到的是挪完的位置。
+# 段间两个空格：两段的主色都是暗灰，书签名和分支名又常是同一个词，靠间距分界。
 __bash_prompt_repo() {
     repo_ansi=''
-    if __bash_prompt_jj; then
-        return 0
-    fi
-    # jj 仓库里 jj 自己失败（工作副本陈旧、配置错、锁、二进制坏了）不能退回 git：
-    # colocated 仓库里 git 看的是同一份工作副本，画出来像正常结果（分支名，甚至
-    # jj/keep/<hash>），把真正的错误藏掉。没装 jj 才退回 git（那份 git 信息至少是对的）。
-    if __bash_prompt_in_jj_repo && command -v jj >/dev/null 2>&1; then
-        repo_ansi="\[$__bash_prompt_color_red\]jj!\[$__bash_prompt_color_reset\]"
-        return 0
-    fi
-    __bash_prompt_git
+    __bash_prompt_repo_kinds || return 0
+    local kinds=$REPLY
+    local -a parts=()
+
+    case $kinds in
+    *jj*)
+        if __bash_prompt_jj; then
+            parts+=("$repo_ansi")
+        # 有 .jj 但 jj 自己失败（工作副本陈旧、配置错、锁、二进制坏了）：画红色 jj!，
+        # 不画 jj 段。共置仓库里 git 段照画：jj! 说明这是 jj 的错误，没有它的话
+        # git 的分支名看着像正常结果，会把真正的错误藏掉。
+        elif command -v jj >/dev/null 2>&1; then
+            parts+=("\[$__bash_prompt_color_red\]jj!\[$__bash_prompt_color_reset\]")
+        fi
+        ;;
+    esac
+
+    case $kinds in
+    *git*) __bash_prompt_git && parts+=("$repo_ansi") ;;
+    esac
+
+    __bash_prompt_join_into '  ' "${parts[@]}"
+    repo_ansi=$REPLY
 }
 
 # git 段：branch + dirty(*) + stash(≡ N) + unpushed/unpulled(⇡ N/⇣ N)。
@@ -48,8 +82,13 @@ __bash_prompt_git() {
     done <<< "$status"
 
     # detached HEAD 时 porcelain 只说 "(detached)"，用 name-rev 换成人能读的 main~N。
+    # refs/jj/* 是 jj 的记账 ref：共置仓库里 jj new 之后 HEAD 常只剩
+    # refs/jj/keep/<hash>，画出来是 50 列的哈希；排掉它们，没有名字就画短哈希。
     if [ "$branch" = '(detached)' ]; then
-        branch=$(command git name-rev --name-only HEAD 2>/dev/null)
+        branch=$(command git name-rev --exclude='refs/jj/*' --name-only HEAD 2>/dev/null)
+        case $branch in
+        ''|undefined) branch=$(command git rev-parse --short HEAD 2>/dev/null) ;;
+        esac
     fi
     [ -n "$branch" ] || return 1
 

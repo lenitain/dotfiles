@@ -54,7 +54,8 @@ __bash_prompt_visible_length() {
 }
 
 # 仓库段的宽度：仓库里先用这个上限，之后用 widget 写回的实际宽度（见下）。
-# 上限是 jj/git 段的观测最大值（含前导空格和符号/数字间的空格，见 prompt/ps1.sh）。
+# 43 盖住 jj+git 两段的常见组合（前导空格、段间两个空格、符号与数字间的空格都算在内，
+# 见 prompt/ps1.sh）；更长的段（多个书签、长分支名）仍可能超预算。
 __bash_prompt_repo_reserved=43
 
 # per-shell 的小文件（宽度缓存、jj 的 stderr）都放 XDG_RUNTIME_DIR（per-user 0700，登出即清）：

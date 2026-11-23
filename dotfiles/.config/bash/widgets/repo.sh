@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# flyline 的 custom prompt widget：输出第一行的仓库段（jj 优先，否则 git）。
+# flyline 的 custom prompt widget：输出第一行的仓库段（共置仓库里 jj、git 两段都画）。
 # 由 conf.d/flyline.sh 注册成 FLYLINE_REPO，每个提示符在子进程里跑一次；
 # 超过 --block 的等待时间就显示空白（--placeholder 0），慢仓库不阻塞提示符。
 # 契约：输出单行，没有内容就什么都不打印，退出码永远 0。

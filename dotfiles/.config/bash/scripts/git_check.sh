@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# git 段自检：真实仓库里的分支 / dirty / stash / 上游 / detached / bare / 空仓库，
-# 以及 widgets/repo.sh 写回的宽度缓存。改 prompt/repo.sh 的 git 分支后跑一遍
+# git 段自检：真实仓库里的分支 / dirty / stash / 上游 / detached（含只剩 jj 记账 ref）/ bare /
+# 空仓库，以及 widgets/repo.sh 写回的宽度缓存。改 prompt/repo.sh 的 git 分支后跑一遍
 # （见 README 的「验证」）；退出码 0 才算过。可以随便 fork：手动脚本，不在热路径上。
 # 每个仓库都用 --initial-branch=main 初始化，结果不依赖本机的 init.defaultBranch。
 
@@ -114,6 +114,17 @@ case $REPLY in
     main|main~[0-9]*) ;;
     *) report "detached HEAD 期望 main~N，实际 [$REPLY]" ;;
 esac
+
+# detached HEAD、唯一指向它的 ref 是 jj 的记账 ref（共置仓库里 jj new 之后的样子）：
+# refs/jj/* 不能画进 git 段，要换成短哈希。
+mkdir "$tmp/detached-jj-keep" && init_repo "$tmp/detached-jj-keep" \
+    && printf 'a\n' > "$tmp/detached-jj-keep/a.txt" && commit_in "$tmp/detached-jj-keep" one \
+    && git -C "$tmp/detached-jj-keep" checkout --quiet --detach HEAD \
+    && oid=$(git -C "$tmp/detached-jj-keep" rev-parse HEAD) \
+    && git -C "$tmp/detached-jj-keep" update-ref "refs/jj/keep/$oid" "$oid" \
+    && git -C "$tmp/detached-jj-keep" branch --quiet -D main
+expect_in "$(git -C "$tmp/detached-jj-keep" rev-parse --short HEAD)" \
+    "$tmp/detached-jj-keep" "只剩 jj 记账 ref 的 detached HEAD"
 
 # 空仓库 clone：@{upstream} 会吐出字面量，不能出箭头，也不能报错
 git init --bare --quiet --initial-branch=main "$tmp/empty-remote.git"
