@@ -130,23 +130,35 @@ local function niri_outputs()
     return outputs
 end
 
+-- 工作区按 output 分组：idx 是该 output 上的序号，不同 output 可以重复。
+-- output 为 null 表示这个工作区当前没有屏承载。
 local function niri_workspaces()
     local payload = niri_request("Workspaces")
     if not payload then return nil end
     local body = payload:match('^{"Workspaces":(.*)}$')
     if not body then return nil end
 
-    local indices, current = {}, nil
+    local workspaces = {}
     for _, object in ipairs(objects(body)) do
         local idx = tonumber(object:match('"idx":(%d+)'))
         if idx then
-            indices[#indices + 1] = idx
-            if object:find('"is_focused":true', 1, true) then current = idx end
+            workspaces[#workspaces + 1] = {
+                idx = idx,
+                output = object:match('"output":"([^"]*)"'),
+                focused = object:find('"is_focused":true', 1, true) ~= nil,
+            }
         end
     end
-    table.sort(indices)
-    if #indices == 0 or not current then return nil end
-    return indices, current
+    return workspaces
+end
+
+-- 聚焦输出：当前持有键盘焦点的屏。focus-follows-mouse 关着时只随点击切换。
+local function niri_focused_output()
+    local payload = niri_request("FocusedOutput")
+    if not payload then return nil end
+    local body = payload:match('^{"FocusedOutput":(.*)}$')
+    if not body then return nil end
+    return body:match('"name":"([^"]*)"')
 end
 
 -- 电量：AC 直接读 sysfs；百分比优先走 UPower（sysfs capacity 在空闲后要 ~85ms）。
@@ -329,14 +341,27 @@ local function ime_row()
     return ICON.language .. "  " .. (out == "2" and "ZH" or "EN")
 end
 
+-- 只列聚焦输出上的工作区：idx 是屏内序号，所有屏混在一起会重复。
 local function workspaces_row()
-    local indices, current = niri_workspaces()
-    if not indices or not current then return nil end
+    local output = niri_focused_output()
+    if not output then return nil end
+
+    local workspaces = niri_workspaces()
+    if not workspaces then return nil end
+
+    local on_output = {}
+    for _, workspace in ipairs(workspaces) do
+        if workspace.output == output then
+            on_output[#on_output + 1] = workspace
+        end
+    end
+    if #on_output == 0 then return nil end
+    table.sort(on_output, function(a, b) return a.idx < b.idx end)
 
     local numbers = {}
-    for _, idx in ipairs(indices) do
-        numbers[#numbers + 1] = idx == current
-            and ("[" .. idx .. "]") or tostring(idx)
+    for _, workspace in ipairs(on_output) do
+        numbers[#numbers + 1] = workspace.focused
+            and ("[" .. workspace.idx .. "]") or tostring(workspace.idx)
     end
     return ICON.workspace .. "  " .. table.concat(numbers, " ")
 end
