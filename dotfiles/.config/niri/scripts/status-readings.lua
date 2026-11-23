@@ -7,7 +7,6 @@
 local dir = arg[0]:match("^(.*)/") or "."
 package.path = dir .. "/?.lua;" .. package.path
 
-local ffi = require("ffi")
 local lib = require("lib")
 
 os.setlocale("C", "time")
@@ -35,82 +34,8 @@ local function add(reading, action)
     end
 end
 
--- niri IPC：一行 JSON 请求，一行 JSON 回复。
-local niri_fd
-
-local function niri_connect()
-    local path = os.getenv("NIRI_SOCKET")
-    if not path or path == "" or #path >= 108 then return nil end
-
-    local fd = ffi.C.socket(1, 1, 0)
-    if fd < 0 then return nil end
-
-    local addr = ffi.new("struct sockaddr_un")
-    addr.sun_family = 1
-    ffi.copy(addr.sun_path, path)
-    local length = ffi.offsetof("struct sockaddr_un", "sun_path") + #path + 1
-    if ffi.C.connect(fd, ffi.cast("const void *", addr), length) ~= 0 then
-        ffi.C.close(fd)
-        return nil
-    end
-    return fd
-end
-
-local function niri_request(name)
-    if not niri_fd then niri_fd = niri_connect() end
-    if not niri_fd then return nil end
-
-    local req = '"' .. name .. '"\n'
-    if ffi.C.write(niri_fd, req, #req) ~= #req then
-        ffi.C.close(niri_fd)
-        niri_fd = nil
-        return nil
-    end
-
-    local chunks = {}
-    local buf = ffi.new("char[4096]")
-    while true do
-        local n = ffi.C.read(niri_fd, buf, ffi.sizeof(buf))
-        if n <= 0 then
-            ffi.C.close(niri_fd)
-            niri_fd = nil
-            return nil
-        end
-        local chunk = ffi.string(buf, n)
-        local newline = chunk:find("\n", 1, true)
-        if newline then
-            chunks[#chunks + 1] = chunk:sub(1, newline - 1)
-            local reply = table.concat(chunks)
-            return reply:match('^{"Ok":(.*)}$')
-        end
-        chunks[#chunks + 1] = chunk
-    end
-end
-
--- 顶层 JSON 数组里的对象逐个切出来，跳过字符串里的括号和转义。
-local function objects(json)
-    local result, depth, start, in_string, escaped = {}, 0, nil, false, false
-    for i = 1, #json do
-        local c = json:sub(i, i)
-        if in_string then
-            if escaped then escaped = false
-            elseif c == "\\" then escaped = true
-            elseif c == '"' then in_string = false end
-        elseif c == '"' then
-            in_string = true
-        elseif c == "{" then
-            depth = depth + 1
-            if depth == 1 then start = i end
-        elseif c == "}" then
-            if depth == 1 then result[#result + 1] = json:sub(start, i) end
-            depth = depth - 1
-        end
-    end
-    return result
-end
-
 local function niri_outputs()
-    local payload = niri_request("Outputs")
+    local payload = lib.niri_query("Outputs")
     if not payload then return nil end
     local body = payload:match('^{"Outputs":(.*)}$')
     if not body then return nil end
@@ -136,13 +61,13 @@ end
 -- 工作区按 output 分组：idx 是该 output 上的序号，不同 output 可以重复。
 -- output 为 null 表示这个工作区当前没有屏承载。
 local function niri_workspaces()
-    local payload = niri_request("Workspaces")
+    local payload = lib.niri_query("Workspaces")
     if not payload then return nil end
     local body = payload:match('^{"Workspaces":(.*)}$')
     if not body then return nil end
 
     local workspaces = {}
-    for _, object in ipairs(objects(body)) do
+    for _, object in ipairs(lib.json_objects(body)) do
         local idx = tonumber(object:match('"idx":(%d+)'))
         if idx then
             workspaces[#workspaces + 1] = {
@@ -157,7 +82,7 @@ end
 
 -- 聚焦输出：当前持有键盘焦点的屏。focus-follows-mouse 关着时只随点击切换。
 local function niri_focused_output()
-    local payload = niri_request("FocusedOutput")
+    local payload = lib.niri_query("FocusedOutput")
     if not payload then return nil end
     local body = payload:match('^{"FocusedOutput":(.*)}$')
     if not body then return nil end
@@ -418,10 +343,7 @@ add(ime_row(results.ime), "ime")
 add(workspaces_row(focused_output, workspaces))
 add(clock_row())
 
-if niri_fd then
-    ffi.C.close(niri_fd)
-    niri_fd = nil
-end
+lib.niri_close()
 
 io.write(table.concat(rows, "\n"))
 if #rows > 0 then io.write("\n") end

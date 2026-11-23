@@ -1,5 +1,5 @@
--- LuaJIT 共享运行时：进程/文件/总线查询。
--- status-readings.lua、state.lua、single-instance.lua 共用；不直接执行。
+-- LuaJIT 共享运行时：进程/文件/总线/niri IPC 查询。
+-- status-readings.lua、resize-workspace、state.lua、single-instance.lua 共用；不直接执行。
 local ffi = require("ffi")
 
 ffi.cdef [[
@@ -51,6 +51,104 @@ local LOCK_EX, LOCK_NB = 2, 4
 
 local function close(fd)
     if fd >= 0 then ffi.C.close(fd) end
+end
+
+-- niri IPC：一行 JSON 请求，一行 JSON 回复。连接由模块持有，出错后关闭，
+-- 下一次请求自动重连。成功返回 Ok 里的内容，失败返回 nil 和原因。
+local AF_UNIX, SOCK_STREAM = 1, 1
+local niri_fd
+
+local function niri_close()
+    if niri_fd then
+        close(niri_fd)
+        niri_fd = nil
+    end
+end
+
+local function niri_connect()
+    local path = os.getenv("NIRI_SOCKET")
+    if not path or path == "" or #path >= 108 then
+        return nil, "NIRI_SOCKET 未设置或路径太长"
+    end
+
+    local fd = ffi.C.socket(AF_UNIX, SOCK_STREAM, 0)
+    if fd < 0 then return nil, "socket() 失败" end
+
+    local addr = ffi.new("struct sockaddr_un")
+    addr.sun_family = AF_UNIX
+    ffi.copy(addr.sun_path, path)
+    local length = ffi.offsetof("struct sockaddr_un", "sun_path") + #path + 1
+    if ffi.C.connect(fd, ffi.cast("const void *", addr), length) ~= 0 then
+        close(fd)
+        return nil, "connect " .. path .. " 失败"
+    end
+
+    niri_fd = fd
+    return true
+end
+
+function M.niri_request(json)
+    if not niri_fd then
+        local ok, err = niri_connect()
+        if not ok then return nil, err end
+    end
+
+    local req = json .. "\n"
+    if ffi.C.write(niri_fd, req, #req) ~= #req then
+        niri_close()
+        return nil, "write 失败"
+    end
+
+    local chunks = {}
+    local buf = ffi.new("char[4096]")
+    while true do
+        local n = ffi.C.read(niri_fd, buf, ffi.sizeof(buf))
+        if n <= 0 then
+            niri_close()
+            return nil, "读取回复失败"
+        end
+
+        local chunk = ffi.string(buf, n)
+        local newline = chunk:find("\n", 1, true)
+        if newline then
+            chunks[#chunks + 1] = chunk:sub(1, newline - 1)
+            local reply = table.concat(chunks)
+            local ok = reply:match('^{"Ok":(.*)}$')
+            if ok then return ok end
+            return nil, reply:match('^{"Err":(.*)}$') or reply
+        end
+        chunks[#chunks + 1] = chunk
+    end
+end
+
+function M.niri_query(name)
+    return M.niri_request('"' .. name .. '"')
+end
+
+function M.niri_close()
+    niri_close()
+end
+
+-- 顶层 JSON 数组里的对象逐个切出来，跳过字符串里的括号和转义。
+function M.json_objects(json)
+    local result, depth, start, in_string, escaped = {}, 0, nil, false, false
+    for i = 1, #json do
+        local c = json:sub(i, i)
+        if in_string then
+            if escaped then escaped = false
+            elseif c == "\\" then escaped = true
+            elseif c == '"' then in_string = false end
+        elseif c == '"' then
+            in_string = true
+        elseif c == "{" then
+            depth = depth + 1
+            if depth == 1 then start = i end
+        elseif c == "}" then
+            if depth == 1 then result[#result + 1] = json:sub(start, i) end
+            depth = depth - 1
+        end
+    end
+    return result
 end
 
 function M.readfile(path)

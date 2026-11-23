@@ -12,43 +12,21 @@
 --
 -- 浮窗不参与：宽度预设对浮窗没有意义，贴边还会把浮窗拉进平铺布局。
 -- 贴边用的是 toggle，而 IPC 里没有 is_maximized 字段；贴边时边框被吃掉，
--- window_offset_in_tile 从边框宽度变成 0 —— 用这个布尔值挡掉已经贴边的窗口，
--- 所以连按 Mod+F 只会保持铺满，不会缩回去。
--- 前提是 layout.border 非 off / width 非 0；否则普通窗口的 offset 也是 0，
+-- tile_size 与 window_size 相等，普通窗口则相差两边框宽度。二者都取自当前布局，
+-- 不随 resize 动画插值 —— 用它挡掉已经贴边/正在展开的窗口，
+-- 连按 Mod+F 只会保持铺满，不会缩回去。
+-- 前提是 layout.border 非 off / width 非 0；否则普通窗口的二者也相等，
 -- 与贴边不可区分。本配置 border on / width 1。
 --
 -- MaximizeWindowToEdges 是 toggle：普通多窗口列会被 niri 拆成一列一个窗口再最大化，
--- 标签列则整列一起最大化。fill 因此逐窗口处理并重新统计；宽度预设才按列去重。
+-- 标签列则整列一起最大化。fill 每轮每列只发一个目标，提交后按目标所在列判断影响范围；
+-- 宽度预设才按列去重。
 
-local ffi = require("ffi")
+local dir = arg[0]:match("^(.*)/") or "."
+package.path = dir .. "/?.lua;" .. package.path
+local lib = require("lib")
 
-ffi.cdef [[
-int socket(int, int, int);
-int connect(int, const void *, unsigned int);
-long write(int, const char *, unsigned long);
-long read(int, char *, unsigned long);
-int close(int);
-
-struct sockaddr_un {
-    unsigned short sun_family;
-    char sun_path[108];
-};
-
-struct timespec {
-    long tv_sec;
-    long tv_nsec;
-};
-int nanosleep(const struct timespec *, struct timespec *);
-]]
-
-local AF_UNIX, SOCK_STREAM = 1, 1
-
-local function sleep_ms(ms)
-    local ts = ffi.new("struct timespec")
-    ts.tv_sec = 0
-    ts.tv_nsec = ms * 1000000
-    ffi.C.nanosleep(ts, nil)
-end
+local POLL_SECONDS = 0.01
 
 local function die(msg)
     io.stderr:write("resize-workspace: ", msg, "\n")
@@ -56,71 +34,9 @@ local function die(msg)
 end
 
 local mode = arg[1]
-local proportion = mode and tonumber(mode:match("^(%d+%.?%d*)%%$") or "")
+local proportion = mode and tonumber(mode:match("^(%d+%.?%d*)%%$"))
 if mode ~= "fill" and not proportion then
     die("用法: resize-workspace fill|<百分比>")
-end
-
-local path = os.getenv("NIRI_SOCKET")
-if not path then die("NIRI_SOCKET 未设置，不在 niri 会话里？") end
-if #path >= 108 then die("NIRI_SOCKET 路径太长") end
-
-local fd = ffi.C.socket(AF_UNIX, SOCK_STREAM, 0)
-if fd < 0 then die("socket() 失败") end
-
-local addr = ffi.new("struct sockaddr_un")
-addr.sun_family = AF_UNIX
-ffi.copy(addr.sun_path, path) -- 结构体是零初始化的，结尾自带 \0
-local len = ffi.offsetof("struct sockaddr_un", "sun_path") + #path + 1
-if ffi.C.connect(fd, ffi.cast("const void *", addr), len) ~= 0 then
-    ffi.C.close(fd)
-    die("connect " .. path .. " 失败")
-end
-
-local buf = ffi.new("char[4096]")
-
--- 发一行 JSON 请求，读回一行 JSON 回复；成功返回 Ok 里的内容，失败返回 nil 和错误
-local function request(json)
-    local req = json .. "\n"
-    if ffi.C.write(fd, req, #req) ~= #req then die("write 失败") end
-
-    local chunks = {}
-    while true do
-        local n = ffi.C.read(fd, buf, ffi.sizeof(buf))
-        if n <= 0 then break end
-        local chunk = ffi.string(buf, n)
-        local nl = chunk:find("\n", 1, true)
-        if nl then
-            chunks[#chunks + 1] = chunk:sub(1, nl - 1)
-            local reply = table.concat(chunks)
-            local ok = reply:match('^{"Ok":(.*)}$')
-            if ok then return ok end
-            return nil, reply:match('^{"Err":(.*)}$') or reply
-        end
-        chunks[#chunks + 1] = chunk
-    end
-    die("读取回复失败")
-end
-
--- 把顶层 JSON 数组里的对象逐个切出来，跳过字符串里的括号和转义
-local function objects(json)
-    local result, depth, start, in_string, escaped = {}, 0, nil, false, false
-    for i = 1, #json do
-        local c = json:sub(i, i)
-        if in_string then
-            if escaped then escaped = false
-            elseif c == "\\" then escaped = true
-            elseif c == '"' then in_string = false end
-        elseif c == '"' then in_string = true
-        elseif c == "{" then
-            depth = depth + 1
-            if depth == 1 then start = i end
-        elseif c == "}" then
-            if depth == 1 then result[#result + 1] = json:sub(start, i) end
-            depth = depth - 1
-        end
-    end
-    return result
 end
 
 -- 取字段值，跳过字符串里的内容（标题里出现 "is_floating":false 这种字面量时不误判）。
@@ -136,8 +52,7 @@ local function value_at(json, i)
             elseif d == '"' then return json:sub(i + 1, j - 1) end
             j = j + 1
         end
-    elseif c == "[" or c == "{" then
-        local open, close = c, c == "[" and "]" or "}"
+    elseif c == "[" then
         local depth, in_string, escaped = 0, false, false
         local j = i
         while j <= #json do
@@ -147,8 +62,8 @@ local function value_at(json, i)
                 elseif d == "\\" then escaped = true
                 elseif d == '"' then in_string = false end
             elseif d == '"' then in_string = true
-            elseif d == open then depth = depth + 1
-            elseif d == close then
+            elseif d == "[" then depth = depth + 1
+            elseif d == "]" then
                 depth = depth - 1
                 if depth == 0 then return json:sub(i, j) end
             end
@@ -189,11 +104,11 @@ local function field(json, name)
 end
 
 local function query(name)
-    local payload, err = request('"' .. name .. '"')
+    local payload, err = lib.niri_query(name)
     if not payload then die(name .. " 请求失败: " .. err) end
     local array = payload:match('^{"' .. name .. '":(.*)}$')
     if not array then die("解析 " .. name .. " 回复失败: " .. payload) end
-    return objects(array)
+    return lib.json_objects(array)
 end
 
 local focused_ws
@@ -205,74 +120,127 @@ for _, workspace in ipairs(query("Workspaces")) do
 end
 if not focused_ws then die("找不到聚焦工作区") end
 
--- 统计工作区里还没贴边的平铺窗口，返回第一个 id 和总数。
-local function fill_state(workspace_id)
-    local target, count = nil, 0
+-- 取当前工作区的平铺窗口布局。贴边窗口没有边框，tile_size 与 window_size 相等；
+-- 普通窗口二者相差两边框宽度（本配置 width 1）。
+-- 与 window_offset_in_tile 不同，这两个值不随 resize 动画插值，
+-- 不会在窗口展开到一半时把 offset 判回边框宽度、再 toggle 一次。
+local function layout_snapshot(workspace_id)
+    local result = {}
     for _, window in ipairs(query("Windows")) do
         local id = tonumber(field(window, "id"))
         local ws = tonumber(field(window, "workspace_id"))
+        local pos = field(window, "pos_in_scrolling_layout")
         if id and ws == workspace_id and field(window, "is_floating") == "false" then
-            local offset = tonumber((field(window, "window_offset_in_tile") or ""):match("%[%s*([^,]+),"))
-            if offset and offset ~= 0 then
-                count = count + 1
-                if not target then target = id end
+            local column = pos and tonumber(pos:match("^%[%s*(%d+),")) or id
+            local tile_width = tonumber((field(window, "tile_size") or ""):match("^%[%s*([^,]+),"))
+            local window_width = tonumber((field(window, "window_size") or ""):match("^%[%s*([^,]+),"))
+            if column and tile_width and window_width then
+                result[#result + 1] = {
+                    id = id,
+                    column = column,
+                    filled = tile_width == window_width,
+                }
             end
         end
     end
-    return target, count
+    return result
+end
+
+local function find_window(windows, id)
+    for _, window in ipairs(windows) do
+        if window.id == id then return window end
+    end
+end
+
+local function maximize_window(id)
+    local _, err = lib.niri_request('{"Action":{"MaximizeWindowToEdges":{"id":' .. id .. '}}}')
+    return err
+end
+
+-- niri 的动作回复早于客户端提交新尺寸；等 expected 里的窗口 tile_size 追平 window_size。
+-- 窗口已关闭时没有可等的对象，按已处理返回。
+local function wait_all_filled(workspace_id, expected, timeout_ms)
+    for _ = 1, timeout_ms / 10 do
+        local by_id = {}
+        for _, window in ipairs(layout_snapshot(workspace_id)) do
+            by_id[window.id] = window
+        end
+        local remaining = 0
+        for id in pairs(expected) do
+            local window = by_id[id]
+            if window and not window.filled then remaining = remaining + 1 end
+        end
+        if remaining == 0 then return true end
+        lib.nanosleep(POLL_SECONDS)
+    end
+    return false
 end
 
 -- MaximizeWindowToEdges 是 toggle：普通多窗口列会被 niri 拆成一列一个窗口再最大化，
--- 标签列则整列一起最大化。所以不能简单按列去重（会漏掉堆叠窗口），
--- 也不能对每个窗口盲发（标签列会被第二次请求取消）。
--- 每次只处理一个窗口，动作后重新统计，直到没有未贴边的窗口。
+-- 标签列则整列一起最大化。每轮每个列只处理一个窗口：动作后普通列的目标已被拆到
+-- 新列，同列其余窗口下一轮仍会被选中；标签列的目标仍和整列在一起，整列标记处理。
 local function fill_workspace(workspace_id)
-    local attempts = 0
-    while attempts < 128 do
-        local target, before = fill_state(workspace_id)
-        if not target then return end
-        local _, err = request('{"Action":{"MaximizeWindowToEdges":{"id":' .. target .. '}}}')
-        if err then
-            io.stderr:write("resize-workspace: ", err, "\n")
-            return
+    local done, expected = {}, {}
+    while true do
+        local targets, target_ids = {}, {}
+        local columns = {}
+        for _, window in ipairs(layout_snapshot(workspace_id)) do
+            if not window.filled and not done[window.id] and not columns[window.column] then
+                columns[window.column] = true
+                targets[#targets + 1] = window
+                target_ids[window.id] = true
+            end
         end
-        -- niri 的 action 回复早于布局事务落地，立刻查会看到旧 offset。
-        -- 最多等 200ms，看到未贴边数量下降再处理下一个窗口。
-        local after = before
-        for _ = 1, 20 do
-            _, after = fill_state(workspace_id)
-            if after < before then break end
-            sleep_ms(10)
+        if #targets == 0 then break end
+
+        for _, window in ipairs(targets) do
+            done[window.id] = true
+            local err = maximize_window(window.id)
+            if err then
+                io.stderr:write("resize-workspace: ", err, "\n")
+                target_ids[window.id] = nil
+            else
+                expected[window.id] = true
+            end
         end
-        if after >= before then
-            io.stderr:write("resize-workspace: fill 未生效，可能有全屏/固定尺寸窗口\n")
-            return
+
+        -- 动作回复早于客户端提交新尺寸；等本轮目标都提交后再看列结构。
+        if not wait_all_filled(workspace_id, target_ids, 500) then
+            io.stderr:write("resize-workspace: 部分列未在预期时间内贴边\n")
         end
-        attempts = attempts + 1
+
+        -- 目标提交后所在的整列就是这次动作影响的列：普通列只剩被拆出的目标，
+        -- 标签列仍包含同列窗口。整列标记掉，下一轮才不会再次 toggle。
+        local after = layout_snapshot(workspace_id)
+        local target_columns = {}
+        for id in pairs(target_ids) do
+            local window = find_window(after, id)
+            if window then target_columns[window.column] = true end
+        end
+        for _, window in ipairs(after) do
+            if target_columns[window.column] then
+                done[window.id] = true
+                if not window.filled then expected[window.id] = true end
+            end
+        end
     end
-    io.stderr:write("resize-workspace: fill 迭代次数过多\n")
+
+    -- 等动作都落到客户端；这样紧接着再按 Mod+F 时，仍在提交中的窗口不会被判成未贴边。
+    if not wait_all_filled(workspace_id, expected, 1000) then
+        io.stderr:write("resize-workspace: 部分窗口未在预期时间内贴边\n")
+    end
 end
 
 if mode == "fill" then
     fill_workspace(focused_ws)
 else
-    -- 宽度是每列一份，同一列只发一次；标题里的字面量不会被 field 命中
-    local targets, columns = {}, {}
-    for _, window in ipairs(query("Windows")) do
-        local id = tonumber(field(window, "id"))
-        local ws = tonumber(field(window, "workspace_id"))
-        if id and ws == focused_ws and field(window, "is_floating") == "false" then
-            local column = (field(window, "pos_in_scrolling_layout") or ""):match("%[(%d+),") or id
-            if not columns[column] then
-                columns[column] = true
-                targets[#targets + 1] = id
-            end
+    local columns = {}
+    for _, window in ipairs(layout_snapshot(focused_ws)) do
+        if not columns[window.column] then
+            columns[window.column] = true
+            local _, err = lib.niri_request('{"Action":{"SetWindowWidth":{"id":' .. window.id ..
+                ',"change":{"SetProportion":' .. proportion .. '}}}}')
+            if err then io.stderr:write("resize-workspace: ", err, "\n") end
         end
-    end
-
-    for _, id in ipairs(targets) do
-        local _, err = request('{"Action":{"SetWindowWidth":{"id":' .. id ..
-            ',"change":{"SetProportion":' .. proportion .. '}}}}')
-        if err then io.stderr:write("resize-workspace: ", err, "\n") end
     end
 end
