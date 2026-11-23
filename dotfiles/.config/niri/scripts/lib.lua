@@ -24,6 +24,7 @@ void _exit(int);
 int open(const char *, int, ...);
 int flock(int, int);
 int kill(pid_t, int);
+long readlink(const char *, char *, unsigned long);
 struct timespec { long tv_sec; long tv_nsec; };
 int nanosleep(const struct timespec *, struct timespec *);
 int access(const char *, int);
@@ -60,6 +61,14 @@ function M.readfile(path)
     return line
 end
 
+-- 软链接的目标（相对路径原样返回）。
+function M.readlink(path)
+    local buf = ffi.new("char[256]")
+    local n = ffi.C.readlink(path, buf, 255)
+    if n <= 0 then return nil end
+    return ffi.string(buf, n)
+end
+
 function M.listdir(path)
     local entries = {}
     local dir = ffi.C.opendir(path)
@@ -76,17 +85,17 @@ function M.listdir(path)
     return entries
 end
 
--- fork/exec，stdout 走管道，stdin/stderr 接 /dev/null。
--- 返回 stdout 内容和 waitpid 的原始状态（0 表示成功）。
-function M.run(argv)
+-- fork/exec 一个命令：stdout 走管道，stdin/stderr 接 /dev/null。
+-- 返回 pid 和管道读端；起不来返回 nil。
+local function spawn(argv)
     local fds = ffi.new("int[2]")
-    if ffi.C.pipe(fds) ~= 0 then return nil, -1 end
+    if ffi.C.pipe(fds) ~= 0 then return nil end
 
     local pid = ffi.C.fork()
     if pid < 0 then
         close(fds[0])
         close(fds[1])
-        return nil, -1
+        return nil
     end
 
     if pid == 0 then
@@ -114,18 +123,56 @@ function M.run(argv)
     end
 
     ffi.C.close(fds[1])
+    return pid, fds[0]
+end
+
+-- 读到 EOF 为止。
+local function read_all(fd)
     local chunks = {}
     local buf = ffi.new("char[4096]")
     while true do
-        local n = ffi.C.read(fds[0], buf, ffi.sizeof(buf))
+        local n = ffi.C.read(fd, buf, ffi.sizeof(buf))
         if n <= 0 then break end
         chunks[#chunks + 1] = ffi.string(buf, n)
     end
-    ffi.C.close(fds[0])
+    return table.concat(chunks)
+end
 
+-- 等子进程退出，返回 waitpid 的原始状态（0 表示成功）。
+local function wait(pid)
     local status = ffi.new("int[1]")
     ffi.C.waitpid(pid, status, 0)
-    return table.concat(chunks), status[0]
+    return status[0]
+end
+
+-- 一批命令同时起来：所有子进程先 fork 完，父进程再统一收 stdout、等退出。
+-- 等待时间因此是最慢的那条命令，而不是所有命令的耗时之和。
+-- 返回与 argvs 等长的列表，每项 { output = ..., status = ... }。
+function M.run_all(argvs)
+    local children = {}
+    for i, argv in ipairs(argvs) do
+        local pid, fd = spawn(argv)
+        children[i] = { pid = pid, fd = fd, output = nil, status = -1 }
+    end
+
+    -- 逐个收 stdout：每条命令的输出都塞得进管道缓冲，
+    -- 谁先写完谁先退出，不会互相等。
+    for _, child in ipairs(children) do
+        if child.pid then
+            child.output = read_all(child.fd)
+            close(child.fd)
+            child.status = wait(child.pid)
+        end
+    end
+
+    return children
+end
+
+-- fork/exec，stdout 走管道，stdin/stderr 接 /dev/null。
+-- 返回 stdout 内容和 waitpid 的原始状态（0 表示成功）。
+function M.run(argv)
+    local result = M.run_all({ argv })[1]
+    return result.output, result.status
 end
 
 function M.which(name)
@@ -207,15 +254,24 @@ function M.recording_state(recorder)
     return nil
 end
 
--- 与 idle-inhibit state 的语义一致：查询失败返回 nil，不把“查不到”当成 off。
-function M.idle_state()
-    local out, status = M.run({
+-- 熄屏抑制的查询命令。命令与判定分开：状态面板要把这条查询
+-- 和其他探测并发跑，state.lua 仍然要一把梭的版本。
+function M.idle_query()
+    return {
         "busctl", "--system", "call",
         "org.freedesktop.login1", "/org/freedesktop/login1",
         "org.freedesktop.login1.Manager", "ListInhibitors",
-    })
+    }
+end
+
+-- 与 idle-inhibit state 的语义一致：查询失败返回 nil，不把“查不到”当成 off。
+function M.idle_state_from(out, status)
     if status ~= 0 or not out then return nil end
     return out:find('"idle" "idle-inhibit" "', 1, true) and "on" or "off"
+end
+
+function M.idle_state()
+    return M.idle_state_from(M.run(M.idle_query()))
 end
 
 function M.nanosleep(seconds)
