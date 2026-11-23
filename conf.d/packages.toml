@@ -49,6 +49,7 @@
 "pacman:tinymist" = "latest"
 "pacman:tree-sitter-cli" = "latest"
 "pacman:git" = "latest"
+"pacman:github-cli" = "latest"
 "pacman:jujutsu" = "latest"
 "pacman:valgrind" = "latest"
 "pacman:age" = "latest"
