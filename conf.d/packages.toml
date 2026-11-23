@@ -108,6 +108,7 @@
 "pacman:typos" = "latest"
 "pacman:pnpm" = "latest"
 "pacman:pavucontrol" = "latest"
+"pacman:just" = "latest"
 
 "flatpak-user:com.tencent.WeChat" = "latest"
 "flatpak-user:com.qq.QQ" = "latest"
