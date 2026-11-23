@@ -258,6 +258,13 @@ mode = "0644"
 state = "running"
 enabled = true
 
+# upowerd 只由 D-Bus 按需激活, 开机后不常驻。状态面板 (niri/scripts/status) 读电量
+# 百分比走它的 Percentage 属性 (sysfs capacity 每次 ~83ms), 于是每次开机第一次开面板
+# 就成了激活者, 要等 daemon 起来 ~256ms。常驻后那一跳只要 ~3ms。
+[bootstrap.services.upower]
+state = "running"
+enabled = true
+
 # WebHID 配置器需要能 open /dev/hidraw*。规则不回溯已插设备，需重插生效。
 [bootstrap.files."/etc/udev/rules.d/70-hidraw-access.rules"]
 content = """

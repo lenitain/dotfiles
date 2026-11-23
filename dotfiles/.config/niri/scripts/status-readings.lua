@@ -245,7 +245,8 @@ local function ddc_buses()
         elseif line:match("^Display ") then
             valid = true
         else
-            local parsed_bus = line:match("^%s*I2C bus:%s*(%S+)")
+            -- --bus 只收总线号；detect 报的是 /dev/i2c-N 设备路径，原样传会被拒绝
+            local parsed_bus = line:match("^%s*I2C bus:%s*/dev/i2c%-(%d+)")
             if parsed_bus then bus = parsed_bus end
             local connector = line:match("^%s*DRM connector:%s*(%S+)")
             if connector then
@@ -259,8 +260,9 @@ end
 
 local function ddc_percentage(bus)
     if not bus or bus == "" then return nil end
+    -- 0x10 = Brightness；ddcutil 的 feature code 一律按十六进制解析
     local out, status = lib.run({
-        "timeout", "1", "ddcutil", "getvcp", "4", "--bus", bus,
+        "timeout", "1", "ddcutil", "getvcp", "10", "--bus", bus,
     })
     if status ~= 0 or not out then return nil end
 
