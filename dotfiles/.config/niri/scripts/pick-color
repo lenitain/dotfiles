@@ -1,0 +1,44 @@
+#!/bin/bash
+# 取色：niri 内置 pick-color 选屏幕像素 → 颜色写进剪贴板 + mako 通知。
+#
+# 取色本身由 niri 完成（读的是渲染后的最终像素，含模糊等效果），
+# 本脚本只负责解析输出、写剪贴板、发通知。
+#
+# niri msg pick-color 阻塞等待点选，按下任意鼠标键即取色，Esc 取消，
+# 输出两行：
+#   Picked color: rgb(r, g, b)
+#   Hex: #rrggbb
+# 取消时输出 "No color was picked."，此时不打扰用户。
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib.sh"
+
+OUTPUT="$(niri msg pick-color 2>&1 || true)"
+
+HEX="$(printf '%s\n' "$OUTPUT" | sed -n 's/^Hex: \(#[[:xdigit:]]\{6\}\)$/\1/p')"
+RGB="$(printf '%s\n' "$OUTPUT" | sed -n 's/^Picked color: \(rgb(.*)\)$/\1/p')"
+
+if [ -z "$HEX" ]; then
+    # 取消点选是正常路径，不提示；其余情况说明命令本身出了问题。
+    if [ "$OUTPUT" != "No color was picked." ]; then
+        notify "取色失败" "${OUTPUT:-niri msg pick-color 没有输出}"
+    fi
+    exit 1
+fi
+
+# 色块图标：mako 直接把图标画出来，一眼能对上颜色。
+ICON=""
+TMP_ICON="$(mktemp /tmp/niri-pick-color_XXXXXX.png)"
+trap 'rm -f "$TMP_ICON"' EXIT
+if magick -size 64x64 "xc:$HEX" "$TMP_ICON" 2>/dev/null; then
+    ICON="$TMP_ICON"
+fi
+
+# 剪贴板放不带 # 的 hex（纯 6 位十六进制）。
+# 通知正文带 #，是习惯的 CSS 写法。
+# 色块图标用带 # 的形式，magick 认这个写法。
+if copy_path "${HEX#\#}"; then
+    notify "取色（已复制）" "$HEX  $RGB" "$ICON"
+fi

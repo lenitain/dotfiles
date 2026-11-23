@@ -300,6 +300,11 @@ binds {
         spawn "~/.config/niri/scripts/ocr-select"
     }
 
+    // 取色：niri 内置 pick-color 选像素，颜色进剪贴板 + mako 通知
+    MOD+SHIFT+G hotkey-overlay-title="Pick color" {
+        spawn "~/.config/niri/scripts/pick-color"
+    }
+
     // Screenshots
     MOD+P hotkey-overlay-title="Screenshot" {
         spawn "~/.config/niri/scripts/screenshot"
