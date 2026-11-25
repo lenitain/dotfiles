@@ -2,12 +2,13 @@
 # 由 conf.d/prompt.sh 挂在 PROMPT_COMMAND 第一位，每次提示符重建一次 PS1。
 . "${BASH_SOURCE[0]%/*}/lib.sh"
 
-# pure 4.19.2 的 bash 版提示符。
+# 照 pure（zsh 上游）的两行布局在 bash 里重写的提示符。
 # 只在 PROMPT_COMMAND 里运行：结果写进 PS1（不再写 PS1_FINAL），本身不输出内容。
 #
-# 渲染归 flyline：PS1 里的 FLYLINE_REPO 由 flyline 换成 widget 输出（仓库段
-# 异步跑），这里只算 flyline 拿不到的东西：cwd 的宽度取舍、会话开始后就固定
-# 的段，以及只能从 shell 状态（PIPESTATUS / 环境变量）里读的符号行。
+# 渲染归 flyline：PS1 里的 FLYLINE_REPO 由 flyline 换成 widget 输出（flyline 同步等
+# 这个 widget 至多 100ms，见 flyline/widget.sh），这里只算 flyline 拿不到的东西：
+# cwd 的宽度取舍、会话开始后就固定的段，以及只能从 shell 状态（PIPESTATUS / 环境变量）
+# 里读的符号行。
 
 # flyline widget 的实际宽度 bash 看不到（PS1 里只有占位符名字）：仓库里先用
 # lib.sh 的上限预留，之后用 widget 写回的实际宽度（__bash_prompt_repo_width_read）。
@@ -104,7 +105,7 @@ __bash_prompt() {
 
     [ -n "${__bash_prompt_static_ready-}" ] || __bash_prompt_build_static
 
-    # 第一行的仓库段是 flyline 的异步 widget：宽度按上一次 widget 写回的实际值计入，
+    # 第一行的仓库段由 flyline 的 widget 渲染：宽度按上一次 widget 写回的实际值计入，
     # 还没有缓存（本仓库第一条提示符）时用上限；占位符交给 flyline 替换。
     # flyline 没加载成功时两件事都不做——否则 PS1 里会原样显示 FLYLINE_REPO 这个字符串。
     local repo_reserved=0 repo_placeholder=''

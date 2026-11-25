@@ -1,6 +1,6 @@
 # bash 配置
 
-由 mise dotfiles 部署（`~/.bashrc`、`~/.bash_profile`、`~/.config/bash` 都是 symlink）。原则：**每个组件只有一个 owner、一条加载路径**。
+由 mise dotfiles 部署（`~/.bashrc`、`~/.bash_profile` 是 symlink，`~/.config/bash` 是硬链接的目录）。原则：**每个组件只有一个 owner、一条加载路径**。
 
 > fish 已于 2026-11-01 移除（包与 `~/.config/fish` 都已删除）：这棵树现在是唯一的 shell 配置。
 
@@ -71,7 +71,7 @@
 | bash / bash-completion | pacman | `/etc/bash.bashrc` |
 | flyline | mise `github:HalFrgrd/flyline` | `flyline/load.sh`：`enable -f <latest>/libflyline.so*` |
 | flyline 全部配置 | `flyline/`（style / widget / behavior） | 每个会话重新声明（flyline 没有配置文件） |
-| 提示符 | 本目录（pure 4.19.2 的 bash 版） | `conf.d/prompt.sh` 接线 → `prompt/ps1.sh` |
+| 提示符 | 本目录（照 pure 的 zsh 版布局在 bash 里重写） | `conf.d/prompt.sh` 接线 → `prompt/ps1.sh` |
 | 提示符 widget | `widgets/repo.sh` → `prompt/repo.sh` | `conf.d/flyline.sh` 注册，flyline 子进程调用 |
 | 配色 | `theme/everforest_dark_medium.sh` | `conf.d/flyline.sh` 与 `conf.d/fzf.sh` 共用的十六进制值 |
 | fzf 主题与布局 | `conf.d/fzf.sh` | `__bash_fzf_opts` 生成 `FZF_DEFAULT_OPTS`（布局 reverse：输入栏在上） |
@@ -87,7 +87,7 @@ flyline 是 bash 的 loadable builtin（不是独立进程），但它和 bash �
 | 归 flyline | 归 bash |
 | --- | --- |
 | PS1/RPS1/PS1_FILL/PROMPT_RULER/PS2 的解析与渲染（`\[ \]`、ANSI、`\D{}` 动态时间、widget 占位符、`*_FINAL` 瞬态提示符） | `PROMPT_COMMAND` 执行点（flyline 不跑任何 hook） |
-| 所有异步 widget 的执行、超时、`prev` 缓存 | cwd 的宽度取舍（flyline 不截断提示符） |
+| widget 的执行：同步等待（`--block`）或后台跑（`--placeholder prev`）、超时处理 | cwd 的宽度取舍（flyline 不截断提示符） |
 | 键位与 remap、`runBashCommand` 调 bash 函数 | 会话内不变的段：`[zmx]`、SSH 的 user@host |
 | 补全/建议/模糊历史搜索、光标绘制、鼠标、帧率 | — |
 | shell integration codes（OSC 133 / 633；OSC 7 只在 shell 启动时发一次） | 窗口标题 OSC 0（flyline 不发标题；空闲时 cwd，执行中 cwd – 程序）、OSC 7 目录上报（`prompt/hooks.sh`，每条提示符发一次） |
@@ -99,7 +99,11 @@ flyline 是 bash 的 loadable builtin（不是独立进程），但它和 bash �
   能拿它判断“要不要 `enable -f`”，本目录用不导出的 `__bash_flyline_enabled`。
 - **flyline 自定义 widget 的宽度 bash 看不到**（PS1 里只有占位符名字）。`prompt/ps1.sh`
   先用上限预留，之后按 widget 写回的实际宽度缩 cwd（`prompt/lib.sh` 的
-  `__bash_prompt_repo_width_*`）；慢命令超时后显示空白，不会画出上一个仓库的段。
+  `__bash_prompt_repo_width_*`）；widget 超时后这一轮显示空白（`--placeholder 0`），
+  不会画出上一个仓库的段。
+- **flyline 的 widget 默认是同步等待**：`--block <毫秒>` 表示提示符最多等这么久，
+  超时就放弃等待、改用 `--placeholder` 的占位（`0` 是空白），子进程在后台跑完但
+  结果丢弃，下一条提示符重新 spawn 一次。不带 `--block` 才是后台跑、显示上一次的结果。
 - **cwd 只有“真实路径的后缀”才能被 flyline 认出来**：`find_cwd_in_span` 匹配 cwd 表示形式的最长
   后缀，并允许前缀是 `…`（或点串）。所以缩略用 `…/tail/segments`，每段仍然可点击跳转；
   `~/.c/m/d/foo` 这种“每段只留首字母”的写法 flyline 只能匹配到最后一段。
@@ -168,8 +172,8 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
   git HEAD 变过、jj 重置了工作副本父提交）。冲突的书签名后面画红色 `!`
   （`main~1!`、`main!`）：`jj log <名字>` 会直接报 `Name ... is conflicted`，
   `jj bookmark list` 看两个目标，`jj bookmark set <名字> -r <rev>` 定夺。
-  flyline 只等 100ms，超时那段时间仓库段是空白
-  （`--placeholder 0`），提示符不再被 `jj log` 或 `git status` 卡住。
+  仓库段由 flyline 同步等待至多 100ms（`--block 100`）：这一轮提示符被
+  `jj log` / `git status` 拖住至多 100ms，超时则仓库段空白（`--placeholder 0`）。
 - 符号行（第 2 行）的段按 pure 的顺序拼，每条提示符重算，都只读变量和内建、不 fork：
   root 的 `#`（`$EUID`）/ nix develop 的 `❄`+`$IN_NIX_SHELL` / venv 名
   （`VIRTUAL_ENV_PROMPT` → `VIRTUAL_ENV` → `CONDA_DEFAULT_ENV`，只取末段）/ 上一条命令的
@@ -211,6 +215,9 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
 - 仓库段的宽度缓存按 shell 而不是按仓库：刚 `cd` 进另一个仓库时，第一条提示符用的是
   上一个仓库的实际宽度；第一次进仓库（没有缓存）用 43 列上限（jj、git 两段合计）。仓库段超过预算
   （超长分支名、多个书签）时第一行仍可能折行一次。
+- 仓库段每条提示符都要跑一次 jj/git，`--block 100` 是同步等待：本机实测提示符构造
+  平均多约 70ms（`flyline perf dump` 里的 `startup: prompt manager`），慢仓库顶到
+  100ms 时那轮仓库段是空白。
 - Tab 补全/历史搜索 UI 由 flyline 提供。
 - 历史后端用 bash 原生（`histappend` + 提示符后 `history -a`）；换成 flyline 的 JSONL 后端会
   丢掉 `!!`/`!$`/`history`，所以不建议。

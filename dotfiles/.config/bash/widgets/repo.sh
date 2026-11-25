@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # flyline 的 custom prompt widget：输出第一行的仓库段（共置仓库里 jj、git 两段都画）。
 # 由 conf.d/flyline.sh 注册成 FLYLINE_REPO，每个提示符在子进程里跑一次；
-# 超过 --block 的等待时间就显示空白（--placeholder 0），慢仓库不阻塞提示符。
+# flyline 同步等待至多 --block 的时间，超时就显示空白（--placeholder 0），
+# 子进程在后台跑完但结果丢弃，下一条提示符重新 spawn 一次。
 # 契约：输出单行，没有内容就什么都不打印，退出码永远 0。
 # 另外把这次输出的可见宽度写进缓存，供 ps1.sh 下一条提示符按实际宽度缩 cwd。
 
