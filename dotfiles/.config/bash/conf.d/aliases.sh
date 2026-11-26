@@ -34,7 +34,7 @@ alias gitpkg='pacman -Q | grep -i "\-git" | wc -l'
 # ─── System ───
 alias jctl='journalctl -p 3 -xb'
 alias hw='hwinfo --short'
-alias ssu='systemctl suspend'
+alias s='systemctl suspend'
 alias psmem='ps auxf | sort -nr -k 4'
 alias psmem10='ps auxf | sort -nr -k 4 | head -10'
 
