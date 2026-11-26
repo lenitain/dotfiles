@@ -26,7 +26,6 @@ lua-language-server = "latest"  # aqua:LuaLS/lua-language-server
 zmx = "latest"                  # github:neurosnap/zmx
 "github:MichaelKinsy/PiG" = "latest"
 "github:HalFrgrd/flyline" = "latest"
-"github:3axap4eHko/prmt" = "latest"   # release 资产名带 runner 标签（ubuntu-24.04 等），mise 自动匹配 gnu/x86_64
 
 # ── ③ 语言生态工具：跟包管理器走 ─────────────────────────────────
 "npm:typescript" = "latest"
