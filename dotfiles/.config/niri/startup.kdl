@@ -1,6 +1,7 @@
 // Startup commands
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
-spawn-at-startup "~/.config/niri/scripts/idle-inhibit" "on"
+// 休眠前锁屏：没有定时熄屏，只有系统准备挂起时锁一次。
+spawn-at-startup "swayidle" "-w" "before-sleep" "swaylock -f"
 spawn-at-startup "foot" "--server"
 spawn-sh-at-startup "swaybg -i \"$HOME/.local/share/wallpapers/starry-night-sky.png\""
 prefer-no-csd

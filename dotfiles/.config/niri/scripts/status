@@ -35,6 +35,5 @@ action=$(snapshot | "$dir/fuzzel-wrapper" \
 case $action in
     volume) niri msg action spawn -- pavucontrol ;;
     ime) fcitx5-remote -t ;;
-    idle) "$dir/idle-inhibit" toggle ;;
     record) "$dir/record" toggle ;;
 esac

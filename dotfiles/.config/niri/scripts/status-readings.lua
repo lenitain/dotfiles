@@ -15,7 +15,6 @@ local ICON = {
     clock = "󰥔",
     brightness = "󰖨",
     language = "󰗊",
-    monitor = "󰍹",
     record = "󰑊",
     video = "󰕧",
     workspace = "󰀻",
@@ -280,12 +279,6 @@ local function recording_row()
     return icon .. "  " .. state
 end
 
-local function idle_row(result)
-    local state = lib.idle_state_from(result.output, result.status)
-    if not state then return nil end
-    return ICON.monitor .. "  " .. state
-end
-
 local function clock_row()
     return ICON.clock .. "  " .. os.date("%m-%d %a %H:%M")
 end
@@ -299,7 +292,6 @@ local backlights = backlight_percentages()
 
 -- 外部显示器的亮度走 DDC/CI，总线号由 DRM 连接器给出。
 local probes = {
-    probe("idle", lib.idle_query()),
     probe("volume", { "wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@" }),
     probe("ime", { "fcitx5-remote" }),
 }
@@ -335,7 +327,6 @@ for i, item in ipairs(probes) do
 end
 
 add(recording_row(), "record")
-add(idle_row(results.idle), "idle")
 add(battery_row(results, battery, ac))
 for _, reading in ipairs(brightness_rows(outputs, backlights, results)) do add(reading) end
 add(volume_row(results.volume), "volume")

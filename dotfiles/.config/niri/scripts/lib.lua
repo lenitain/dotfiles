@@ -352,26 +352,6 @@ function M.recording_state(recorder)
     return nil
 end
 
--- 熄屏抑制的查询命令。命令与判定分开：状态面板要把这条查询
--- 和其他探测并发跑，state.lua 仍然要一把梭的版本。
-function M.idle_query()
-    return {
-        "busctl", "--system", "call",
-        "org.freedesktop.login1", "/org/freedesktop/login1",
-        "org.freedesktop.login1.Manager", "ListInhibitors",
-    }
-end
-
--- 与 idle-inhibit state 的语义一致：查询失败返回 nil，不把“查不到”当成 off。
-function M.idle_state_from(out, status)
-    if status ~= 0 or not out then return nil end
-    return out:find('"idle" "idle-inhibit" "', 1, true) and "on" or "off"
-end
-
-function M.idle_state()
-    return M.idle_state_from(M.run(M.idle_query()))
-end
-
 function M.nanosleep(seconds)
     local sec = math.floor(seconds)
     local ts = ffi.new("struct timespec")
