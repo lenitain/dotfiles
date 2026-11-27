@@ -6,6 +6,8 @@
 --   resize-workspace 33.3333%   ……（Mod+S）
 --   resize-workspace 25%        ……（Mod+A）
 --
+-- 宽度预设之后会把可见列整体居中（center-visible-columns）。
+--
 -- 直接走 niri 的 IPC socket（$NIRI_SOCKET），协议是「一行 JSON 请求，一行 JSON 回复」，
 -- 所以一次按键只有一个 luajit 进程 + 一次 connect，不起 bash/jq/niri msg 子进程。
 -- 动作都带窗口 id，不会改动聚焦。
@@ -138,12 +140,52 @@ local function layout_snapshot(workspace_id)
                 result[#result + 1] = {
                     id = id,
                     column = column,
+                    width = tile_width,
                     filled = tile_width == window_width,
                 }
             end
         end
     end
     return result
+end
+
+-- 已提交的列宽（按列去重）。客户端提交新尺寸之前，这里还是旧宽度。
+local function column_widths(workspace_id)
+    local widths = {}
+    for _, window in ipairs(layout_snapshot(workspace_id)) do
+        widths[window.column] = window.width
+    end
+    return widths
+end
+
+-- 两份列宽是否一致：列集合相同，且宽度相差不超过 0.5。
+local function widths_equal(a, b)
+    for column, width in pairs(a) do
+        if b[column] == nil or math.abs(b[column] - width) > 0.5 then return false end
+    end
+    for column in pairs(b) do
+        if a[column] == nil then return false end
+    end
+    return true
+end
+
+-- 等列宽提交：niri 记的是客户端已提交的列宽，提交前发居中动作会按旧宽度算位置。
+-- 连续两轮读数一致才算落定。一轮都没变说明本来就是这个宽度，
+-- 等到超时也继续，居中按当前宽度算就是对的。
+local function wait_widths_committed(workspace_id, before, timeout_ms)
+    local prev, stable = nil, 0
+    for _ = 1, timeout_ms / 10 do
+        local cur = column_widths(workspace_id)
+        if prev and widths_equal(prev, cur) then
+            stable = stable + 1
+            if stable >= 2 and not widths_equal(before, cur) then return true end
+        else
+            stable = 0
+        end
+        prev = cur
+        lib.nanosleep(POLL_SECONDS)
+    end
+    return false
 end
 
 local function find_window(windows, id)
@@ -234,6 +276,7 @@ end
 if mode == "fill" then
     fill_workspace(focused_ws)
 else
+    local before = column_widths(focused_ws)
     local columns = {}
     for _, window in ipairs(layout_snapshot(focused_ws)) do
         if not columns[window.column] then
@@ -243,4 +286,8 @@ else
             if err then io.stderr:write("resize-workspace: ", err, "\n") end
         end
     end
+    -- 新列宽提交之后再居中，否则 niri 按旧宽度算位置。
+    wait_widths_committed(focused_ws, before, 500)
+    local _, err = lib.niri_request('{"Action":{"CenterVisibleColumns":{}}}')
+    if err then io.stderr:write("resize-workspace: ", err, "\n") end
 end
