@@ -276,10 +276,6 @@ binds {
     MOD+F repeat=false hotkey-overlay-title="Fill workspace to screen edges" {
         spawn "~/.config/niri/scripts/resize-workspace" "fill"
     }
-    // 真全屏；与 Mod+Ctrl+F 同一个动作
-    MOD+SHIFT+F hotkey-overlay-title="Fullscreen window" {
-        fullscreen-window
-    }
     MOD+D repeat=false hotkey-overlay-title="Set workspace columns to 50%" {
         spawn "~/.config/niri/scripts/resize-workspace" "50%"
     }
