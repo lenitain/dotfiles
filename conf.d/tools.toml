@@ -25,7 +25,10 @@ zls = "latest"                  # aqua:zigtools/zls（recipe 走 builds.zigtools
 lua-language-server = "latest"  # aqua:LuaLS/lua-language-server
 zmx = "latest"                  # github:neurosnap/zmx
 "github:MichaelKinsy/PiG" = "latest"
+"github:vercel-labs/fx" = "latest"
+"github:tontinton/maki" = "latest"
 "github:HalFrgrd/flyline" = "latest"
+"aqua:numtide/treefmt" = "latest"
 
 # ── ③ 语言生态工具：跟包管理器走 ─────────────────────────────────
 "npm:typescript" = "latest"
