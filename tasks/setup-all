@@ -64,7 +64,7 @@ run_step() {  # run_step <任务名> <说明>
 }
 
 # ── 非 GitHub 组: 本机设置 / 国内镜像 ──
-run_step setup-tuning         "性能调优 (BBR/Wi-Fi 省电/电源档位)"
+run_step setup-tuning         "调优 (Wi-Fi/电源档位) + 系统默认值"
 run_step setup-desktop        "dconf/XDG"
 run_step setup-pig            "PiG agent + 扩展"
 

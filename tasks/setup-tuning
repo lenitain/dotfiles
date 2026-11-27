@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-#MISE description="桌面性能调优 (BBR/Wi-Fi 省电/电源档位): 立即应用并体检"
+#MISE description="桌面调优 (Wi-Fi/电源档位/NVMe/THP/journal): 立即应用并体检"
 
-# 目标场景: 编程、等编译、等下载。三件事:
-#   1) TCP 拥塞控制 → BBR      (Wi-Fi、高 RTT 链路吞吐优于 cubic)
-#   2) Wi-Fi 省电   → off      (rtw88 等省电下掉吞吐、加延迟)
-#   3) 电源档位     → 插电 performance / 电池 balanced
+# 目标场景: 编程、等编译、等下载。
+# 桌面性能两件事:
+#   1) Wi-Fi 省电   → off      (rtw88 等省电下掉吞吐、加延迟)
+#   2) 电源档位     → 插电 performance / 电池 balanced
+# 系统默认值三件事 (与硬件无关, 新机器同样生效):
+#   3) NVMe 调度器  → none     (单队列消费级盘少一层队列管理)
+#   4) THP          → madvise  (always 的折叠开销与内存膨胀不划算)
+#   5) journald     → 500M     (默认 50M 很快滚完, 排查时没有历史)
 #
 # 配置文件与 systemd 单元由 mise bootstrap 收敛 (见 conf.d/system.toml),
 # 本任务只负责"立即生效 + 体检"。幂等, 可重复运行。
@@ -23,24 +27,25 @@ as_root() {
   fi
 }
 
-sysctl_dropin=/etc/sysctl.d/99-net-tuning.conf
 power_profile_script=/usr/local/bin/power-profile
 wifi_script=/usr/local/bin/wifi-powersave-off
 
-# ── 1. TCP 拥塞控制 → BBR ─────────────────────────────────────────
-if [ -r /proc/sys/net/ipv4/tcp_available_congestion_control ]; then
-  current_cc="$(cat /proc/sys/net/ipv4/tcp_congestion_control)"
-  if grep -qw bbr /proc/sys/net/ipv4/tcp_available_congestion_control; then
-    info "应用 BBR (当前 $current_cc) ..."
-    as_root sysctl -w net.core.default_qdisc=fq >/dev/null
-    as_root sysctl -w net.ipv4.tcp_congestion_control=bbr >/dev/null
-    ok "拥塞控制 $(cat /proc/sys/net/ipv4/tcp_congestion_control) / 队列 $(cat /proc/sys/net/core/default_qdisc)"
-  else
-    warn "内核不支持 BBR, 保持 $current_cc"
+# ── 1. 拥塞控制 → 保持内核默认 cubic ─────────────────────────────
+# 实测 (10 轮交错, 同一镜像): cubic 131.7 Mbps / ping 9.3·19.6ms,
+# bbr 130.6 Mbps / ping 10.1·28.8ms。吞吐差 <1% 在噪声内, 延迟方向 bbr 反而差
+# (长驻队列)。BBR 的优势在丢包 / 高 RTT 链路, 这条路径两者都没有。
+# 遗留的手写 drop-in 会把它拉回 bbr, 一并清掉。
+for f in /etc/sysctl.d/99-net-tuning.conf /etc/sysctl.d/99-bbr.conf; do
+  if [ -e "$f" ]; then
+    as_root rm -f "$f"
+    ok "移除遗留的 $f"
   fi
-else
-  warn "读不到 tcp_available_congestion_control, 跳过 TCP 部分"
-fi
+done
+cc="$(cat /proc/sys/net/ipv4/tcp_congestion_control)"
+qdisc="$(cat /proc/sys/net/core/default_qdisc)"
+[ "$cc" = cubic ] || as_root sysctl -q -w net.ipv4.tcp_congestion_control=cubic
+[ "$qdisc" = fq_codel ] || as_root sysctl -q -w net.core.default_qdisc=fq_codel
+ok "拥塞控制 $(cat /proc/sys/net/ipv4/tcp_congestion_control) / 队列 $(cat /proc/sys/net/core/default_qdisc)"
 
 # ── 2. 电源档位 (插电 performance / 电池 balanced) ───────────────
 if [ -x "$power_profile_script" ]; then
@@ -77,7 +82,54 @@ else
   warn "缺少 $wifi_script, 跳过 (先跑: sudo mise bootstrap)"
 fi
 
-# ── 4. 体检 ─────────────────────────────────────────────────────
-[ -f "$sysctl_dropin" ] || warn "缺少 $sysctl_dropin, 开机不会自动应用 (先跑: sudo mise bootstrap)"
-info "提示: 内核参数 amd_pstate=active 能进一步放开睿频, 需改引导配置并重编 initramfs, 本任务不自动动 /boot"
+# ── 4. 系统默认值 (NVMe 调度器 / THP / journald) ────────────────
+nvme_devs=(/sys/block/nvme*)
+if [ -r "${nvme_devs[0]}/queue/scheduler" ]; then
+  info "应用 NVMe 调度器 ..."
+  for dev in "${nvme_devs[@]}"; do
+    [ "$(cat "$dev/queue/rotational" 2>/dev/null)" = "0" ] || continue
+    name="$(basename "$dev")"
+    if ! as_root sh -c "echo none > /sys/block/$name/queue/scheduler" 2>/dev/null; then
+      warn "$name 调度器改写失败"
+      continue
+    fi
+    ok "$name 调度器 $(sed -n 's/.*\[\(.*\)\].*/\1/p' "$dev/queue/scheduler")"
+  done
+else
+  info "无 NVMe, 跳过"
+fi
+
+if [ -f /etc/tmpfiles.d/thp.conf ]; then
+  info "收敛 THP ..."
+  # 声明用的 w! 只在开机阶段执行, 手动生效要显式给 --boot。
+  if as_root systemd-tmpfiles --create --boot /etc/tmpfiles.d/thp.conf; then
+    ok "THP $(cat /sys/kernel/mm/transparent_hugepage/enabled)"
+  else
+    warn "THP 设置失败"
+  fi
+else
+  warn "缺少 /etc/tmpfiles.d/thp.conf, 跳过 (先跑: sudo mise bootstrap)"
+fi
+
+if [ -f /etc/systemd/journald.conf.d/99-journal-size.conf ]; then
+  info "收紧 journald 配额 ..."
+  if as_root systemctl restart systemd-journald; then
+    usage="$(du -sh /var/log/journal 2>/dev/null | cut -f1)"
+    ok "journal 磁盘占用 ${usage:-未知} (上限 500M)"
+  else
+    warn "journald 重启失败"
+  fi
+else
+  warn "缺少 journald 配额配置, 跳过 (先跑: sudo mise bootstrap)"
+fi
+
+# ── 5. 体检 ─────────────────────────────────────────────────────
+# amd_pstate 要固件暴露 CPPC (_CPC); 没有就只能靠 governor, 提引导参数也没用。
+if grep -q AuthenticAMD /proc/cpuinfo; then
+  if [ -d /sys/devices/system/cpu/cpu0/acpi_cppc ]; then
+    info "提示: 引导参数加 amd_pstate=active 能让 amd-pstate 接管频率, 比 governor 更细 (需改引导配置并重编 initramfs, 本任务不自动动 /boot)"
+  else
+    info "固件未暴露 CPPC, amd-pstate 用不了, 频率只能由 governor 控制"
+  fi
+fi
 ok "调优已应用"

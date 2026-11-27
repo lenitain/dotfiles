@@ -87,25 +87,13 @@ enabled = true
 state = "stopped"
 enabled = false
 
-# ── 桌面性能调优 ───────────────────────────────────────────────────
-# 场景: 编程 / 等编译 / 等下载。三件事:
-#   1) TCP 拥塞控制 → BBR   (Wi-Fi、高 RTT 链路吞吐优于 cubic)
-#   2) Wi-Fi 省电   → off   (rtw88 等在省电下掉吞吐、加延迟)
-#   3) 电源档位     → 插电 performance / 电池 balanced
+# ── 桌面调优 ─────────────────────────────────────────────────────
+# 场景: 编程 / 等编译 / 等下载。两件事:
+#   1) Wi-Fi 省电   → off   (rtw88 等在省电下掉吞吐、加延迟)
+#   2) 电源档位     → 插电 performance / 电池 balanced
+# 拥塞控制保持内核默认 cubic: 本机实测 bbr 与 cubic 吞吐差 <1%,
+# 而 bbr 的 ping 峰值反而更高 (长驻队列), 见 README 附录。
 # 文件与单元由 bootstrap 收敛; 立即生效 + 体检: mise run setup-tuning。
-
-# 内核没编 BBR 时这一行会在启动时报一条 sysctl 错误, 拥塞控制保持默认, 无副作用。
-[bootstrap.files."/etc/sysctl.d/99-net-tuning.conf"]
-content = """
-# 由 mise 收敛 (conf.d/system.toml) —— TCP 拥塞控制
-# BBR 在高 RTT / 有丢包的链路 (Wi-Fi、跨境) 上吞吐与延迟都优于 cubic。
-net.ipv4.tcp_congestion_control = bbr
-# BBR 依赖 fq 队列, 两者配套才生效
-net.core.default_qdisc = fq
-"""
-owner = "root"
-group = "root"
-mode = "0644"
 
 # 关 Wi-Fi 省电: 逐个无线接口关掉, 无无线网卡或没有 iw 时静默退出。
 [bootstrap.files."/usr/local/bin/wifi-powersave-off"]
@@ -257,6 +245,49 @@ mode = "0644"
 [bootstrap.services."power-profiles-daemon"]
 state = "running"
 enabled = true
+
+# ── 系统默认值 ─────────────────────────────────────────────────────
+# 与硬件无关, 新机器同样适用; 立即生效 + 体检也走 setup-tuning。
+
+# 单队列消费级 NVMe 上 none 的延迟与吞吐优于 kyber, 而 CachyOS 默认给 nvme 挂 kyber。
+# 文件名排在 60-ioschedulers.rules 之后, 同一属性由后处理的规则覆盖。
+[bootstrap.files."/etc/udev/rules.d/70-nvme-scheduler.rules"]
+content = """
+# NVMe → none: 消费级盘不需要队列调度, 省掉 kyber 的延迟目标计算
+ACTION=="add|change", KERNEL=="nvme[0-9]*", ENV{DEVTYPE}=="disk", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none"
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# 内核编译时选的是 always (CachyOS 的 PKGBUILD 显式指定), 小内存机器上换来的是
+# 折叠开销与内存膨胀; madvise 只给 MADV_HUGEPAGE 的进程用大页。
+# tmpfiles 的同名文件是整体覆盖, defrag 那行必须一起带上, 否则会被丢掉。
+[bootstrap.files."/etc/tmpfiles.d/thp.conf"]
+content = """
+w! /sys/kernel/mm/transparent_hugepage/enabled - - - - madvise
+w! /sys/kernel/mm/transparent_hugepage/defrag - - - - defer+madvise
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# CachyOS 给 50M, 装完没多久就滚完; 排查挂起/唤醒要的是更长的历史。
+# 文件名排在 00-journal-size.conf 之后, 同键后读到的生效。
+[bootstrap.files."/etc/systemd/journald.conf.d/99-journal-size.conf"]
+content = """
+[Journal]
+SystemMaxUse=500M
+"""
+owner = "root"
+group = "root"
+mode = "0644"
+
+# 缺父目录 bootstrap 会中止。
+[bootstrap.directories."/etc/systemd/journald.conf.d"]
+owner = "root"
+group = "root"
+mode = "0755"
 
 # upowerd 只由 D-Bus 按需激活, 开机后不常驻。状态面板 (niri/scripts/status) 读电量
 # 百分比走它的 Percentage 属性 (sysfs capacity 每次 ~83ms), 于是每次开机第一次开面板

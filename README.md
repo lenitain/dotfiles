@@ -67,7 +67,7 @@ mise ls                # 已装工具
 | 任务                  | 作用                                                         | 权限 |
 | --------------------- | ------------------------------------------------------------ | ---- |
 | `setup-all`           | 聚合入口                                                     | sudo |
-| `setup-tuning`        | 桌面性能调优（BBR / Wi-Fi 省电 / 电源档位），立即应用 + 体检 | sudo  |
+| `setup-tuning`        | 桌面调优（Wi-Fi / 电源档位 / NVMe / THP / journald），立即应用 + 体检 | sudo  |
 | `setup-boot`          | systemd-boot / sdboot-manage；带守卫，手动跑，不入 setup-all | sudo |
 | `setup-desktop`       | dconf 桌面设置 + 按 user-dirs.dirs 建 XDG 目录               | 用户 |
 | `setup-fonts`         | Maple Mono 字体                                              | 用户 |
@@ -134,13 +134,32 @@ ansible-playbook deploy-xray.yml --limit <IP>
 
 ### 桌面性能调优
 
-场景是编程 / 等编译 / 等下载。三件事由 `conf.d/system.toml` 声明，bootstrap 收敛到新机器：
+场景是编程 / 等编译 / 等下载。两件事由 `conf.d/system.toml` 声明，bootstrap 收敛到新机器：
 
 | 内容              | 落点                                                       | 作用                                   |
 | ----------------- | ---------------------------------------------------------- | -------------------------------------- |
-| TCP 拥塞控制 BBR  | `/etc/sysctl.d/99-net-tuning.conf`（+ `net.core.default_qdisc=fq`） | Wi-Fi / 高 RTT 链路吞吐优于 cubic |
 | 关 Wi-Fi 省电     | `/usr/local/bin/wifi-powersave-off` + `.service` + udev 规则 | rtw88 等省电下掉吞吐、加延迟           |
 | 电源档位随供电走  | `/usr/local/bin/power-profile` + `.service` + udev 规则      | 插电 performance / 电池 balanced       |
+
+拥塞控制保持内核默认 `cubic`。实测（同一镜像、五轮交错、每轮 6 秒）：
+
+| CC    | 吞吐中位数  | ping 平均 / 峰值 | 重传   |
+| ----- | ----------- | ---------------- | ------ |
+| cubic | 131.7 Mbps  | 9.3 / 19.6 ms    | 0.000% |
+| bbr   | 130.6 Mbps  | 10.1 / 28.8 ms   | 0.000% |
+
+吞吐差落在噪声内，bbr 的延迟反而更差（长驻队列）。路径是 130 Mbps 瓶颈、丢包 0、RTT 9 ms，
+BBR 擅长的高丢包 / 高 RTT 两个条件都不成立。`tcp_bbr3` 在本内核另一个模块同名 kfunc
+与 `tcp_bbr` 互斥，运行中无法切换；真要试得重启并把默认设成 `bbr3`。
+`setup-tuning` 会清掉遗留的 `/etc/sysctl.d/99-net-tuning.conf` 与 `99-bbr.conf`。
+
+另三项与硬件无关的系统默认值同在这份文件里：
+
+| 内容              | 落点                                                        | 作用                                  |
+| ----------------- | ----------------------------------------------------------- | ------------------------------------- |
+| NVMe 调度器 none  | `/etc/udev/rules.d/70-nvme-scheduler.rules`                  | 消费级盘去掉 kyber 的队列管理开销      |
+| THP → madvise     | `/etc/tmpfiles.d/thp.conf`                                   | 避开 always 的折叠开销与内存膨胀       |
+| journald 500M     | `/etc/systemd/journald.conf.d/99-journal-size.conf`          | 默认 50M 很快滚完，排查时没有历史     |
 
 立即生效 + 体检：
 
@@ -155,8 +174,9 @@ mise run setup-tuning
 
 - 本机 `power-profiles-daemon` 只驱动 firmware 的 `platform_profile`，不碰 cpufreq
   governor，所以 governor 由 `power-profile` 脚本直接写（`cpupower frequency-set`）。
-- 内核参数 `amd_pstate=active` 能让 amd-pstate 接管频率（比 `performance` governor 更细），
-  但要改引导配置并重编 initramfs，`setup-tuning` 不碰 `/boot`。
+- 内核参数 `amd_pstate=active` 能让 amd-pstate 接管频率（比 governor 更细），前提是固件暴露
+  CPPC；本机没有 `acpi_cppc`，用不了。真要启用还得改引导配置并重编 initramfs，
+  `setup-tuning` 不碰 `/boot`。
 
 ### U 盘自动挂载
 
