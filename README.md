@@ -151,7 +151,12 @@ ansible-playbook deploy-xray.yml --limit <IP>
 吞吐差落在噪声内，bbr 的延迟反而更差（长驻队列）。路径是 130 Mbps 瓶颈、丢包 0、RTT 9 ms，
 BBR 擅长的高丢包 / 高 RTT 两个条件都不成立。`tcp_bbr3` 在本内核另一个模块同名 kfunc
 与 `tcp_bbr` 互斥，运行中无法切换；真要试得重启并把默认设成 `bbr3`。
-`setup-tuning` 会清掉遗留的 `/etc/sysctl.d/99-net-tuning.conf` 与 `99-bbr.conf`。
+旧机器上若还留着旧的 `/etc/sysctl.d/99-net-tuning.conf` 或手写的 `99-bbr.conf`，
+删一次即可（迁移动作，不进 `setup-tuning`）：
+
+```bash
+sudo rm -f /etc/sysctl.d/99-net-tuning.conf /etc/sysctl.d/99-bbr.conf
+```
 
 另三项与硬件无关的系统默认值同在这份文件里：
 

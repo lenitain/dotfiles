@@ -31,16 +31,10 @@ power_profile_script=/usr/local/bin/power-profile
 wifi_script=/usr/local/bin/wifi-powersave-off
 
 # ── 1. 拥塞控制 → 保持内核默认 cubic ─────────────────────────────
-# 实测 (10 轮交错, 同一镜像): cubic 131.7 Mbps / ping 9.3·19.6ms,
+# 实测 (5 轮交错, 同一镜像): cubic 131.7 Mbps / ping 9.3·19.6ms,
 # bbr 130.6 Mbps / ping 10.1·28.8ms。吞吐差 <1% 在噪声内, 延迟方向 bbr 反而差
 # (长驻队列)。BBR 的优势在丢包 / 高 RTT 链路, 这条路径两者都没有。
-# 遗留的手写 drop-in 会把它拉回 bbr, 一并清掉。
-for f in /etc/sysctl.d/99-net-tuning.conf /etc/sysctl.d/99-bbr.conf; do
-  if [ -e "$f" ]; then
-    as_root rm -f "$f"
-    ok "移除遗留的 $f"
-  fi
-done
+# 这里只把当前运行的内核对齐到默认值, 不处理旧机器留的 sysctl 文件。
 cc="$(cat /proc/sys/net/ipv4/tcp_congestion_control)"
 qdisc="$(cat /proc/sys/net/core/default_qdisc)"
 [ "$cc" = cubic ] || as_root sysctl -q -w net.ipv4.tcp_congestion_control=cubic
