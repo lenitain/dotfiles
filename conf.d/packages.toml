@@ -111,6 +111,7 @@
 "pacman:just" = "latest"
 "pacman:lsof" = "latest"
 "pacman:pandoc" = "latest"
+"pacman:starship" = "latest"
 
 "flatpak-user:com.tencent.WeChat" = "latest"
 "flatpak-user:com.qq.QQ" = "latest"
