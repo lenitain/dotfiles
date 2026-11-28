@@ -172,7 +172,8 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
   detached HEAD 画红色的 `(detached)` 加 name-rev 的名字（`main~1`）；共置仓库里
   jj 会主动把 git HEAD 留在 detached，那时不画 `(detached)`，jj 段已经说明状态。
   jj 的记账 ref（`refs/jj/*`）不参与取名，没有名字就画短哈希。
-  jj 是变更 id / 最近的祖先书签（`+` 表示在书签之上，不带数字）/ `(empty)`，
+  jj 是变更 id（bold bright magenta，和 `jj st` 的 @ change id 同色）/
+  最近的祖先书签（`+` 表示在书签之上，不带数字）/ `(empty)`，
   以及 @ 的冲突 `×`、divergent `≠`、snapshot 警告 `!`。
   jj 的书签只在 @ 的 20 个祖先提交内查找，距离是从 @ 沿父边走过去的边数
   （空 @ 不计一步），最近的本地书签超出这个范围就不显示；同一距离上的多个书签

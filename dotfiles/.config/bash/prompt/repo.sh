@@ -340,7 +340,7 @@ __bash_prompt_jj() {
     # + 修饰整组：main,dev+ 读作"这组书签在 @ 的祖先层上"，而不是每个名字各加一个。
     [ "$ancestor_distance" -gt 0 ] && reference_ansi+="\[$__bash_prompt_color_mute\]+\[$__bash_prompt_color_reset\]"
 
-    local head_ansi="\[$__bash_prompt_color_mute\]$at_change_id\[$__bash_prompt_color_reset\]"
+    local head_ansi="\[$__bash_prompt_color_jj_change\]$at_change_id\[$__bash_prompt_color_reset\]"
     [ -n "$reference_ansi" ] && head_ansi+=" $reference_ansi"
     if [ "$at_empty" = 1 ]; then
         head_ansi+=" \[$__bash_prompt_color_cyan\](empty)\[$__bash_prompt_color_reset\]"

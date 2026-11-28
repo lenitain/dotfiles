@@ -11,6 +11,9 @@ __bash_prompt_color_yellow=$'\e[33m'
 __bash_prompt_color_white=$'\e[37m'
 __bash_prompt_color_mute=$'\e[90m'
 __bash_prompt_color_reset=$'\e[0m'
+# jj st 把 @ 的 change id 画成 bold + bright magenta（256 色 13）；提示符里的变更 id
+# 用同一个 SGR，和 `jj st` 对齐。不是终端调色板的 magenta（35），后者更暗。
+__bash_prompt_color_jj_change=$'\e[1m\e[38;5;13m'
 
 __bash_prompt_symbol='❯'
 # 符号行上的其它符号：
