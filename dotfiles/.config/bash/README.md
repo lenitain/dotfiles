@@ -41,8 +41,18 @@
 
 `mise env` 本身约 60ms，所以结果按「全局配置 + mise 二进制 + 启动时的 PATH」
 缓存在 `~/.cache/mise/env.sh`：三者都没变就直接 source，省掉这 60ms；任一变了
-（`mise install` 换版本、`mise use` 改配置）自动重算。有项目 `mise.toml` 的目录
-不用缓存——项目 env 跟着 cwd 走，写进全局缓存会张冠李戴。`mr` 会作废缓存。
+（`mise install` 换版本、`mise use` 改配置）自动重算。有项目配置的目录不用缓存——
+项目 env 跟着 cwd 走，写进全局缓存会张冠李戴。设置 `MISE_ENV` 或 `MISE_CONFIG_FILE`
+时也不用缓存。`mr` 会作废缓存。
+
+项目配置的完整清单按 mise 2026.11.14 的 `mise config ls`：`mise.toml`、`.mise.toml`、
+`mise.local.toml`、`.mise.local.toml`、`.tool-versions`、`mise/config.toml`、
+`.config/mise.toml`、`.config/mise/config.toml`，以及 `MISE_ENV` 对应的
+`mise.$MISE_ENV.toml` / `.mise.$MISE_ENV.toml`。`$HOME` 下的
+`.config/mise.toml` 与 `.config/mise/config.toml` 是全局配置，不算项目配置；
+走到 `$HOME/.config` 时也按全局处理，避免把 `~/.config` 当成项目根（否则进入
+`~/.config` 下的任何目录都会被当成项目目录）。`$HOME/mise.toml`、`$HOME/.tool-versions`
+仍然算（mise 会加载它们）。
 
 代价：cd 不再自动换工具版本。要切项目版本，敲 `mr` 手动刷新。
 
@@ -87,7 +97,7 @@ flyline 是 bash 的 loadable builtin（不是独立进程），但它和 bash �
 | 归 flyline | 归 bash |
 | --- | --- |
 | PS1/RPS1/PS1_FILL/PROMPT_RULER/PS2 的解析与渲染（`\[ \]`、ANSI、`\D{}` 动态时间、widget 占位符、`*_FINAL` 瞬态提示符） | `PROMPT_COMMAND` 执行点（flyline 不跑任何 hook） |
-| widget 的执行：同步等待（`--block`）或后台跑（`--placeholder prev`）、超时处理 | cwd 的宽度取舍（flyline 不截断提示符） |
+| widget 的执行：同步等待（`--block`）或后台跑（`--placeholder prev`）、超时处理 | cwd 完整显示；仓库段是否另起一行 |
 | 键位与 remap、`runBashCommand` 调 bash 函数 | 会话内不变的段：`[zmx]`、SSH 的 user@host |
 | 补全/建议/模糊历史搜索、光标绘制、鼠标、帧率 | — |
 | shell integration codes（OSC 133 / 633；OSC 7 只在 shell 启动时发一次） | 窗口标题 OSC 0（flyline 不发标题；空闲时 cwd，执行中 cwd – 程序）、OSC 7 目录上报（`prompt/hooks.sh`，每条提示符发一次） |
@@ -98,15 +108,17 @@ flyline 是 bash 的 loadable builtin（不是独立进程），但它和 bash �
 - **`FLYLINE_VERSION` 是 flyline 导出的环境变量**，子 bash 会继承它但并没有加载 builtin。所以不
   能拿它判断“要不要 `enable -f`”，本目录用不导出的 `__bash_flyline_enabled`。
 - **flyline 自定义 widget 的宽度 bash 看不到**（PS1 里只有占位符名字）。`prompt/ps1.sh`
-  先用上限预留，之后按 widget 写回的实际宽度缩 cwd（`prompt/lib.sh` 的
-  `__bash_prompt_repo_width_*`）；widget 超时后这一轮显示空白（`--placeholder 0`），
-  不会画出上一个仓库的段。
+  按 widget 写回的实际宽度（`prompt/lib.sh` 的 `__bash_prompt_repo_width_*`）决定
+  仓库段是否另起一行；widget 超时后这一轮没有仓库段（`--placeholder 0`），
+  不会画出上一个仓库的段。cwd 不缩略。
 - **flyline 的 widget 默认是同步等待**：`--block <毫秒>` 表示提示符最多等这么久，
-  超时就放弃等待、改用 `--placeholder` 的占位（`0` 是空白），子进程在后台跑完但
-  结果丢弃，下一条提示符重新 spawn 一次。不带 `--block` 才是后台跑、显示上一次的结果。
-- **cwd 只有“真实路径的后缀”才能被 flyline 认出来**：`find_cwd_in_span` 匹配 cwd 表示形式的最长
-  后缀，并允许前缀是 `…`（或点串）。所以缩略用 `…/tail/segments`，每段仍然可点击跳转；
-  `~/.c/m/d/foo` 这种“每段只留首字母”的写法 flyline 只能匹配到最后一段。
+  超时就放弃等待、改用 `--placeholder` 的占位（这里是 0，不占位），子进程在后台跑完但
+  结果丢弃，下一条提示符重新 spawn 一次。不带 `--block` 才是后台跑、显示上一次的结果；
+  这里不用后台模式，因为上一个仓库/上一条命令的结果会是错的。flyline 的
+  `--placeholder` 只接受数字或 `prev`；`prev` 会显示旧仓库，空格没有信息量，所以选 0。
+- **cwd 完整显示，flyline 按最长后缀识别**：`find_cwd_in_span` 匹配 cwd 表示形式的最长
+  后缀，并允许前缀是 `…`。不缩略时整条路径都是真实后缀；路径被终端折行时点击可能只认
+  其中一段（见「已知差异」）。
 - **`set-cursor --backend terminal` 时 flyline 不画光标也不发 DECSCUSR**，光标形状只能由
   `PROMPT_COMMAND` 里的 `printf '\e[6 q'` 负责。
 - **`history --backend flyline` 不写 bash 的内存历史**，`!!`、`!$`、`history` 会失效。所以历史
@@ -144,22 +156,27 @@ flyline 是 bash 的 loadable builtin（不是独立进程），但它和 bash �
 widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
 
 ```
-[zmx] [docker] user@host  ~/path  main* ≡ 2 ⇡ 1 ⇣ 3   ← 会话段 + cwd(蓝) + 仓库段(暗灰/青)
-# ❄impure (venv) |0|1 ❯                               ← 上下文(红/青/暗灰) + 退出码(红) + 符号(洋红)
+[zmx] [docker] host  ~/path  main* ↑   ← 会话段 + cwd(蓝) + 仓库段(暗灰/青/黄)
+(venv) ✗ 0|1 ❯                        ← 环境(暗灰) + 退出码(红/黄) + 符号(洋红)
 ```
 
+- cwd 完整显示，只把 `$HOME` 写成 `~`；不缩略。第一行放不下时，在仓库段前插一个
+  换行，仓库段整体到下一行（短路径一行，长路径两行；路径本身超过终端宽度时只能让
+  终端折行）。第二行不参与这个判断。
 - 仓库段由 `widgets/repo.sh` 输出，看最近一层仓库根上的标记：共置仓库（`.jj` 与
   `.git` 在同一个根）jj、git 两段都画，jj 在前、中间两个空格，例如
-  `r main~1*  main* ≡ 1`；只有一种标记就只画那一种，父目录里的 git 分支不会混进来。
-  git 段是
-  branch / dirty(`*`) / stash(`≡ N`) / `⇡ N` `⇣ N`（分支、dirty、上游、ahead/behind
-  都来自同一次 `git status --porcelain=v2 --branch`，stash 另查一次），detached HEAD 画
-  name-rev 的名字（`main~1`），jj 的记账 ref（`refs/jj/*`）不参与取名，没有名字就画短哈希。
-  jj 是变更 id / 最近的祖先书签
-  （`~N` 距离）/ `(empty)`，以及 @ 的冲突 `×` 和 divergent `≠`。
+  `r main+*  main* ↑`；只有一种标记就只画那一种，父目录里的 git 分支不会混进来。
+  git 段是 branch / dirty(`*`) / `↑` `↓` / 操作中状态（`REBASE 2/5`、`MERGING` 等）：
+  分支、dirty、上游、ahead/behind 都来自同一次 `git status --porcelain=v2 --branch`，
+  不画 stash，也不画数字；操作中状态直接读 gitdir 下的文件，不额外 fork。
+  detached HEAD 画红色的 `(detached)` 加 name-rev 的名字（`main~1`）；共置仓库里
+  jj 会主动把 git HEAD 留在 detached，那时不画 `(detached)`，jj 段已经说明状态。
+  jj 的记账 ref（`refs/jj/*`）不参与取名，没有名字就画短哈希。
+  jj 是变更 id / 最近的祖先书签（`+` 表示在书签之上，不带数字）/ `(empty)`，
+  以及 @ 的冲突 `×`、divergent `≠`、snapshot 警告 `!`。
   jj 的书签只在 @ 的 20 个祖先提交内查找，距离是从 @ 沿父边走过去的边数
-  （空 @ 不计一步），最近的本地书签超出这个范围就不显示；merge 时同一距离上的
-  多个书签都画出来（逗号分隔）。jj 不画同步状态；要看远端跟踪用
+  （空 @ 不计一步），最近的本地书签超出这个范围就不显示；同一距离上的多个书签
+  写成 `main,dev+`（`+` 修饰整组）。jj 不画同步状态；要看远端跟踪用
   `jj bookmark list`。jj 段每次都让 jj 做一次 snapshot：jj 的工作副本就是一个提交，
   只有 snapshot 能发现文件变化（没有 git status 那种只读查询），所以 `(empty)` / `*`
   和 `jj st` 永远一致。代价是文件改过的那次提示符会写一条 snapshot 操作；没变化时
@@ -170,33 +187,35 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
   权限错误同理）段尾画黄色 `!`：命令本身成功，但那个文件没进 jj，不标的话提示符是
   一份看起来正常的 `(empty)`；原文跑 `jj st` 看（一次性的提示也会亮一次，比如共置仓库里
   git HEAD 变过、jj 重置了工作副本父提交）。冲突的书签名后面画红色 `!`
-  （`main~1!`、`main!`）：`jj log <名字>` 会直接报 `Name ... is conflicted`，
+  （`main!+`、`main!`）：`jj log <名字>` 会直接报 `Name ... is conflicted`，
   `jj bookmark list` 看两个目标，`jj bookmark set <名字> -r <rev>` 定夺。
-  仓库段由 flyline 同步等待至多 100ms（`--block 100`）：这一轮提示符被
-  `jj log` / `git status` 拖住至多 100ms，超时则仓库段空白（`--placeholder 0`）。
-- 符号行（第 2 行）的段按 pure 的顺序拼，每条提示符重算，都只读变量和内建、不 fork：
-  root 的 `#`（`$EUID`）/ nix develop 的 `❄`+`$IN_NIX_SHELL` / venv 名
-  （`VIRTUAL_ENV_PROMPT` → `VIRTUAL_ENV` → `CONDA_DEFAULT_ENV`，只取末段）/ 上一条命令的
-  退出码。venv 自带的前缀由 `VIRTUAL_ENV_DISABLE_PROMPT` 关掉，名字只由这里画。
-- 退出码列表（`pure_show_exit_status` 的 bash 版）：只有管道最后一个状态非 0 才显示，
-  整条管道的 `PIPESTATUS` 用 `|` 连起来，`128+N` 换成信号名（`143` → `SIGTERM`）。
-  所以 `ps1.sh` 里 `PIPESTATUS` 必须是 `__bash_prompt` 的第一条语句，任何 `printf` 之后
-  就只剩它自己的 0 了。
+  仓库段由 flyline 有界等待至多 100ms（`--block 100`）：这一轮提示符被
+  `jj log` / `git status` 拖住至多 100ms，超时则这一轮没有仓库段
+  （`--placeholder 0`）。不是后台异步：后台模式会显示上一个仓库/上一条命令的结果，
+  和“结果必须对应当前状态”冲突。
+- 符号行（第 2 行）的段：root 的 `#`（`$EUID`）/ venv 名
+  （`VIRTUAL_ENV_PROMPT` → `VIRTUAL_ENV` → `CONDA_DEFAULT_ENV`，只取末段）/
+  上一条命令的退出码。venv 自带的前缀由 `VIRTUAL_ENV_DISABLE_PROMPT` 关掉，
+  名字只由这里画。nix 段已删除。
+- 退出码列表：只有管道最后一个状态非 0 才显示，`✗` 是失败标志，`|` 只分隔管道的
+  各个阶段（`✗ 0|1`）；`128+N` 换成信号名（`143` → `SIGTERM`）。SIGINT（130）用黄色，
+  其它失败用红色。所以 `ps1.sh` 里 `PIPESTATUS` 必须是 `__bash_prompt` 的第一条语句，
+  任何 `printf` 之后就只剩它自己的 0 了。
 - 会话段（第 1 行，会话内只算一次）：`[zmx]`、SSH 的 `user@host`、容器里的
-  `[docker] user@host`。容器检测读固定路径、不 fork，顺序是标记文件（`/.dockerenv`、
-  `/run/.containerenv`）→ `/run/systemd/container` → `/proc/1/cgroup` → PID 1；
-  cgroup v2 只有一行 `0::/`，rootless 运行时只能由 PID 1 兜底，那时只能给出泛称 `[container]`。
-- 命令耗时默认不显示。想打开就取消 `conf.d/flyline.sh` 里的 `last-command-duration` 注册，
-  并把 `FLYLINE_DURATION` 补回 `PS1`（记得同时为它留 8 列宽度）。
-- 宽度：仓库里第一条提示符按上限 43 列预留（jj、git 两段合计）；widget 每次把实际可见宽度写进
-  `$XDG_RUNTIME_DIR/bash-prompt-repo-width.<shell pid>`，之后 cwd 按 `COLUMNS` 减去
-  这个实际值决定是否缩略成 `…/尾段`（切仓库后的第一条提示符用上一个仓库的宽度）。
-  第 2 行不参与这个预算。
-- cwd 缩略只有 `…/tail` 形式能让 flyline 把整段识别成 cwd，其余段落的点击跳转因此保留。
+  `[docker] host`（完整 hostname，不画 user）。容器检测读固定路径、不 fork，顺序是
+  标记文件（`/.dockerenv`、`/run/.containerenv`）→ `/run/systemd/container` →
+  `/proc/1/cgroup` → PID 1；cgroup v2 只有一行 `0::/`，rootless 运行时只能由 PID 1
+  兜底，那时只能给出泛称 `[container]`。
+- 命令耗时默认不显示。想打开就取消 `conf.d/flyline.sh` 里的 `last-command-duration`
+  注册，并把 `FLYLINE_DURATION` 补回 `PS1`（记得同时为它留 8 列宽度）。
+- 宽度：cwd 不缩略；widget 每次把实际可见宽度写进
+  `$XDG_RUNTIME_DIR/bash-prompt-repo-width.<shell pid>`，`prompt/ps1.sh` 用这个宽度
+  决定仓库段是否另起一行。没有缓存（本仓库第一条提示符）时不预留；
+  切仓库后的第一条提示符用上一个仓库的宽度。
 - 提示符本身是 `PROMPT_COMMAND` 的第一个元素；窗口标题（空闲时的路径）和 `history -a`
   跟在后面，执行中的程序名由 `PS0` 在命令开始前补。
-- 不用瞬态提示符：`PS1_FINAL` 被 unset，命令提交后 flyline 的最后一次重绘沿用完整 `PS1`，
-  历史里那条已输入命令保留第一行（会话段 + cwd + 仓库段）和命令前的空行。
+- 不用瞬态提示符：`PS1_FINAL` 被 unset，命令提交后 flyline 的最后一次重绘沿用完整
+  `PS1`，历史里那条已输入命令保留第一行（会话段 + cwd + 仓库段）和命令前的空行。
 - 窗口标题空闲时只显示当前目录：`prompt/hooks.sh` 发 OSC 0（家目录写成 `~`）。
   命令开始执行前 `PS0` 再发一次 `cwd – 程序名`，程序名取刚读入的历史行的第一个词
   （跳过 `VAR=value` 前缀和路径），提示符出现后恢复成纯路径。
@@ -208,16 +227,21 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
 
 ## 已知差异
 
-- 路径宽度按字符数计算，CJK 双宽路径比终端列宽略宽。
-- `≡` `⇡` `⇣` 不在 Maple Mono NL NF CN 里，foot 从回退字体取字形，字形常画到格边：
-  git 段里符号与数字之间因此留一个空格；`❄` 同样走回退字体，但按 pure 的样式仍紧贴 shell 名。
-  jj 段的 `×` `≠` `~` `*` `!` 都在主字体里，不存在这个问题。
-- 仓库段的宽度缓存按 shell 而不是按仓库：刚 `cd` 进另一个仓库时，第一条提示符用的是
-  上一个仓库的实际宽度；第一次进仓库（没有缓存）用 43 列上限（jj、git 两段合计）。仓库段超过预算
-  （超长分支名、多个书签）时第一行仍可能折行一次。
-- 仓库段每条提示符都要跑一次 jj/git，`--block 100` 是同步等待：本机实测提示符构造
+- 路径宽度按字符数计算，CJK 双宽路径比终端列宽略宽；仓库段前的折行判断会因此偏晚。
+- 字形全部在主字体里：`✗`（U+2717）、`↑` `↓`、`×`、`≠`、`❯`。
+  `✖`（U+2716）、`⇡` `⇣`、`≡` 不在 Maple Mono NL NF CN 里，已不用；`✗` 和 `×`
+  同时出现时靠行和上下文区分。
+- 仓库段宽度缓存按 shell 而不是按仓库：刚 `cd` 进另一个仓库时，第一条提示符用上一个
+  仓库的实际宽度；第一次进仓库（没有缓存）不预留。仓库段超长（超长分支名、
+  多个书签）时在仓库段前折行，仓库段本身不会被拆开。
+- cwd 完整显示；路径本身超过终端宽度时由终端折行，flyline 的 cwd 点击在折行处可能只认
+  其中一段。这是不缩略的代价。
+- 仓库段每条提示符都要跑一次 jj/git，`--block 100` 是有界等待：本机实测提示符构造
   平均多约 70ms（`flyline perf dump` 里的 `startup: prompt manager`），慢仓库顶到
-  100ms 时那轮仓库段是空白。
+  100ms 时那轮仓库段为空。
+- 占位符选 0（不占位）：flyline 的 `--placeholder` 只接受数字或 `prev`；`prev` 会
+  显示旧仓库的结果，空格只是空洞，0 最干净。超时那一条提示符停在 cwd，下一条按实际
+  宽度出现。
 - Tab 补全/历史搜索 UI 由 flyline 提供。
 - 历史后端用 bash 原生（`histappend` + 提示符后 `history -a`）；换成 flyline 的 JSONL 后端会
   丢掉 `!!`/`!$`/`history`，所以不建议。
@@ -230,9 +254,9 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
 bash -n ~/.bashrc ~/.bash_profile ~/.config/bash/init.sh \
     ~/.config/bash/conf.d/*.sh ~/.config/bash/functions/*.sh \
     ~/.config/bash/prompt/*.sh ~/.config/bash/widgets/*.sh \
-    ~/.config/bash/scripts/*.sh
-~/.config/bash/scripts/repo_check.sh    # repo 段：模板段数契约 + 端到端场景（参考点、merge、符号链接、未 snapshot 的改动、snapshot 警告、书签冲突、jj 报错、共置仓库的两段、jj 段嵌在 git 工作树里），退出码必须是 0
-~/.config/bash/scripts/git_check.sh     # git 段：分支/dirty/stash/上游/detached/jj 记账 ref/bare/空仓库 + 宽度缓存，退出码必须是 0
+    ~/.config/bash/scripts/*.sh ~/.config/bash/flyline/*.sh
+~/.config/bash/scripts/repo_check.sh    # repo 段：模板段数契约 + 端到端场景（参考点、merge、符号链接、未 snapshot 的改动、snapshot 警告、书签冲突、jj 报错、共置仓库的两段、jj 段嵌在 git 工作树里、同层两个书签的 main,dev+），退出码必须是 0
+~/.config/bash/scripts/git_check.sh     # git 段：分支/dirty/上游/操作中状态（rebase-merge、worktree）/detached/jj 记账 ref/bare/空仓库 + 宽度缓存，stash 不画；退出码必须是 0
 ~/.config/bash/widgets/repo.sh          # 仓库里输出单行、仓库外输出空，两种情况退出码都必须是 0
 bash -i -c 'type ll; flyline settings; flyline key list'   # 需要 pty
 mise bootstrap dotfiles status

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# git 段自检：真实仓库里的分支 / dirty / stash / 上游 / detached（含只剩 jj 记账 ref）/ bare /
-# 空仓库，以及 widgets/repo.sh 写回的宽度缓存。改 prompt/repo.sh 的 git 分支后跑一遍
+# git 段自检：真实仓库里的分支 / dirty / 上游 / 操作中状态 / detached（含只剩 jj 记账 ref）/
+# bare / 空仓库，以及 widgets/repo.sh 写回的宽度缓存。改 prompt/repo.sh 的 git 分支后跑一遍
 # （见 README 的「验证」）；退出码 0 才算过。可以随便 fork：手动脚本，不在热路径上。
+# stash 是故意不画的；下面保留一个 stash 场景，验证它不会出现在段里。
 # 每个仓库都用 --initial-branch=main 初始化，结果不依赖本机的 init.defaultBranch。
 
 config=${BASH_CONFIG_HOME:-$HOME/.config/bash}
@@ -17,7 +18,7 @@ strip_ansi() { sed $'s/\x1b\\[[0-9;]*m//g; s/\\\\\\[//g; s/\\\\\\]//g'; }
 # 在目录里跑 __bash_prompt_git：去掉颜色后的输出写进 REPLY，退出码原样返回。
 segment_in() {
     local dir=$1 out rc
-    out=$(cd "$dir" && __bash_prompt_git && printf '%s' "$repo_ansi")
+    out=$(cd "$dir" && __bash_prompt_repo_kinds && __bash_prompt_git && printf '%s' "$repo_ansi")
     rc=$?
     REPLY=$(printf '%s' "$out" | strip_ansi)
     return $rc
@@ -74,15 +75,15 @@ printf 'u\n' > "$tmp/clean/u.txt"
 expect_in "main*" "$tmp/clean" "dirty 仓库"
 rm -f "$tmp/clean/u.txt"
 
-# stash：数字恒开（符号与数字之间一个空格）
+# stash：不再画；stash 之后工作区是干净的，段里只有分支名
 mkdir "$tmp/stash" && init_repo "$tmp/stash" \
     && printf 'a\n' > "$tmp/stash/a.txt" && commit_in "$tmp/stash" init \
     && printf 'b\n' > "$tmp/stash/b.txt" \
     && git -C "$tmp/stash" add b.txt \
     && git -C "$tmp/stash" stash --quiet
-expect_in "main ≡ 1" "$tmp/stash" "stash"
+expect_in "main" "$tmp/stash" "stash 不画"
 
-# 上游：本地领先 2、落后 1（段之间、符号与数字之间各一个空格）
+# 上游：本地领先 2、落后 1；只画方向，不画数字
 git init --bare --quiet --initial-branch=main "$tmp/remote.git"
 git clone --quiet "$tmp/remote.git" "$tmp/sync" 2>/dev/null
 git -C "$tmp/sync" config user.email git-check@example.com
@@ -97,22 +98,22 @@ git -C "$tmp/other" push --quiet
 printf '1\n' > "$tmp/sync/1.txt" && commit_in "$tmp/sync" one
 printf '2\n' > "$tmp/sync/2.txt" && commit_in "$tmp/sync" two
 git -C "$tmp/sync" fetch --quiet
-expect_in "main ⇡ 2 ⇣ 1" "$tmp/sync" "上游领先 2 / 落后 1"
+expect_in "main ↑ ↓" "$tmp/sync" "上游领先 2 / 落后 1"
 
 # 无 upstream：不出箭头
 mkdir "$tmp/local" && init_repo "$tmp/local" \
     && printf 'a\n' > "$tmp/local/a.txt" && commit_in "$tmp/local" init
 expect_in "main" "$tmp/local" "无 upstream"
 
-# detached HEAD：name-rev 给 main~N
+# detached HEAD：name-rev 给 main~N，段首画 (detached)
 mkdir "$tmp/detached" && init_repo "$tmp/detached" \
     && printf 'a\n' > "$tmp/detached/a.txt" && commit_in "$tmp/detached" one \
     && printf 'b\n' > "$tmp/detached/b.txt" && commit_in "$tmp/detached" two \
     && git -C "$tmp/detached" checkout --quiet HEAD~1
 segment_in "$tmp/detached"
 case $REPLY in
-    main|main~[0-9]*) ;;
-    *) report "detached HEAD 期望 main~N，实际 [$REPLY]" ;;
+    '(detached) main'|'(detached) main~'[0-9]*) ;;
+    *) report "detached HEAD 期望 (detached) main~N，实际 [$REPLY]" ;;
 esac
 
 # detached HEAD、唯一指向它的 ref 是 jj 的记账 ref（共置仓库里 jj new 之后的样子）：
@@ -123,8 +124,26 @@ mkdir "$tmp/detached-jj-keep" && init_repo "$tmp/detached-jj-keep" \
     && oid=$(git -C "$tmp/detached-jj-keep" rev-parse HEAD) \
     && git -C "$tmp/detached-jj-keep" update-ref "refs/jj/keep/$oid" "$oid" \
     && git -C "$tmp/detached-jj-keep" branch --quiet -D main
-expect_in "$(git -C "$tmp/detached-jj-keep" rev-parse --short HEAD)" \
+expect_in "(detached) $(git -C "$tmp/detached-jj-keep" rev-parse --short HEAD)" \
     "$tmp/detached-jj-keep" "只剩 jj 记账 ref 的 detached HEAD"
+
+# 操作中状态：直接读 gitdir/rebase-merge 的 msgnum 与 end，不额外 fork。
+mkdir "$tmp/rebase" && init_repo "$tmp/rebase" \
+    && printf 'a\n' > "$tmp/rebase/a.txt" && commit_in "$tmp/rebase" init \
+    && mkdir -p "$tmp/rebase/.git/rebase-merge" \
+    && printf '2\n' > "$tmp/rebase/.git/rebase-merge/msgnum" \
+    && printf '5\n' > "$tmp/rebase/.git/rebase-merge/end"
+expect_in "main REBASE 2/5" "$tmp/rebase" "rebase-merge 状态"
+
+# worktree：.git 是文件，状态文件在 gitdir: 指向的目录里。
+mkdir "$tmp/wt" && init_repo "$tmp/wt" \
+    && printf 'a\n' > "$tmp/wt/a.txt" && commit_in "$tmp/wt" init \
+    && git -C "$tmp/wt" worktree add --quiet "$tmp/wt-linked" -b linked
+wt_gitdir=$(git -C "$tmp/wt-linked" rev-parse --git-dir)
+mkdir -p "$wt_gitdir/rebase-merge" \
+    && printf '3\n' > "$wt_gitdir/rebase-merge/msgnum" \
+    && printf '7\n' > "$wt_gitdir/rebase-merge/end"
+expect_in "linked REBASE 3/7" "$tmp/wt-linked" "worktree 的 rebase 状态"
 
 # 空仓库 clone：@{upstream} 会吐出字面量，不能出箭头，也不能报错
 git init --bare --quiet --initial-branch=main "$tmp/empty-remote.git"

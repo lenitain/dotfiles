@@ -13,20 +13,18 @@ __bash_prompt_color_mute=$'\e[90m'
 __bash_prompt_color_reset=$'\e[0m'
 
 __bash_prompt_symbol='❯'
-# 符号行上的其它符号，取值同 pure 的默认值：
+# 符号行上的其它符号：
 #   root 前缀 #（pure_symbol_prefix_root_prompt）
-#   nix develop 前缀 ❄（不带 VS16：终端按 1 列画，flyline 的宽度也算 1 列）
-#   退出码前缀 |（pure_symbol_exit_status_prefix，分隔符同值）
+#   退出码前缀 ✗（U+2717，Maple Mono 有；✖ U+2716 不在主字体里）
+#   管道各段之间仍然用 |，它在这里只表示管道分隔
 __bash_prompt_symbol_root='#'
-__bash_prompt_symbol_nixdevshell='❄'
-__bash_prompt_symbol_exit_status='|'
+__bash_prompt_symbol_exit_status='✗'
+__bash_prompt_symbol_pipestatus='|'
 # repo 段的符号：dirty 由 git 与 jj 共用（两边各写一遍就是两份事实，见 README 的「验证」）；
-# ≡ ⇡ ⇣ 只有 git 段用，而且 Maple Mono 里没有：foot 从回退字体取字形，常画到格边，
-# 所以拼段时符号和数字之间要留空格（见 prompt/repo.sh）。
+# ↑ ↓ 是通用箭头，Maple Mono 里有，不再需要为回退字体留空格。
 __bash_prompt_symbol_dirty='*'
-__bash_prompt_symbol_stash='≡'
-__bash_prompt_symbol_ahead='⇡'
-__bash_prompt_symbol_behind='⇣'
+__bash_prompt_symbol_ahead='↑'
+__bash_prompt_symbol_behind='↓'
 # repo 段的告警：书签冲突跟在书签名后面，jj 的 stderr 警告单独跟在段尾。
 __bash_prompt_symbol_warn='!'
 # ANSI SGR 的 ERE。必须存成变量：[[ =~ ]] 里直接写带引号的模式会被当字面量。
@@ -53,13 +51,9 @@ __bash_prompt_visible_length() {
     REPLY=${#text}
 }
 
-# 仓库段的宽度：仓库里先用这个上限，之后用 widget 写回的实际宽度（见下）。
-# 43 盖住 jj+git 两段的常见组合（前导空格、段间两个空格、符号与数字间的空格都算在内，
-# 见 prompt/ps1.sh）；更长的段（多个书签、长分支名）仍可能超预算。
-__bash_prompt_repo_reserved=43
-
 # per-shell 的小文件（宽度缓存、jj 的 stderr）都放 XDG_RUNTIME_DIR（per-user 0700，登出即清）：
-# 没有它就返回 1，调用方继续用上限 / 丢掉警告，不去 /tmp 里按 PID 猜文件名。
+# 没有它就返回 1，调用方不预留宽度 / 丢掉警告，不去 /tmp 里按 PID 猜文件名。
+# 宽度缓存现在只服务"仓库段是否另起一行"的判断，cwd 不再按它缩略。
 __bash_prompt_runtime_file() { # 名字，pid
     [ -n "${XDG_RUNTIME_DIR-}" ] || return 1
     REPLY=$XDG_RUNTIME_DIR/bash-prompt-$1.$2

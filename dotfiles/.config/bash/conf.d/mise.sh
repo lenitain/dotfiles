@@ -16,26 +16,61 @@ __bash_mise_cache_path() {
 }
 
 # mise 会从 cwd 往上找这些文件名；找到任何一个就说明 env 结果和目录有关。
-# $HOME/.config/mise/config.toml 是全局配置本身，走到 $HOME 就停，别当成项目配置。
-__bash_mise_has_project_config() {
+# 列表按 mise 2026.11.14 的 `mise config ls` 对齐：.tool-versions、mise/config.toml、
+# mise.local.toml、.mise.local.toml、环境专属的 mise.$MISE_ENV.toml 都会加载。
+# $HOME 下的 .config/mise.toml 与 .config/mise/config.toml 是全局配置，不算项目配置；
+# $HOME/mise.toml、$HOME/.tool-versions 仍然算（mise 会加载它们）。
+__bash_mise_collect() {
+    __bash_mise_project_root=''
+    __bash_mise_project_files=()
+    local -a names=(
+        mise.toml .mise.toml mise.local.toml .mise.local.toml .tool-versions mise/config.toml
+    )
+    if [ -n "${MISE_ENV-}" ]; then
+        names+=("mise.$MISE_ENV.toml" ".mise.$MISE_ENV.toml")
+    fi
     local dir=$PWD file
     while :; do
-        if [ "$dir" != "$HOME" ]; then
-            for file in mise.toml .mise.toml mise.local.toml .config/mise.toml .config/mise/config.toml; do
-                [ -e "$dir/$file" ] && return 0
+        if [ "$dir" = "$HOME" ]; then
+            for file in "${names[@]}"; do
+                [ -e "$dir/$file" ] || continue
+                [ -n "$__bash_mise_project_root" ] || __bash_mise_project_root=$dir
+                __bash_mise_project_files+=("$dir/$file")
+            done
+        else
+            for file in "${names[@]}" .config/mise.toml .config/mise/config.toml; do
+                [ -e "$dir/$file" ] || continue
+                # $HOME/.config/mise.toml 与 $HOME/.config/mise/config.toml 是全局配置，
+                # 走到 $HOME/.config 时正好会被 mise.toml / mise/config.toml 匹配到；
+                # 不能把 $HOME/.config 当成项目根，否则进入 ~/.config 下的任何目录
+                # 都会被当成项目根。它们的变化由全局配置的 mtime 检查处理。
+                case $dir/$file in
+                    "$HOME/.config/mise.toml"|"$HOME/.config/mise/config.toml") continue ;;
+                esac
+                [ -n "$__bash_mise_project_root" ] || __bash_mise_project_root=$dir
+                __bash_mise_project_files+=("$dir/$file")
             done
         fi
-        [ "$dir" = "$HOME" ] && return 1
+        [ "$dir" = "$HOME" ] && break
         dir=${dir%/*}
-        [ -n "$dir" ] || return 1
+        [ -n "$dir" ] || break
     done
+    [ -n "${MISE_CONFIG_FILE-}" ] && [ -e "$MISE_CONFIG_FILE" ] &&
+        __bash_mise_project_files+=("$MISE_CONFIG_FILE")
+    [ -n "$__bash_mise_project_root" ]
+}
+
+__bash_mise_has_project_config() {
+    __bash_mise_collect
 }
 
 # 缓存比所有输入都新才可用。全部是 bash 内建判断，不 fork。
 __bash_mise_cache_fresh() {
     local cache=$1 file mise line
     [ -s "$cache" ] || return 1
+    # 环境变量指定的配置不按目录缓存；MISE_ENV 会切换一套配置，也不能共用缓存。
     [ -z "${MISE_CONFIG_FILE-}" ] || return 1
+    [ -z "${MISE_ENV-}" ] || return 1
     __bash_mise_has_project_config && return 1
 
     # 第一行是生成时的基准 PATH：PATH 不同，合并结果就不同。
@@ -47,7 +82,8 @@ __bash_mise_cache_fresh() {
     esac
 
     mise=$(command -v mise) || return 1
-    for file in "$HOME/.config/mise/config.toml" "$HOME"/.config/mise/conf.d/*.toml \
+    for file in "$HOME/.config/mise.toml" "$HOME/.config/mise/config.toml" \
+        "$HOME"/.config/mise/conf.d/*.toml \
         "$HOME"/.local/share/mise/installs/* "$mise"; do
         [ -e "$file" ] || continue
         [ "$file" -nt "$cache" ] && return 1
@@ -75,7 +111,8 @@ if [ -z "${__bash_mise_activated-}" ] && command -v mise >/dev/null 2>&1; then
         if __bash_mise_env=$(mise env -s bash) && [ -n "$__bash_mise_env" ]; then
             eval "$__bash_mise_env"
             # 项目目录里的结果带着项目 env，只给这一个 shell 用，不能写进全局缓存。
-            if [ -z "${MISE_CONFIG_FILE-}" ] && ! __bash_mise_has_project_config; then
+            if [ -z "${MISE_CONFIG_FILE-}" ] && [ -z "${MISE_ENV-}" ] &&
+                ! __bash_mise_has_project_config; then
                 __bash_mise_cache_write "$__bash_mise_cache" "$__bash_mise_base" "$__bash_mise_env"
             fi
         else
@@ -100,12 +137,16 @@ fi
 
 # 手动刷新（别名 mr）：按当前目录重算环境，再补 shims、去重 PATH。
 # 缓存作废即可：新开的 shell 会用新的 PATH/配置重算，不必在这里猜基准 PATH。
+# hook-env 失败时不动环境，也不作废缓存。
 __bash_mise_refresh() {
-    eval "$(mise hook-env -s bash)"
-    rm -f "$(__bash_mise_cache_path)"
-    case ":$PATH:" in
-        *":$HOME/.local/share/mise/shims:"*) ;;
-        *) PATH="$PATH:$HOME/.local/share/mise/shims" ;;
-    esac
-    __bash_path_dedupe
+    local output
+    if output=$(mise hook-env -s bash); then
+        eval "$output"
+        rm -f "$(__bash_mise_cache_path)"
+        case ":$PATH:" in
+            *":$HOME/.local/share/mise/shims:"*) ;;
+            *) PATH="$PATH:$HOME/.local/share/mise/shims" ;;
+        esac
+        __bash_path_dedupe
+    fi
 }

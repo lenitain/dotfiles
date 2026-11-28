@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # repo 段自检：模板的段数契约 + 端到端场景（参考点、merge、符号链接、未 snapshot 的改动、
 # snapshot 警告、书签冲突、jj 报错、共置仓库的两段、jj 段嵌在 git 工作树里）。
+# jj 书签只画名字和 +；距离数字已移除，多个同层书签写成 main,dev+（+ 修饰整组）。
 # 改 prompt/repo.sh 的列数组、模板或参考点选择之后跑一遍（见 README 的「验证」）；
 # 退出码 0 才算过。这里可以随便 fork，热路径不行 —— 所以检查不放 widget 里。
 # 只检查自己所在的这棵树（符号链接进来也一样），不看 BASH_CONFIG_HOME：
@@ -51,7 +52,7 @@ expect_segment() {  # want dir label [fn]
 }
 
 # 场景：root → c1(main) → c2 → @(空)。最近的书签是祖先 main，
-# @ 离它 2 个提交，但空工作副本不计 → 距离 1。
+# @ 离它 2 个提交，但空工作副本不计 → 仍画 +（不是书签上）。
 scenario_ancestor() {
     local dir=$1
     mkdir -p "$dir" || return 1
@@ -64,10 +65,10 @@ scenario_ancestor() {
         jj describe -m c2 >/dev/null 2>&1
         jj new >/dev/null 2>&1
     ) || return 1
-    expect_segment "<id> main~1 (empty)" "$dir" "祖先参考点"
+    expect_segment "<id> main+ (empty)" "$dir" "祖先参考点"
 }
 
-# 场景：改完文件、还没跑任何 jj 命令。提示符必须自己 snapshot，立刻画出 * 和距离；
+# 场景：改完文件、还没跑任何 jj 命令。提示符必须自己 snapshot，立刻画出 * 和 +；
 # 退回 --ignore-working-copy 读旧状态时这里会停在 `<id> main (empty)`（回归测试）。
 scenario_unsnapshotted_change() {
     local dir=$1
@@ -82,7 +83,7 @@ scenario_unsnapshotted_change() {
     ) || return 1
     expect_segment "<id> main (empty)" "$dir" "改动前的空工作副本"
     printf 'b\n' >> "$dir/f"
-    expect_segment "<id> main~1*" "$dir" "未 snapshot 的改动"
+    expect_segment "<id> main+*" "$dir" "未 snapshot 的改动"
 }
 
 # 场景：新文件超过 snapshot.max-new-file-size（默认 1MiB）。jj 拒绝 snapshot，
@@ -202,7 +203,7 @@ scenario_symlink() {  # dir link，dir 已经是 scenario_ancestor 建的仓库
     local dir=$1 link=$2
     mkdir -p "$dir/sub" || return 1
     ln -sfn "$dir/sub" "$link" || return 1
-    expect_segment "<id> main~1 (empty)" "$link" "符号链接子目录"
+    expect_segment "<id> main+ (empty)" "$link" "符号链接子目录"
 }
 
 # 场景：两条分支各有一个书签，@ 是它们的 merge（空）。两个书签都在最近一层，
@@ -238,6 +239,29 @@ scenario_bookmark_on_at() {
     expect_segment "<id> feat (empty)" "$dir" "书签在 @ 上"
 }
 
+# 场景：两个书签在同一个祖先提交上，@ 是非空子提交。必须画成 main,dev+（+ 修饰整组），
+# 不能写成 main+,dev+，也不能把 + 贴到每个名字后面。书签顺序由 jj 自己决定，两种都接受。
+scenario_group_bookmark() {
+    local dir=$1 out got
+    mkdir -p "$dir" || return 1
+    (
+        cd "$dir" || exit 1
+        jj git init --quiet . >/dev/null 2>&1 || exit 1
+        jj describe -m c1 >/dev/null 2>&1 || exit 1
+        jj bookmark create main >/dev/null 2>&1 || exit 1
+        jj bookmark create dev >/dev/null 2>&1 || exit 1
+        jj new >/dev/null 2>&1 || exit 1
+        printf 'x\n' > f || exit 1
+    ) || return 1
+    out=$(cd "$dir" && __bash_prompt_jj && printf '%s' "$repo_ansi")
+    got=$(printf '%s' "$out" | strip_ansi)
+    got=${got#* }
+    case $got in
+        'dev,main+*'|'main,dev+*') ;;
+        *) report "同层两个书签 期望 [dev,main+*] 或 [main,dev+*]，实际 [$got]" ;;
+    esac
+}
+
 if command -v jj >/dev/null 2>&1; then
     scenario_dir=$(mktemp -d) || report "端到端: mktemp 失败"
     if [ -n "${scenario_dir-}" ]; then
@@ -253,6 +277,7 @@ if command -v jj >/dev/null 2>&1; then
         scenario_symlink "$scenario_dir/ancestor" "$scenario_dir/link"
         scenario_merge "$scenario_dir/merge"
         scenario_bookmark_on_at "$scenario_dir/on_at"
+        scenario_group_bookmark "$scenario_dir/group"
         rm -rf "$scenario_dir"
     fi
 else

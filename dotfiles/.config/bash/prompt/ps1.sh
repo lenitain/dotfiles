@@ -7,15 +7,16 @@
 #
 # 渲染归 flyline：PS1 里的 FLYLINE_REPO 由 flyline 换成 widget 输出（flyline 同步等
 # 这个 widget 至多 100ms，见 flyline/widget.sh），这里只算 flyline 拿不到的东西：
-# cwd 的宽度取舍、会话开始后就固定的段，以及只能从 shell 状态（PIPESTATUS / 环境变量）
-# 里读的符号行。
+# 会话开始后就固定的段、仓库段是否另起一行，以及只能从 shell 状态（PIPESTATUS /
+# 环境变量）里读的符号行。
 
-# flyline widget 的实际宽度 bash 看不到（PS1 里只有占位符名字）：仓库里先用
-# lib.sh 的上限预留，之后用 widget 写回的实际宽度（__bash_prompt_repo_width_read）。
-# 留宽了只会让 cwd 提前缩略，留窄了会让第一行折行。
+# cwd 永远完整显示，只把 $HOME 写成 ~，不做任何缩略。仓库段的实际宽度 bash 看不到
+# （PS1 里只有占位符名字）：用 widget 写回的实际宽度决定“仓库段是否另起一行”；
+# 没有缓存时不预留（widget 超时这一轮也没有仓库段）。放不下就在仓库段前插一个
+# 换行，让仓库段整体到下一行；路径本身超过终端宽度时只能让终端折行。
 
-# 在 jj/git 仓库里才预留仓库段的宽度：仓库外 widget 输出为空，预留给它只会白白
-# 吃掉 cwd 的列宽。只为挑预算，不要求精确，所以纯 bash 向上找标记。
+# 在 jj/git 仓库里才判断仓库段的宽度：仓库外 widget 输出为空，不需要为它留列。
+# 纯 bash 向上找标记，不要求精确。
 __bash_prompt_find_repo_marker() {
     local dir=${1:-$PWD} parent
     while :; do
@@ -39,40 +40,19 @@ __bash_prompt_in_repo() {
 
 # 把多个片段拼进 REPLY；空片段丢掉，分隔符默认空格。
 
-# 去掉 \[ \] 和 ANSI 序列后的可见长度记进 REPLY，用于按终端宽度缩 cwd。
-# 按字符数算；CJK 双宽路径会比终端列宽略宽。
+# 去掉 \[ \] 和 ANSI 序列后的可见长度记进 REPLY；按字符数算，CJK 双宽路径
+# 会比终端列宽略宽。
 
-# 超宽时只留尾部若干段，前面用 … 代替。flyline 的 find_cwd_in_span 会把
-# “省略号 + 真实后缀”整体识别成 cwd 段，所以剩下的每一段仍然可点击跳转；
-# 每段只留首字母（~/.c/m/d/foo）flyline 只能匹配到最后一段，中间段点不到。
-__bash_prompt_abbreviate_path() {
-    local path=$1 limit=$2 rest
-    rest=${path#/}
-    [ -n "$rest" ] || { REPLY=/; return 0; }
-    while [ "${#rest}" -gt "$(( limit - 2 ))" ]; do
-        case $rest in
-            */*) rest=${rest#*/} ;;
-            *) break ;;
-        esac
-    done
-    REPLY="…/$rest"
-}
-
-# pure 会先算 cwd 之外的宽度，超宽才把路径缩成 …/尾段。
+# cwd 完整显示，只把 $HOME 写成 ~；cwd_width 用于判断仓库段是否另起一行。
 __bash_prompt_cwd() {
-    local other_width=$1
     local cwd=${PWD/#$HOME/\~}
-    local limit=$(( ${COLUMNS:-80} - other_width - 1 ))
-    [ "$limit" -lt 4 ] && limit=4
-    if [ "${#cwd}" -gt "$limit" ]; then
-        __bash_prompt_abbreviate_path "$cwd" "$limit"
-        cwd=$REPLY
-    fi
     cwd_ansi="\[$__bash_prompt_color_blue\]$cwd\[$__bash_prompt_color_reset\]"
+    __bash_prompt_visible_length "$cwd_ansi"
+    cwd_width=$REPLY
 }
 
-# 会话内不变的段只算一次：ZMX 会话名、SSH 与容器的 user@host——这三样在会话开始后
-# 不再变，PROMPT_COMMAND 里因此不用每条提示符都 fork 一个 id -un、读一遍 /proc。
+# 会话内不变的段只算一次：ZMX 会话名、SSH 的 user@host、容器的 [kind] host——
+# 这三样在会话开始后不再变，PROMPT_COMMAND 里因此不用每条提示符重读 /proc、重算身份。
 __bash_prompt_build_static() {
     local -a parts=()
     [ -n "${ZMX_SESSION-}" ] && parts+=("[${ZMX_SESSION}]")
@@ -106,21 +86,18 @@ __bash_prompt() {
     [ -n "${__bash_prompt_static_ready-}" ] || __bash_prompt_build_static
 
     # 第一行的仓库段由 flyline 的 widget 渲染：宽度按上一次 widget 写回的实际值计入，
-    # 还没有缓存（本仓库第一条提示符）时用上限；占位符交给 flyline 替换。
-    # flyline 没加载成功时两件事都不做——否则 PS1 里会原样显示 FLYLINE_REPO 这个字符串。
-    local repo_reserved=0 repo_placeholder=''
-    if [ -n "${__bash_flyline_enabled-}" ]; then
+    # 没有缓存时不预留。占位符交给 flyline 替换。
+    # flyline 没加载成功时不写占位符——否则 PS1 里会原样显示 FLYLINE_REPO 这个字符串。
+    local repo_placeholder='' repo_width=0
+    if [ -n "${__bash_flyline_enabled-}" ] && __bash_prompt_in_repo; then
         repo_placeholder='FLYLINE_REPO'
-        if __bash_prompt_in_repo; then
-            repo_reserved=$__bash_prompt_repo_reserved
-            __bash_prompt_repo_width_read "$$" && [ "$REPLY" -gt 0 ] && [ "$REPLY" -le "${COLUMNS:-80}" ] && repo_reserved=$REPLY
-        fi
+        __bash_prompt_repo_width_read "$$" && [ "$REPLY" -gt 0 ] && [ "$REPLY" -le "${COLUMNS:-80}" ] && repo_width=$REPLY
     fi
-    __bash_prompt_cwd "$(( __bash_prompt_static_width + repo_reserved ))"
+    __bash_prompt_cwd
 
     local symbol_ansi="\[$__bash_prompt_color_magenta\]$__bash_prompt_symbol\[$__bash_prompt_color_reset\]"
 
-    # 符号行的段（pure 的第 2 行布局）：root/nix/venv → 退出码 → ❯。
+    # 符号行的段：root → venv → 退出码 → ❯。
     # 都只读变量和内建，每条提示符重算也不会 fork；会话内不变的那几段在 static 里。
     local -a symbol_parts=()
     __bash_prompt_context
@@ -134,7 +111,15 @@ __bash_prompt() {
     local leading_newline=''
     [ -n "${__bash_prompt_ran_before-}" ] && leading_newline=$'\n'
 
-    PS1="\[$__bash_prompt_color_reset\]${leading_newline}${__bash_prompt_static}${cwd_ansi}${repo_placeholder}"$'\n'"${symbol_line} "
+    # 放不下时在仓库段前折行：cwd 不缩略，仓库段整体到下一行。
+    # 用 >= 留一列，避免最后一个字符正好落在终端的最后一列。
+    local repo_break=''
+    if [ -n "$repo_placeholder" ] && [ "$repo_width" -gt 0 ] &&
+        [ $(( __bash_prompt_static_width + cwd_width + repo_width )) -ge "${COLUMNS:-80}" ]; then
+        repo_break=$'\n'
+    fi
+
+    PS1="\[$__bash_prompt_color_reset\]${leading_newline}${__bash_prompt_static}${cwd_ansi}${repo_break}${repo_placeholder}"$'\n'"${symbol_line} "
     # 不用瞬态提示符：命令提交后 flyline 的最后一次重绘沿用完整 PS1，第一行（会话段 +
     # cwd + 仓库段）和命令前的空行都留在历史里。
     # unset 而不是把 PS1 复制进 PS1_FINAL：flyline 对每个提示符变量各跑一遍 widget，
@@ -198,25 +183,24 @@ __bash_prompt_container_kind() {
     return 0
 }
 
-# 容器里的 user@host 段（pure 的 container 段）：容器里没有 SSH_CONNECTION，
-# 身份只能从这里看。pure 的前缀默认为空，这里用运行时的名字当前缀，能看出是哪一层。
+# 容器里的 [kind] host：容器里没有 SSH_CONNECTION，机器身份只能从这里看。
+# 不画 user：root 由符号行的 # 表示，非 root 用户名很少改变下一步动作；
+# host 是区分多个容器的唯一字段，完整保留。
 __bash_prompt_container_build() {
     __bash_prompt_container_ansi=''
     __bash_prompt_container_kind
     local kind=$REPLY
     [ -n "$kind" ] || return 0
-    __bash_prompt_user_at_host
-    __bash_prompt_container_ansi="\[$__bash_prompt_color_mute\][$kind]\[$__bash_prompt_color_reset\] $REPLY"
+    local host=${HOSTNAME-}
+    [ -n "$host" ] || host=$(uname -n)
+    __bash_prompt_container_ansi="\[$__bash_prompt_color_mute\][$kind]\[$__bash_prompt_color_reset\] \[$__bash_prompt_color_mute\]$host\[$__bash_prompt_color_reset\]"
 }
 
-# 符号行上的环境上下文，顺序同 pure：root 前缀 # → nix develop → Python venv。
+# 符号行上的环境上下文：root 前缀 # → Python venv。
 # 全是变量判断，不 fork。
 __bash_prompt_context() {
     local -a parts=()
     [ "$EUID" -eq 0 ] && parts+=("\[$__bash_prompt_color_red\]$__bash_prompt_symbol_root\[$__bash_prompt_color_reset\]")
-    if [ -n "${IN_NIX_SHELL-}" ]; then
-        parts+=("\[$__bash_prompt_color_cyan\]$__bash_prompt_symbol_nixdevshell\[$__bash_prompt_color_mute\]$IN_NIX_SHELL\[$__bash_prompt_color_reset\]")
-    fi
     # pure 的取值顺序：VIRTUAL_ENV_PROMPT（可能自带括号）→ VIRTUAL_ENV → CONDA_DEFAULT_ENV，
     # 后两者只取末段。venv 自带的前缀在 conf.d/prompt.sh 里关掉了。
     local venv=${VIRTUAL_ENV_PROMPT:-}
@@ -231,13 +215,17 @@ __bash_prompt_context() {
 # 128+N 换信号名（pure 的 pure_convert_exit_status_to_signal），Linux 的 1..31 号。
 __bash_prompt_signal_names=(HUP INT QUIT ILL TRAP ABRT BUS FPE KILL USR1 SEGV USR2 PIPE ALRM TERM STKFLT CHLD CONT STOP TSTP TTIN TTOU URG XCPU XFSZ VTALRM PROF WINCH IO PWR SYS)
 
-# 上一条命令失败时列出整条管道的退出码（pure 的 pure_show_exit_status）：
-# 只有最后一个状态非 0 才显示，格式与 pure 的 |前缀/|分隔符一致。
+# 上一条命令失败时列出整条管道的退出码：只有最后一个状态非 0 才显示。
+# ✗ 是失败标志，| 只分隔管道的各个阶段。SIGINT（130）用黄色——那是主动中断；
+# 其它失败用红色。
 __bash_prompt_exit_status() {
     REPLY=''
     local -a codes=("$@")
     local last_status=${codes[-1]:-0}
     [ "$last_status" -ne 0 ] || return 0
+
+    local color=$__bash_prompt_color_red
+    [ "$last_status" -eq 130 ] && color=$__bash_prompt_color_yellow
 
     local text='' code index
     for code in "${codes[@]}"; do
@@ -245,7 +233,7 @@ __bash_prompt_exit_status() {
         if [ "$index" -ge 0 ] && [ "$index" -lt ${#__bash_prompt_signal_names[@]} ]; then
             code="SIG${__bash_prompt_signal_names[index]}"
         fi
-        text+="${text:+$__bash_prompt_symbol_exit_status}$code"
+        text+="${text:+$__bash_prompt_symbol_pipestatus}$code"
     done
-    REPLY="\[$__bash_prompt_color_red\]$__bash_prompt_symbol_exit_status$text\[$__bash_prompt_color_reset\]"
+    REPLY="\[$color\]$__bash_prompt_symbol_exit_status $text\[$__bash_prompt_color_reset\]"
 }

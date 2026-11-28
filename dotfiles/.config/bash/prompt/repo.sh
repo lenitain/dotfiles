@@ -8,9 +8,11 @@
 # 按物理路径向上找：$PWD 是逻辑路径，jj/git 自己按物理路径解析。
 __bash_prompt_repo_kinds() {
     local dir parent
+    __bash_prompt_repo_root=''
     dir=$(pwd -P)
     while :; do
         if [ -e "$dir/.jj" ] || [ -e "$dir/.git" ]; then
+            __bash_prompt_repo_root=$dir
             REPLY=''
             [ -e "$dir/.jj" ] && REPLY=jj
             [ -e "$dir/.git" ] && REPLY="${REPLY:+$REPLY }git"
@@ -51,14 +53,61 @@ __bash_prompt_repo() {
     repo_ansi=$REPLY
 }
 
-# git 段：branch + dirty(*) + stash(≡ N) + unpushed/unpulled(⇡ N/⇣ N)。
-# branch/dirty 用 brblack，stash/同步用 cyan；数字同 pure 的 pure_show_numbered_git_indicator。
-# 符号与数字之间留一个空格：≡ ⇡ ⇣ 不在 Maple Mono 里，foot 回退的字体常把字形画到
-# 格边，紧贴数字时两条笔画会连成一个字形。
-#
+# git 段：branch + dirty(*) + unpushed/unpulled(↑/↓) + 操作中状态（REBASE 2/5 等）。
+# branch/dirty 用 brblack，同步用 cyan，操作中状态用黄色；detached 用红色 (detached) 前缀。
 # 分支、dirty、上游、ahead/behind 全在 `git status --porcelain=v2 --branch` 的头部，
 # 一次 fork 就够（原来分 6 次问 git，约 27ms/提示符，这是一次约 7ms）。
-# stash 数不在 status 里，仍在 refs/stash 的 reflog 上另查一次。
+# 没有 stash 段：stash 不是当前动作的 triage，而且它要额外 fork 一次 rev-list。
+#
+# 操作中状态直接读 gitdir 下的文件，不再 fork 一次 rev-parse：
+#   rebase-merge/{msgnum,end} / rebase-apply/{next,last} / MERGE_HEAD /
+#   CHERRY_PICK_HEAD / REVERT_HEAD / BISECT_LOG。
+# gitdir 从仓库根的 .git 取；.git 是文件时（worktree/submodule）按 gitdir: 行解析。
+__bash_prompt_git_dir() { # 仓库根 -> REPLY=gitdir
+    local root=$1 dotgit=$1/.git line
+    if [ -d "$dotgit" ]; then
+        REPLY=$dotgit
+        return 0
+    fi
+    [ -f "$dotgit" ] || return 1
+    IFS= read -r line <"$dotgit" || return 1
+    line=${line%$'\r'}
+    case $line in
+    'gitdir: '*) line=${line#'gitdir: '} ;;
+    *) return 1 ;;
+    esac
+    case $line in
+    /*) REPLY=$line ;;
+    *) REPLY=$root/$line ;;
+    esac
+    return 0
+}
+
+__bash_prompt_git_state() { # gitdir -> REPLY=状态
+    local dir=$1 num end
+    REPLY=''
+    if [ -d "$dir/rebase-merge" ]; then
+        read -r num <"$dir/rebase-merge/msgnum" 2>/dev/null || num=''
+        read -r end <"$dir/rebase-merge/end" 2>/dev/null || end=''
+        REPLY="REBASE${num:+ $num}${end:+/$end}"
+        [ -n "$num" ] && [ -n "$end" ] || REPLY=REBASE
+        return 0
+    fi
+    if [ -d "$dir/rebase-apply" ]; then
+        read -r num <"$dir/rebase-apply/next" 2>/dev/null || num=''
+        read -r end <"$dir/rebase-apply/last" 2>/dev/null || end=''
+        REPLY="REBASE${num:+ $num}${end:+/$end}"
+        [ -n "$num" ] && [ -n "$end" ] || REPLY=REBASE
+        [ -e "$dir/rebase-apply/applying" ] && REPLY="AM${num:+ $num}${end:+/$end}"
+        return 0
+    fi
+    [ -e "$dir/MERGE_HEAD" ] && { REPLY=MERGING; return 0; }
+    [ -e "$dir/CHERRY_PICK_HEAD" ] && { REPLY=CHERRY-PICK; return 0; }
+    [ -e "$dir/REVERT_HEAD" ] && { REPLY=REVERT; return 0; }
+    [ -e "$dir/BISECT_LOG" ] && { REPLY=BISECT; return 0; }
+    return 1
+}
+
 __bash_prompt_git() {
     command -v git >/dev/null 2>&1 || return 1
 
@@ -84,30 +133,38 @@ __bash_prompt_git() {
     # detached HEAD 时 porcelain 只说 "(detached)"，用 name-rev 换成人能读的 main~N。
     # refs/jj/* 是 jj 的记账 ref：共置仓库里 jj new 之后 HEAD 常只剩
     # refs/jj/keep/<hash>，画出来是 50 列的哈希；排掉它们，没有名字就画短哈希。
+    local detached=''
     if [ "$branch" = '(detached)' ]; then
         branch=$(command git name-rev --exclude='refs/jj/*' --name-only HEAD 2>/dev/null)
         case $branch in
         ''|undefined) branch=$(command git rev-parse --short HEAD 2>/dev/null) ;;
         esac
+        detached="\[$__bash_prompt_color_red\](detached)\[$__bash_prompt_color_reset\] "
+        # 共置仓库里 jj 会主动把 git HEAD 留在 detached；那是 jj 的正常工作方式，
+        # 不是用户需要处理的 detached checkout。jj 段已经画了真实状态。
+        [ -n "${__bash_prompt_repo_root-}" ] && [ -e "$__bash_prompt_repo_root/.jj" ] && detached=''
     fi
     [ -n "$branch" ] || return 1
 
-    local stash='' stash_count
-    stash_count=$(command git rev-list --walk-reflogs --count refs/stash 2>/dev/null) || stash_count=0
-    [ "${stash_count:-0}" -gt 0 ] 2>/dev/null && stash=" $__bash_prompt_symbol_stash $stash_count"
-
     local ahead_ansi='' behind_ansi=''
-    [ "${ahead:-0}" -gt 0 ] 2>/dev/null && ahead_ansi="$__bash_prompt_symbol_ahead $ahead"
-    [ "${behind:-0}" -gt 0 ] 2>/dev/null && behind_ansi="$__bash_prompt_symbol_behind $behind"
+    [ "${ahead:-0}" -gt 0 ] 2>/dev/null && ahead_ansi="$__bash_prompt_symbol_ahead"
+    [ "${behind:-0}" -gt 0 ] 2>/dev/null && behind_ansi="$__bash_prompt_symbol_behind"
 
-    local head_ansi="\[$__bash_prompt_color_mute\]${branch}${dirty}\[$__bash_prompt_color_reset\]"
+    local state=''
+    if [ -n "${__bash_prompt_repo_root-}" ] &&
+        __bash_prompt_git_dir "$__bash_prompt_repo_root" &&
+        __bash_prompt_git_state "$REPLY"; then
+        state=$REPLY
+    fi
+
+    local head_ansi="${detached}\[$__bash_prompt_color_mute\]${branch}${dirty}\[$__bash_prompt_color_reset\]"
     local info=''
-    info+="$stash"
     [ -n "$ahead_ansi" ] && info+=" $ahead_ansi"
     [ -n "$behind_ansi" ] && info+=" $behind_ansi"
     if [ -n "$info" ]; then
         head_ansi+="\[$__bash_prompt_color_cyan\]${info}\[$__bash_prompt_color_reset\]"
     fi
+    [ -n "$state" ] && head_ansi+=" \[$__bash_prompt_color_yellow\]$state\[$__bash_prompt_color_reset\]"
     repo_ansi=$head_ansi
     return 0
 }
@@ -158,8 +215,8 @@ __bash_prompt_jj() {
     local bookmark_walk=$(( depth + 1 ))
 
     # 参考点用「20 个提交内的祖先书签」，不取 latest()：latest 在 jj 里默认按
-    # committer 时间只取 1 个，分叉/merge 时会把更近的书签藏掉。距离由下面的
-    # BFS 算，所以参考点可以是一组提交。
+    # committer 时间只取 1 个，分叉/merge 时会把更近的书签藏掉。最近一层由下面的
+    # BFS 选，所以参考点可以是一组提交。
     local ancestor_refs="ancestors(@, $bookmark_walk) & bookmarks()"
     local ancestor_path="($ancestor_refs)::@"
     local revset="@ | ($ancestor_path)"
@@ -213,8 +270,8 @@ __bash_prompt_jj() {
 
     [ -n "$at_key" ] || return 1
 
-    # 距离 = 从 @ 沿 parent 走到书签的边数；空 @ 不计一步，和原来的口径一致
-    # （直接父书签距离 0，再上一个距离 1）。
+    # 距离 = 从 @ 沿 parent 走到书签的边数；只用来选最近一层和判断 + 后缀，
+    # 不显示数字。空 @ 不计一步（直接父书签算 "在书签上"，不画 +）。
     local id
     local -A ancestor_depth=()
     local -a queue=()
@@ -273,7 +330,6 @@ __bash_prompt_jj() {
             *$'\x1d') conflicted=1; name=${name%$'\x1d'} ;;
         esac
         part="\[$__bash_prompt_color_mute\]$name"
-        [ "$ancestor_distance" -gt 0 ] && part+="~${ancestor_distance}"
         [ "$conflicted" = 1 ] && part+="\[$__bash_prompt_color_red\]$__bash_prompt_symbol_warn"
         part+="\[$__bash_prompt_color_reset\]"
         reference_parts+=("$part")
@@ -281,6 +337,8 @@ __bash_prompt_jj() {
 
     __bash_prompt_join_into ',' "${reference_parts[@]}"
     local reference_ansi=$REPLY
+    # + 修饰整组：main,dev+ 读作"这组书签在 @ 的祖先层上"，而不是每个名字各加一个。
+    [ "$ancestor_distance" -gt 0 ] && reference_ansi+="\[$__bash_prompt_color_mute\]+\[$__bash_prompt_color_reset\]"
 
     local head_ansi="\[$__bash_prompt_color_mute\]$at_change_id\[$__bash_prompt_color_reset\]"
     [ -n "$reference_ansi" ] && head_ansi+=" $reference_ansi"
