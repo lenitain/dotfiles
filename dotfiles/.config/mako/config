@@ -16,7 +16,7 @@ default-timeout=5000
 
 # ---------- 布局 ----------
 width=420
-height=160
+height=512
 padding=14
 margin=12
 border-size=2
