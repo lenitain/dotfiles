@@ -4,12 +4,20 @@ Status:children_remove(5, Status.RIGHT)
 -- 状态栏左侧用完整路径替换默认只显示文件名的组件（id=3 的 name）
 Status:children_remove(3, Status.LEFT)
 
+-- 路径里的目录部分用文件夹的蓝色（th.mgr.cwd），文件名保持默认色
 Status:children_add(function()
 	local h = cx.active.current.hovered
 	if not h then
 		return ""
 	end
-	return " " .. ya.readable_path(tostring(h.url))
+
+	local dir, name = ya.readable_path(tostring(h.url)):match("^(.*/)([^/]*)$")
+
+	local base = ui.Style():fg("reset"):bg("reset")
+	return ui.Line {
+		ui.Span(" " .. dir):style(base:patch(th.mgr.cwd)),
+		ui.Span(ui.printable(name)):style(base),
+	}
 end, 2000, Status.LEFT)
 
 -- 大小从左侧（id=2）挪到右侧，落在权限和行数之间
