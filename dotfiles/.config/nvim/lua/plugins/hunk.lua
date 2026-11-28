@@ -96,6 +96,8 @@ end
 
 return {
   "julienvincent/hunk.nvim",
+  -- 本地仓库优先于安装副本（lazy dev.path = ~/projects）；上游合并后删掉
+  dev = true,
   -- 主要作为 jj 的 diff-editor 使用，因此按命令懒加载
   cmd = { "HunkDiffView", "HunkDiffEditor" },
   dependencies = {

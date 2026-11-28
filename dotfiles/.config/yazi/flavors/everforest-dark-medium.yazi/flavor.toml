@@ -65,6 +65,9 @@ unset_alt  = { fg = "#dbbc7f", bg = "#343f44" }
 # : Status bar {{{
 
 [status]
+# Separators
+sep_left  = { open = "█", close = "" }
+sep_right = { open = "", close = "█" }
 # Permissions
 perm_sep   = { fg = "#4f585e" }
 perm_type  = { fg = "#7fbbb3" }
