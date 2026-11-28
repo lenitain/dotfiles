@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# 用 aria2c 下载一个 URL。
+#
+# 两个调用方共用这一份实现：
+#   - aria2_downloads.py 里的 patch：浏览器每次发起下载都会把 URL 交过来
+#   - `,d`（hint links userscript aria2）：从页面里挑链接直接下，不经过浏览器下载
+#
+# URL 取 $1，没有则取 $QUTE_URL。其余信息全部来自环境变量：
+#   QUTE_CURRENT_URL   发起页，作为 Referer
+#   QUTE_USER_AGENT    浏览器 UA（部分站点按 UA 决定放行）
+#   QUTE_DOWNLOAD_DIR  下载目录，与 downloads.location.directory 同源
+
+set -uo pipefail
+
+url="${1:-${QUTE_URL:-}}"
+if [[ -z "$url" ]]; then
+    notify-send "aria2" "没有拿到要下载的 URL" -u critical
+    exit 1
+fi
+
+if ! command -v aria2c >/dev/null; then
+    notify-send "aria2" "找不到 aria2c" -u critical
+    exit 127
+fi
+
+conf="${XDG_CONFIG_HOME:-$HOME/.config}/aria2/aria2.conf"
+dir="${QUTE_DOWNLOAD_DIR:-$HOME/downloads}"
+mkdir -p "$dir"
+
+args=(--conf-path="$conf" --dir="$dir")
+if [[ -n "${QUTE_USER_AGENT:-}" ]]; then
+    args+=(--user-agent="$QUTE_USER_AGENT")
+fi
+referer="${QUTE_CURRENT_URL:-}"
+if [[ -n "$referer" ]]; then
+    args+=(--header="Referer: $referer")
+fi
+
+# 失败时保留日志供排查，成功即删
+log_dir="${XDG_CACHE_HOME:-$HOME/.cache}/aria2"
+mkdir -p "$log_dir"
+log="$log_dir/qutebrowser-$(date +%Y%m%d-%H%M%S)-$$.log"
+
+# 下载条不再出现任何条目，通知是这个动作唯一的反馈
+notify-send "aria2" "开始下载：${url}" -u low
+
+if aria2c "${args[@]}" "$url" >"$log" 2>&1; then
+    # 结束时的汇总表行长这样：871214|OK  |   747KiB/s|/path/to/file
+    summary=$(grep -m1 -E '^[0-9a-f]+\|' "$log" | awk -F'|' '{print $4}' || true)
+    notify-send "aria2" "下载完成${summary:+：${summary}}" -u normal
+    rm -f "$log"
+else
+    status=$?
+    err=$(grep -m1 -E '^\(ERR\)' "$log" || true)
+    notify-send "aria2" "下载失败（退出码 ${status}）：${url}${err:+$'\n'${err}}" -u critical
+    exit "$status"
+fi

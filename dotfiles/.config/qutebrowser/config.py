@@ -145,9 +145,23 @@ c.tabs.title.elide = "none"
 c.tabs.indicator.width = 4
 c.tabs.padding = {"top": 6, "bottom": 6, "left": 8, "right": 8}
 
-# 下载
+# ==================== 下载：由 aria2c 接管 ====================
+# qutebrowser 没有"把下载转交外部程序"的选项（downloads.* 只有 location、
+# open_dispatcher 这些），所以 aria2_downloads 在 qutebrowser.browser.downloads
+# 的两个通用方法上包了一层：网页每发起一次下载就取 URL、取消浏览器这次下载、
+# 把 URL 交给 userscripts/aria2 去调 aria2c。item 不入下载模型，下载条不会出现
+# 任何条目。
+#
+# 留在内置下载器里的情况：file://（qutebrowser 会直接打开）、页面另存为
+# （:download --mhtml）、content.pdfjs 打开时的 PDF、blob:/data: 这种只在
+# 浏览器进程内有效的地址。下面两项只影响这些放行的情况。
+import aria2_downloads  # noqa: E402,F401
+
 c.downloads.location.directory = "~/downloads"
 c.downloads.location.prompt = False
+
+# 从页面里挑链接直接交给 aria2，不经过浏览器下载（站点靠 JS 生成地址时用得上）
+config.bind(",d", "hint links userscript aria2")
 
 # 隐私
 c.content.cookies.accept = "no-3rdparty"
