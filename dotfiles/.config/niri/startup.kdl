@@ -1,5 +1,8 @@
 // Startup commands
 spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+// 滚动布局自动就位：放得下时整组居中，放不下时把内容右端夹回屏幕右缘。
+// 见 scripts/auto-layout 文件头；调试用 auto-layout --once / --dry-run。
+spawn-at-startup "/home/lenitain/.config/niri/scripts/auto-layout"
 // 休眠前锁屏：没有定时熄屏，只有系统准备挂起时锁一次。
 spawn-at-startup "swayidle" "-w" "before-sleep" "swaylock -f"
 spawn-at-startup "foot" "--server"

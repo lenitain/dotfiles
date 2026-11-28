@@ -1,0 +1,452 @@
+#!/usr/bin/luajit
+-- 把滚动布局保持在“放得下就整组居中、放不下就贴左”的位置。
+--
+--   auto-layout              常驻，订阅 IPC 事件流，每个事件批次立即判断
+--   auto-layout --dry-run    常驻，只打印判断，不发动作
+--   auto-layout --once       打印一次判断后退出
+--
+-- 规则 A：W + 2·gaps ≤ 工作区宽 → 整组居中（center-visible-columns 的结果就是等边距居中）。
+-- 规则 B：放不下 → 视口不越过内容右端；缩窄最右列后把它夹回来，左侧窗口随之滑入。
+--
+-- 为什么不读视口位置再判断：v26.04 的 IPC 对平铺窗口的 tile_pos_in_workspace_view 恒为
+-- null（滚动布局填这个字段是 26.04 之后的事），脚本看不到视口偏移。所以这里只在
+-- “宽度或窗口集合变了”时执行幂等的动作序列，落点交给 niri 自己算：
+--   * 放得下：center-visible-columns 把完整可见的列居中，重复调用无副作用；
+--   * 从溢出跨到放得下：视口此时可能越界（有列被切在屏幕外，center-visible-columns 会
+--     跳过它们），先用 focus-column-* 把视口拉回范围再居中，最后把焦点还回去；
+--   * 仍溢出且最右列变窄：focus-column <一个被切在左边的列> 让视口退到它左对齐的位置，
+--     再 focus-column-last 走右对齐，把内容右端贴回屏幕右缘。
+--
+-- 两个已知代价（都来自“看不到视口位置”）：
+--   * 跨过“溢出 → 放得下”那一步会临时挪动焦点再还回来，会在 recent-windows 的 MRU
+--     里留下几条记录；
+--   * 仍溢出时无法确认视口是否真的越界，所以“最右列变窄且它是焦点列”一律夹一次。
+--     焦点列一定在视野内，此时视口离右端不超过一列，最多横滚一列宽。
+--
+-- 关于拖拽 resize：niri 26.04 的 IPC 不公开交互 resize 状态（interactive_resize 是布局私有
+-- 状态），也没有读取鼠标按键的接口，所以“松手”这件事脚本观察不到。本机 binds.kdl 没有绑定
+-- 交互 resize（全部走 SetWindowWidth / set-column-width），因此不存在需要等待松手的情况：
+-- 脚本对每个事件批次立即判断。若以后绑了鼠标 resize，那一列在拖动中会被夹紧动作打断。
+
+local dir = arg[0]:match("^(.*)/") or "."
+package.path = dir .. "/?.lua;" .. package.path
+local lib = require("lib")
+local ffi = require("ffi")
+
+ffi.cdef [[
+struct pollfd { int fd; short events; short revents; };
+int poll(struct pollfd *, unsigned long, int);
+]]
+
+-- 必须与 layout { gaps } 一致：IPC 不暴露这个值。偏差只影响判断精度，最多几像素。
+local GAPS = 4
+
+local IDLE_MS = 1000 -- 只是让循环醒一下，不代表任何判断
+
+local function log(fmt, ...)
+    io.stderr:write("auto-layout: ", string.format(fmt, ...), "\n")
+end
+
+--------------------------------------------------------------------------
+-- JSON 取值：只够读出 niri 回复里的字段，跳过字符串内容与转义。
+--------------------------------------------------------------------------
+
+local function value_at(json, i)
+    local c = json:sub(i, i)
+    if c == '"' then
+        local escaped = false
+        for j = i + 1, #json do
+            local d = json:sub(j, j)
+            if escaped then escaped = false
+            elseif d == "\\" then escaped = true
+            elseif d == '"' then return json:sub(i + 1, j - 1) end
+        end
+        return nil
+    end
+    if c == "[" or c == "{" then
+        local open, close = c, (c == "[" and "]" or "}")
+        local depth, in_string, escaped = 0, false, false
+        for j = i, #json do
+            local d = json:sub(j, j)
+            if in_string then
+                if escaped then escaped = false
+                elseif d == "\\" then escaped = true
+                elseif d == '"' then in_string = false end
+            elseif d == '"' then in_string = true
+            elseif d == open then depth = depth + 1
+            elseif d == close then
+                depth = depth - 1
+                if depth == 0 then return json:sub(i, j) end
+            end
+        end
+        return nil
+    end
+    local j = i
+    while j <= #json and not json:sub(j, j):match("[,}%]]") do j = j + 1 end
+    return json:sub(i, j - 1)
+end
+
+local function field(json, name)
+    local key = '"' .. name .. '"'
+    local in_string, escaped = false, false
+    local i = 1
+    while i <= #json do
+        local c = json:sub(i, i)
+        if in_string then
+            if escaped then escaped = false
+            elseif c == "\\" then escaped = true
+            elseif c == '"' then in_string = false end
+        elseif c == '"' and json:sub(i, i + #key - 1) == key then
+            local j = i + #key
+            while json:sub(j, j):match("%s") do j = j + 1 end
+            if json:sub(j, j) == ":" then
+                j = j + 1
+                while json:sub(j, j):match("%s") do j = j + 1 end
+                return value_at(json, j)
+            end
+            in_string = true
+        elseif c == '"' then
+            in_string = true
+        end
+        i = i + 1
+    end
+    return nil
+end
+
+local function query_array(name)
+    local payload, err = lib.niri_query(name)
+    if not payload then return nil, name .. " 查询失败: " .. tostring(err) end
+    local array = payload:match('^{"' .. name .. '":(.*)}$')
+    if not array then return nil, name .. " 回复无法解析" end
+    return lib.json_objects(array)
+end
+
+--------------------------------------------------------------------------
+-- 状态快照：只取聚焦工作区的平铺布局，列宽、列序、焦点列。
+--------------------------------------------------------------------------
+
+local function snapshot()
+    local workspaces, err = query_array("Workspaces")
+    if not workspaces then return nil, err end
+
+    local ws
+    for _, obj in ipairs(workspaces) do
+        if field(obj, "is_focused") == "true" then ws = tonumber(field(obj, "id")) end
+    end
+    if not ws then return nil, "找不到聚焦工作区" end
+
+    local windows, err2 = query_array("Windows")
+    if not windows then return nil, err2 end
+
+    local columns, focused_id, focused_floating = {}, nil, false
+    for _, obj in ipairs(windows) do
+        local id = tonumber(field(obj, "id"))
+        local floating = field(obj, "is_floating") == "true"
+        if field(obj, "is_focused") == "true" then
+            focused_id, focused_floating = id, floating
+        end
+        if not floating and tonumber(field(obj, "workspace_id")) == ws then
+            -- pos_in_scrolling_layout 是 [列, 列内窗口]，1 起。
+            local pos = field(obj, "pos_in_scrolling_layout")
+            local col = pos and tonumber(pos:match("^%[%s*(%d+)"))
+            if col then
+                local size = field(obj, "tile_size") or ""
+                local w = tonumber(size:match("^%[%s*([^,]+)"))
+                local slot = columns[col]
+                if not slot then
+                    slot = { w = 0 }
+                    columns[col] = slot
+                end
+                -- 同一列里所有窗口等宽的列宽取最大值；标签列多出的指示器宽度不影响这里。
+                if w and w > slot.w then slot.w = w end
+                if id == focused_id then slot.focused = true end
+            end
+        end
+    end
+
+    local n = 0
+    for col in pairs(columns) do
+        if col > n then n = col end
+    end
+
+    local widths, xs, W, focused_col = {}, {}, 0, nil
+    for i = 1, n do
+        local slot = columns[i]
+        if not slot then return nil, "列号不连续: " .. i end
+        widths[i] = slot.w
+        xs[i] = W
+        W = W + slot.w
+        if i < n then W = W + GAPS end
+        if slot.focused then focused_col = i end
+    end
+
+    return {
+        ws = ws,
+        n = n,
+        widths = widths,
+        xs = xs,
+        W = W,
+        focused_id = focused_id,
+        focused_floating = focused_floating,
+        focused_col = focused_col,
+    }
+end
+
+-- 工作区宽：输出逻辑宽。左右 strut（含 layer-shell 的左右独占区）不在这条路径里，
+-- 本配置 layout { struts {} } 且没有左右独占的 bar，所以两者相等。
+local function working_width()
+    local payload, err = lib.niri_query("FocusedOutput")
+    if not payload then return nil, "FocusedOutput 查询失败: " .. tostring(err) end
+    local obj = payload:match('^{"FocusedOutput":(.*)}$')
+    if not obj or obj == "null" then return nil, "没有聚焦输出" end
+    local logical = field(obj, "logical")
+    if not logical or logical == "null" then return nil, "输出还没有逻辑尺寸" end
+    local w = tonumber(field(logical, "width"))
+    if not w or w <= 0 then return nil, "输出逻辑宽度无效" end
+    return w
+end
+
+--------------------------------------------------------------------------
+-- 动作
+--------------------------------------------------------------------------
+
+local function act(json)
+    local reply, err = lib.niri_request(json)
+    if not reply then log("动作被拒绝: %s", tostring(err)) end
+end
+
+local function focus_column(index) act(string.format('{"Action":{"FocusColumn":{"index":%d}}}', index)) end
+local function focus_first() act('{"Action":{"FocusColumnFirst":{}}}') end
+local function focus_last() act('{"Action":{"FocusColumnLast":{}}}') end
+local function focus_window(id) act(string.format('{"Action":{"FocusWindow":{"id":%d}}}', id)) end
+local function center_visible() act('{"Action":{"CenterVisibleColumns":{}}}') end
+
+--------------------------------------------------------------------------
+-- 判断
+--------------------------------------------------------------------------
+
+-- 视口越界时把视口拉回范围：被切在左端就 focus 第一列，被切在右端就 focus 最后一列。
+-- 聚焦一个完整可见的列是空操作（niri 保持视口不动），所以两边都试是安全的。
+local function pull_in_view(s)
+    if s.focused_col == s.n then
+        focus_first()
+    elseif s.focused_col == 1 then
+        focus_last()
+    else
+        focus_last()
+        focus_first()
+    end
+end
+
+-- 内容右端贴回屏幕右缘：最右列此刻完整可见，直接 focus 它是空操作，
+-- 先聚焦一个被切在左边的列让视口退到 x_k - gaps（< W - 工作区宽），
+-- 最右列因此越出右缘，focus-column-last 才会走右对齐分支。
+local function clamp_right(s, working)
+    local k
+    for i = 1, s.n - 1 do
+        if s.xs[i] < s.W - working + GAPS then k = i end
+    end
+    if not k then
+        log("最右列宽于视口，无法夹紧")
+        return
+    end
+    focus_column(k)
+    focus_last()
+end
+
+local previous
+
+local function widths_equal(a, b)
+    if not a or not b or #a ~= #b then return false end
+    for i = 1, #a do
+        if math.abs(a[i] - b[i]) > 0.5 then return false end
+    end
+    return true
+end
+
+local function evaluate(apply)
+    local s, err = snapshot()
+    if not s then
+        log("%s", err)
+        return
+    end
+    if s.n == 0 or s.focused_floating then
+        -- 没有平铺窗口，或焦点在浮窗上：不碰平铺布局。
+        previous = nil
+        return
+    end
+
+    local working, err2 = working_width()
+    if not working then
+        log("%s", err2)
+        return
+    end
+
+    local prev = previous
+    previous = { ws = s.ws, n = s.n, widths = s.widths, W = s.W }
+
+    local same_ws = prev ~= nil and prev.ws == s.ws
+    local fits = s.W + 2 * GAPS <= working + 0.5
+    -- 从“溢出”跨到“放得下”的那一步，视口一定可能越界，需要先拉回范围。
+    local became_fit = same_ws
+        and prev.W + 2 * GAPS > working + 0.5
+        and fits
+    -- 焦点变化不会移动“放得下”的布局（没有可滚的余量），所以只在布局本身变了时居中。
+    local layout_changed = prev == nil or (same_ws and not widths_equal(prev.widths, s.widths))
+    local last_shrank = same_ws
+        and prev.n == s.n
+        and s.n > 1
+        and (prev.widths[s.n] or 0) > (s.widths[s.n] or 0) + 0.5
+
+    if fits then
+        if not (layout_changed or became_fit) then return end
+        log("放得下（W=%.1f，工作区=%.1f）：%s", s.W, working,
+            became_fit and "拉回视口后居中" or "居中")
+        if not apply then return end
+        if became_fit and s.focused_col ~= nil then pull_in_view(s) end
+        center_visible()
+        if became_fit and s.focused_id then focus_window(s.focused_id) end
+    elseif last_shrank and s.focused_col == s.n then
+        log("仍溢出（W=%.1f，工作区=%.1f）：夹回内容右端", s.W, working)
+        if apply then clamp_right(s, working) end
+    end
+end
+
+--------------------------------------------------------------------------
+-- 事件流
+--------------------------------------------------------------------------
+
+local AF_UNIX, SOCK_STREAM, POLLIN = 1, 1, 1
+
+-- 单实例：拿不到锁就退出。niri 重启后残留的旧进程和新登录启动的进程不能同时动手。
+local O_WRONLY, O_CREAT, LOCK_EX, LOCK_NB = 1, 64, 2, 4
+
+local function acquire_lock()
+    local dir = os.getenv("XDG_RUNTIME_DIR") or "/tmp"
+    -- open 是可变参数函数：mode 必须显式传 int cdata，否则按 double 传。
+    local fd = ffi.C.open(dir .. "/auto-layout.lock", O_WRONLY + O_CREAT, ffi.new("int", 420))
+    if fd < 0 then
+        log("无法创建锁文件，跳过单实例检查")
+        return true
+    end
+    if ffi.C.flock(fd, LOCK_EX + LOCK_NB) ~= 0 then
+        ffi.C.close(fd)
+        return false
+    end
+    -- fd 不关：进程活着就占着锁，退出时由内核释放。
+    return true
+end
+
+local function connect_stream()
+    local path = os.getenv("NIRI_SOCKET")
+    if not path or path == "" or #path >= 108 then
+        return nil, "NIRI_SOCKET 未设置或路径太长"
+    end
+
+    local fd = ffi.C.socket(AF_UNIX, SOCK_STREAM, 0)
+    if fd < 0 then return nil, "socket() 失败" end
+
+    local addr = ffi.new("struct sockaddr_un")
+    addr.sun_family = AF_UNIX
+    ffi.copy(addr.sun_path, path)
+    local len = ffi.offsetof("struct sockaddr_un", "sun_path") + #path + 1
+    if ffi.C.connect(fd, ffi.cast("const void *", addr), len) ~= 0 then
+        ffi.C.close(fd)
+        return nil, "connect " .. path .. " 失败"
+    end
+
+    local req = '"EventStream"\n'
+    if ffi.C.write(fd, req, #req) ~= #req then
+        ffi.C.close(fd)
+        return nil, "写 EventStream 请求失败"
+    end
+    return fd
+end
+
+local stream_buf = ""
+
+-- 等到有数据或超时；可读就读一次并把完整行切出来。返回 nil 表示连接断了。
+local function read_lines(fd, timeout_ms)
+    local pfd = ffi.new("struct pollfd[1]")
+    pfd[0].fd = fd
+    pfd[0].events = POLLIN
+    pfd[0].revents = 0
+    local ready = ffi.C.poll(pfd, 1, timeout_ms)
+    if ready == 0 then return {} end
+    if ready < 0 then return nil end
+
+    local chunk = ffi.new("char[8192]")
+    local n = ffi.C.read(fd, chunk, ffi.sizeof(chunk))
+    if n <= 0 then return nil end
+    stream_buf = stream_buf .. ffi.string(chunk, n)
+
+    local lines = {}
+    while true do
+        local i = stream_buf:find("\n", 1, true)
+        if not i then break end
+        lines[#lines + 1] = stream_buf:sub(1, i - 1)
+        stream_buf = stream_buf:sub(i + 1)
+    end
+    return lines
+end
+
+local function daemon(apply)
+    local fd, err = connect_stream()
+    if not fd then
+        log("%s", err)
+        os.exit(1)
+    end
+
+    -- 每个事件批次（一次就读到的所有行）立即判断一次，不攒时间窗。
+    local handshake, dirty = true, true
+    while true do
+        local lines = read_lines(fd, IDLE_MS)
+        if lines == nil then
+            log("事件流断开")
+            os.exit(0)
+        end
+        for _, line in ipairs(lines) do
+            if handshake then
+                -- 第一条是 {"Ok":"Handled"}
+                handshake = false
+            elseif line ~= "" then
+                dirty = true
+            end
+        end
+        if dirty then
+            dirty = false
+            evaluate(apply)
+        end
+    end
+end
+
+--------------------------------------------------------------------------
+-- 入口
+--------------------------------------------------------------------------
+
+local mode = arg[1]
+if mode == "--once" then
+    local s, err = snapshot()
+    if not s then
+        print("快照失败: " .. err)
+        os.exit(1)
+    end
+    local working = working_width()
+    print(string.format("工作区 %d：%d 列，W=%.1f，工作区宽=%s，gaps=%d",
+        s.ws, s.n, s.W, working and string.format("%.1f", working) or "未知", GAPS))
+    for i = 1, s.n do
+        print(string.format("  列 %d：宽 %.1f，content x=%.1f%s",
+            i, s.widths[i], s.xs[i], i == s.focused_col and "   ← 焦点" or ""))
+    end
+    if working then
+        local fits = s.W + 2 * GAPS <= working + 0.5
+        print(string.format("  放得下: %s（%s）", tostring(fits), fits and "应居中" or "应贴左"))
+    end
+elseif mode == "--dry-run" then
+    daemon(false)
+elseif mode == nil then
+    if acquire_lock() then daemon(true) end
+else
+    log("用法: auto-layout [--dry-run|--once]")
+    os.exit(2)
+end
