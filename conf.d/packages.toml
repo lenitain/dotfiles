@@ -101,6 +101,8 @@
 "pacman:prek" = "latest"
 "pacman:libnotify" = "latest"
 "pacman:niri" = "latest"
+"pacman:umbriel" = "latest"
+"pacman:hyprpicker" = "latest"
 "pacman:gvfs-mtp" = "latest"
 "pacman:udisks2" = "latest"
 "pacman:onlyoffice-bin" = "latest"
