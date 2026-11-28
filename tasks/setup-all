@@ -16,8 +16,7 @@
 #
 # 顺序规则: 需要从 GitHub 拉取的任务统一排在最后 —— 本机/镜像类先收敛,
 #   GitHub 抽风时不受影响的步骤已经做完。组内无相互依赖, 组间只保持原有相对顺序。
-#   判定依据: 任务里用了 gh_api / gh_download, 或产物本身就来自 GitHub
-#   (ya pkg 的插件/配色, package.toml 里是 owner/repo)。
+#   判定依据: 任务里用了 gh_api / gh_download, 或产物本身就来自 GitHub。
 #   例外: mise install/upgrade 里的 aqua 工具 (zls/gofumpt/golangci-lint/lua-ls/
 #   stylua/ruff) 也走 GitHub, 但它同时是 setup-pig 等步骤的工具前置 (pig 由 mise
 #   提供), 挪到末尾会顺序倒挂, 故留在第 2 步。
@@ -71,7 +70,6 @@ run_step setup-pig            "PiG agent + 扩展"
 # ── GitHub 组: 全部经 gh-proxy 拉取, 统一放最后 ──
 run_step setup-fonts          "Maple Mono"
 run_step setup-rime-wanxiang  "万象拼音"
-run_step setup-yazi           "yazi 插件/配色"
 
 # ── 收尾: 本地产物编译 (无网络依赖; 成品已是最新则跳过) ──
 run_step setup-build          "qb-open 编译 + 壁纸导出"

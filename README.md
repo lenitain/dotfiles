@@ -33,7 +33,7 @@ mise ls                # 已装工具
 ```
 
 `setup-all` 依次跑：`mise bootstrap` → `mise install` + `mise upgrade` → `setup-tuning` →
-`setup-desktop` → `setup-pig` → `setup-fonts` → `setup-rime-wanxiang` → `setup-yazi` →
+`setup-desktop` → `setup-pig` → `setup-fonts` → `setup-rime-wanxiang` →
 `setup-build`。更新类步骤软失败：挂了只 warn，不中断后面的收敛。
 
 升级只在 `setup-all` 里做：它先 `sudo pacman -Syu --noconfirm` 再装声明里的包
@@ -73,7 +73,6 @@ mise ls                # 已装工具
 | `setup-fonts`         | Maple Mono 字体                                              | 用户 |
 | `setup-pig`           | PiG agent + 扩展                                             | 用户 |
 | `setup-rime-wanxiang` | 万象拼音 → fcitx5                                            | 用户 |
-| `setup-yazi`          | yazi 插件（simple-status / smart-enter）                     | 用户 |
 | `setup-build`         | 本地产物编译：qb-open 静态编译 + 壁纸 SVG→PNG 导出            | 用户 |
 
 `setup-boot` 只新建 / 收敛，不卸载现有引导器；检测到 Limine / GRUB / UKI 接管内核安装会中止
@@ -123,7 +122,6 @@ ansible-playbook deploy-xray.yml --limit <IP>
 | `dotfiles/.config/jj/repos`、`workspaces`         | 每个仓库的本地状态                               |
 | `dotfiles/.config/nvim/lazy-lock.json`            | 插件锁文件                                       |
 | `dotfiles/.config/qutebrowser/bookmarks/`、`quickmarks` | 浏览器自己读写的书签与快标                 |
-| `dotfiles/.config/yazi/plugins/*`、`package.toml` | 由 `setup-yazi` 生成                             |
 | `dotfiles/.local/bin/scripts/qb-open`             | 编译产物                                         |
 | `dotfiles/.local/share/wallpapers/*.svg`、`*.png` | 壁纸生成产物（脚本入库）                         |
 | `xray/host_vars/*.yml`                            | 私钥（`_template.yml` 除外）                     |

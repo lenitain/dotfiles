@@ -41,11 +41,6 @@ dotfiles/.config/bash/conf.d/*KEY.sh
 # gh 的登录凭据（hosts.yml 含 OAuth token；config.yml 无密钥，可入库）
 dotfiles/.config/gh/hosts.yml
 
-# yazi 插件目录与依赖锁文件 (package.toml 由 setup-yazi 生成/更新, 不入库)
-dotfiles/.config/yazi/plugins/*
-!dotfiles/.config/yazi/plugins/finder.yazi/
-dotfiles/.config/yazi/package.toml
-
 # psd 自动生成的配置快照
 dotfiles/.config/psd/.psd.conf
 
