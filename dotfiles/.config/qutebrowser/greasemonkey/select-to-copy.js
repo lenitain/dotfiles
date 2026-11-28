@@ -33,7 +33,10 @@
             return active.value.slice(active.selectionStart, active.selectionEnd);
         }
         const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        // 不能按 isCollapsed 过滤：Chromium 把 shadow DOM 里的选区暴露成一个
+        // 塌缩的 document selection（anchor/focus 落在宿主上、offset 都是 0），
+        // isCollapsed 为真，但 toString() 仍返回实际选中的文字。
+        if (!selection || selection.rangeCount === 0) {
             return '';
         }
         return selection.toString();
