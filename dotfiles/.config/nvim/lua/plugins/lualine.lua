@@ -7,7 +7,15 @@ return {
       -- sainnhe 的 lua/lualine/themes/everforest.lua **内容完全一致**（逐行对过），
       -- 所以这里直接用 auto，不做任何二次定制。
       theme = "auto",
-      -- 其他 lualine 配置...
+      -- 分隔用圆角：把 lualine 默认的尖角 powerline 字形换成 Nerd Font 的半圆。
+      --   section_separators（段与段之间，实心半圆）：
+      --     left  = U+E0B4（D 形）——左分组（a/b）收尾时向右鼓出圆头
+      --     right = U+E0B6（反 D 形）——右分组（y/z）起头时向左鼓出圆头
+      --   component_separators（同一段内的组件之间，细半圆）：
+      --     left  = U+E0B5（) 形）——左分组，朝右
+      --     right = U+E0B7（( 形）——右分组，朝左
+      section_separators = { left = "\u{E0B4}", right = "\u{E0B6}" },
+      component_separators = { left = "\u{E0B5}", right = "\u{E0B7}" },
     },
     sections = {
       -- 左侧：默认是 branch + diff + diagnostics，这里去掉 branch（分支名已靠其他方式查看）
