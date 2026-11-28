@@ -145,6 +145,8 @@ __bash_prompt_git() {
         [ -n "${__bash_prompt_repo_root-}" ] && [ -e "$__bash_prompt_repo_root/.jj" ] && detached=''
     fi
     [ -n "$branch" ] || return 1
+    __bash_prompt_escape "$branch"
+    branch=$REPLY
 
     local ahead_ansi='' behind_ansi=''
     [ "${ahead:-0}" -gt 0 ] 2>/dev/null && ahead_ansi="$__bash_prompt_symbol_ahead"
@@ -154,6 +156,7 @@ __bash_prompt_git() {
     if [ -n "${__bash_prompt_repo_root-}" ] &&
         __bash_prompt_git_dir "$__bash_prompt_repo_root" &&
         __bash_prompt_git_state "$REPLY"; then
+        __bash_prompt_escape "$REPLY"
         state=$REPLY
     fi
 
@@ -269,6 +272,8 @@ __bash_prompt_jj() {
     done <<< "$log_output"
 
     [ -n "$at_key" ] || return 1
+    __bash_prompt_escape "$at_change_id"
+    at_change_id=$REPLY
 
     # 距离 = 从 @ 沿 parent 走到书签的边数；只用来选最近一层和判断 + 后缀，
     # 不显示数字。空 @ 不计一步（直接父书签算 "在书签上"，不画 +）。
@@ -329,6 +334,9 @@ __bash_prompt_jj() {
         case $name in
             *$'\x1d') conflicted=1; name=${name%$'\x1d'} ;;
         esac
+        __bash_prompt_escape "$name"
+        name=$REPLY
+        [ -n "$name" ] || continue
         part="\[$__bash_prompt_color_mute\]$name"
         [ "$conflicted" = 1 ] && part+="\[$__bash_prompt_color_red\]$__bash_prompt_symbol_warn"
         part+="\[$__bash_prompt_color_reset\]"

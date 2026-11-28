@@ -33,6 +33,40 @@ __bash_prompt_symbol_warn='!'
 # ANSI SGR 的 ERE。必须存成变量：[[ =~ ]] 里直接写带引号的模式会被当字面量。
 __bash_prompt_ansi_pattern=$'\e''\[[0-9;]*m'
 
+# 动态文本进 PS1 前必须过这里。PS1 默认会做参数/命令替换，目录名、branch、
+# bookmark、会话名都可能含 $、反引号、反斜杠或控制字符。
+#   $       后插一个只重置背景的 SGR（提示符没有背景色，所以不可见），打断 $( / ${
+#   反引号  前加反斜杠；PS1 会显示字面反引号，不触发替换
+#   反斜杠  双写，阻止 \u \w \e \[ \] 被当 prompt 转义
+#   控制字符 删掉；ESC/BEL/换行不能进终端
+# \e[49m 是 SGR，__bash_prompt_visible_length 会把它算 0 宽。
+__bash_prompt_ansi_noop=$'\e[49m'
+__bash_prompt_escape() {
+    local value=${1-}
+    value=${value//[[:cntrl:]]/}
+    value=${value//\\/\\\\}
+    value=${value//\`/\\\`}
+    value=${value//\$/\$$__bash_prompt_ansi_noop}
+    REPLY=$value
+}
+
+# 标题/OSC 7 不是 PS1，不能套 __bash_prompt_escape；它们只需要去掉控制字符。
+__bash_prompt_strip_control() {
+    REPLY=${1-}
+    REPLY=${REPLY//[[:cntrl:]]/}
+}
+
+# $PWD 的显示形式：只把完整的 $HOME 路径段换成 ~，/home/user2 不能变成 ~2。
+__bash_prompt_home_path() {
+    if [ "$PWD" = "$HOME" ]; then
+        REPLY='~'
+    elif [[ $PWD == "$HOME"/* ]]; then
+        REPLY="~${PWD#"$HOME"}"
+    else
+        REPLY=$PWD
+    fi
+}
+
 __bash_prompt_join_into() {
     local separator=${1-}
     [ $# -gt 0 ] && shift

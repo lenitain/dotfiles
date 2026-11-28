@@ -5,11 +5,14 @@
 # 不用 prev：切到慢仓库或刚跑完变更命令时，prev 会把上一个仓库/上一条命令的分支和
 # ↑↓ 画出来，而那是错的。空格占位也没有信息量，0 更干净。
 # 提示符因此被拖住至多 100ms；子进程在后台跑完但结果丢弃。
-# 占位符只在 flyline 加载成功时才会写进 PS1（见 prompt/ps1.sh）。
-
-flyline create-prompt-widget custom --name FLYLINE_REPO \
+# 占位符只在 widget 注册成功时才会写进 PS1（见 prompt/ps1.sh）：注册失败
+# （flyline ABI 变了、参数不合法）时 __bash_flyline_repo_widget 不置 1，
+# 提示符这一轮没有 repo 段，不会留下字面 FLYLINE_REPO。
+if flyline create-prompt-widget custom --name FLYLINE_REPO \
     --command "${BASH_CONFIG_HOME:-$HOME/.config/bash}/widgets/repo.sh" \
-    --block 100 --placeholder 0
+    --block 100 --placeholder 0; then
+    __bash_flyline_repo_widget=1
+fi
 
 # 命令耗时默认不显示。要开就取消下面一行，并把 FLYLINE_DURATION 加回 PS1
 # （prompt/ps1.sh，同时为它预留 8 列宽度）。

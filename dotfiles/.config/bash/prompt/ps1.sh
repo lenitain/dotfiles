@@ -43,9 +43,11 @@ __bash_prompt_in_repo() {
 # 去掉 \[ \] 和 ANSI 序列后的可见长度记进 REPLY；按字符数算，CJK 双宽路径
 # 会比终端列宽略宽。
 
-# cwd 完整显示，只把 $HOME 写成 ~；cwd_width 用于判断仓库段是否另起一行。
+# cwd 完整显示，只把完整的 $HOME 路径段写成 ~；cwd_width 用于判断仓库段是否另起一行。
 __bash_prompt_cwd() {
-    local cwd=${PWD/#$HOME/\~}
+    __bash_prompt_home_path
+    __bash_prompt_escape "$REPLY"
+    local cwd=$REPLY
     cwd_ansi="\[$__bash_prompt_color_blue\]$cwd\[$__bash_prompt_color_reset\]"
     __bash_prompt_visible_length "$cwd_ansi"
     cwd_width=$REPLY
@@ -55,11 +57,18 @@ __bash_prompt_cwd() {
 # 这三样在会话开始后不再变，PROMPT_COMMAND 里因此不用每条提示符重读 /proc、重算身份。
 __bash_prompt_build_static() {
     local -a parts=()
-    [ -n "${ZMX_SESSION-}" ] && parts+=("[${ZMX_SESSION}]")
+    if [ -n "${ZMX_SESSION-}" ]; then
+        __bash_prompt_escape "$ZMX_SESSION"
+        parts+=("\[$__bash_prompt_color_mute\][$REPLY]\[$__bash_prompt_color_reset\]")
+    fi
     __bash_prompt_ssh_build
-    [ -n "$__bash_prompt_ssh_ansi" ] && parts+=("$__bash_prompt_ssh_ansi")
     __bash_prompt_container_build
-    [ -n "$__bash_prompt_container_ansi" ] && parts+=("$__bash_prompt_container_ansi")
+    # 容器里的 host 是实际环境；SSH 的 host 只是传输层，两者同时出现会重复身份。
+    if [ -n "$__bash_prompt_container_ansi" ]; then
+        parts+=("$__bash_prompt_container_ansi")
+    elif [ -n "$__bash_prompt_ssh_ansi" ]; then
+        parts+=("$__bash_prompt_ssh_ansi")
+    fi
     __bash_prompt_join_into ' ' "${parts[@]}"
     local joined=$REPLY
     __bash_prompt_visible_length "$joined"
@@ -89,7 +98,7 @@ __bash_prompt() {
     # 没有缓存时不预留。占位符交给 flyline 替换。
     # flyline 没加载成功时不写占位符——否则 PS1 里会原样显示 FLYLINE_REPO 这个字符串。
     local repo_placeholder='' repo_width=0
-    if [ -n "${__bash_flyline_enabled-}" ] && __bash_prompt_in_repo; then
+    if [ "${__bash_flyline_repo_widget-}" = 1 ] && __bash_prompt_in_repo; then
         repo_placeholder='FLYLINE_REPO'
         __bash_prompt_repo_width_read "$$" && [ "$REPLY" -gt 0 ] && [ "$REPLY" -le "${COLUMNS:-80}" ] && repo_width=$REPLY
     fi
@@ -134,9 +143,12 @@ __bash_prompt_user_at_host() {
     user=$(id -un)
     local user_color=$__bash_prompt_color_mute
     [ "$user" = root ] && user_color=$__bash_prompt_color_white
+    __bash_prompt_escape "$user"
+    user=$REPLY
     local host=${HOSTNAME-}
     [ -n "$host" ] || host=$(uname -n)
-    REPLY="\[$user_color\]$user\[$__bash_prompt_color_mute\]@\[$__bash_prompt_color_mute\]${host}\[$__bash_prompt_color_reset\]"
+    __bash_prompt_escape "$host"
+    REPLY="\[$user_color\]$user\[$__bash_prompt_color_mute\]@\[$__bash_prompt_color_mute\]$REPLY\[$__bash_prompt_color_reset\]"
 }
 
 __bash_prompt_ssh_build() {
@@ -193,7 +205,8 @@ __bash_prompt_container_build() {
     [ -n "$kind" ] || return 0
     local host=${HOSTNAME-}
     [ -n "$host" ] || host=$(uname -n)
-    __bash_prompt_container_ansi="\[$__bash_prompt_color_mute\][$kind]\[$__bash_prompt_color_reset\] \[$__bash_prompt_color_mute\]$host\[$__bash_prompt_color_reset\]"
+    __bash_prompt_escape "$host"
+    __bash_prompt_container_ansi="\[$__bash_prompt_color_mute\][$kind]\[$__bash_prompt_color_reset\] \[$__bash_prompt_color_mute\]$REPLY\[$__bash_prompt_color_reset\]"
 }
 
 # 符号行上的环境上下文：root 前缀 # → Python venv。
@@ -208,7 +221,10 @@ __bash_prompt_context() {
         local path=${VIRTUAL_ENV:-${CONDA_DEFAULT_ENV:-}}
         [ -n "$path" ] && venv=${path##*/}
     fi
-    [ -n "$venv" ] && parts+=("\[$__bash_prompt_color_mute\]$venv\[$__bash_prompt_color_reset\]")
+    if [ -n "$venv" ]; then
+        __bash_prompt_escape "$venv"
+        parts+=("\[$__bash_prompt_color_mute\]$REPLY\[$__bash_prompt_color_reset\]")
+    fi
     __bash_prompt_join_into ' ' "${parts[@]}"
 }
 

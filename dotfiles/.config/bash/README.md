@@ -69,7 +69,7 @@
 ├── functions/        命令：一个文件一个功能，文件头一句话说明作用
 ├── prompt/           提示符实现：lib.sh（配色/拼接）、ps1.sh、repo.sh、hooks.sh
 ├── widgets/          flyline 子进程入口（repo.sh）
-├── scripts/          外部/手动执行的脚本（fzf 预览、repo 段自检）
+├── scripts/          外部/手动执行的脚本（fzf 预览、repo/git/prompt 自检）
 ├── theme/            配色常量
 └── README.md
 ```
@@ -87,6 +87,8 @@
 | fzf 主题与布局 | `conf.d/fzf.sh` | `__bash_fzf_opts` 生成 `FZF_DEFAULT_OPTS`（布局 reverse：输入栏在上） |
 | fzf 预览脚本 | `~/.config/bash/scripts/fzf_preview.sh` | fzf 子进程调用 |
 | repo 段自检 | `~/.config/bash/scripts/repo_check.sh` | 手动：改 `prompt/repo.sh` 后跑（见「验证」） |
+| git 段自检 | `~/.config/bash/scripts/git_check.sh` | 手动：改 git 分支逻辑后跑（见「验证」） |
+| 提示符自检 | `~/.config/bash/scripts/prompt_check.sh` | 手动：改转义/路径/标题后跑（见「验证」） |
 | zmx | mise | `conf.d/zmx.sh` + `functions/zmx-select.sh` |
 | 密钥 | `conf.d/API_KEY.sh`（gitignored） | `.bashrc` 的 conf.d glob + `.bash_profile` 的 `*KEY.sh` glob |
 
@@ -135,7 +137,8 @@ flyline 是 bash 的 loadable builtin（不是独立进程），但它和 bash �
 - 需要单独进程跑的东西放 `widgets/`，由 `flyline/widget.sh` 注册。
 - 加载失败（bash 升级后 ABI 不匹配、`.so` 损坏）会在 stderr 说一句；同时
   `prompt/ps1.sh` 不会把 `FLYLINE_REPO` 写进 PS1，提示符只是退化成普通样式，
-  不会露出占位符字符串。
+  不会露出占位符字符串。widget 注册失败（`create-prompt-widget` 返回非 0）也是
+  同样的回退：`__bash_flyline_repo_widget` 不置 1，这一轮没有 repo 段。
 
 ## 密钥
 
@@ -160,9 +163,12 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
 (venv) ✗ 0|1 ❯                        ← 环境(暗灰) + 退出码(红/黄) + 符号(洋红)
 ```
 
-- cwd 完整显示，只把 `$HOME` 写成 `~`；不缩略。第一行放不下时，在仓库段前插一个
-  换行，仓库段整体到下一行（短路径一行，长路径两行；路径本身超过终端宽度时只能让
-  终端折行）。第二行不参与这个判断。
+- cwd 完整显示，只把完整的 `$HOME` 路径段写成 `~`；`/home/user2` 不会变成 `~2`。
+  不缩略。第一行放不下时，在仓库段前插一个换行，仓库段整体到下一行（短路径一行，
+  长路径两行；路径本身超过终端宽度时只能让终端折行）。第二行不参与这个判断。
+- 动态文本（cwd、branch、bookmark、zmx 会话名、venv、user/host）进 PS1 前都过
+  `__bash_prompt_escape`：删控制字符、双写反斜杠、转义反引号、`$` 后插一个只重置
+  背景的 SGR（`\e[49m`），打断 `$(`/`${`。`promptvars` 保持开启，PS0 标题钩子不受影响。
 - 仓库段由 `widgets/repo.sh` 输出，看最近一层仓库根上的标记：共置仓库（`.jj` 与
   `.git` 在同一个根）jj、git 两段都画，jj 在前、中间两个空格，例如
   `r main+*  main* ↑`；只有一种标记就只画那一种，父目录里的 git 分支不会混进来。
@@ -202,8 +208,9 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
   各个阶段（`✗ 0|1`）；`128+N` 换成信号名（`143` → `SIGTERM`）。SIGINT（130）用黄色，
   其它失败用红色。所以 `ps1.sh` 里 `PIPESTATUS` 必须是 `__bash_prompt` 的第一条语句，
   任何 `printf` 之后就只剩它自己的 0 了。
-- 会话段（第 1 行，会话内只算一次）：`[zmx]`、SSH 的 `user@host`、容器里的
-  `[docker] host`（完整 hostname，不画 user）。容器检测读固定路径、不 fork，顺序是
+- 会话段（第 1 行，会话内只算一次）：`[zmx]`（mute，和容器的括号一致）、SSH 的
+  `user@host`、容器里的 `[docker] host`（完整 hostname，不画 user）。SSH 进容器时
+  只画容器段，避免重复身份。容器检测读固定路径、不 fork，顺序是
   标记文件（`/.dockerenv`、`/run/.containerenv`）→ `/run/systemd/container` →
   `/proc/1/cgroup` → PID 1；cgroup v2 只有一行 `0::/`，rootless 运行时只能由 PID 1
   兜底，那时只能给出泛称 `[container]`。
@@ -219,16 +226,20 @@ widget 占位符（`FLYLINE_REPO`），由 flyline 换成真实输出：
   `PS1`，历史里那条已输入命令保留第一行（会话段 + cwd + 仓库段）和命令前的空行。
 - 窗口标题空闲时只显示当前目录：`prompt/hooks.sh` 发 OSC 0（家目录写成 `~`）。
   命令开始执行前 `PS0` 再发一次 `cwd – 程序名`，程序名取刚读入的历史行的第一个词
-  （跳过 `VAR=value` 前缀和路径），提示符出现后恢复成纯路径。
+  （跳过 `VAR=value` 前缀和路径），提示符出现后恢复成纯路径。标题里的 cwd 和程序名
+  先删控制字符，避免目录名/命令名提前终止 OSC 0。
   `/etc/bash.bashrc` 自带的 `user@host:cwd` 标题命令会被摘掉：两条 OSC 0 连发会让
   终端先显示系统标题再被覆盖，标题会闪一下。
 - OSC 7 每条提示符发一次（`prompt/hooks.sh`）：foot 只有在收到 OSC 7 时才知道
   当前目录，`Ctrl+Shift+N` 才能在当前目录里开新终端。flyline 的 OSC 7 只在 shell 启动时
-  发一次，`cd` 之后不更新，所以这条由 bash 补。
+  发一次，`cd` 之后不更新，所以这条由 bash 补。路径里的控制字符先删掉，再做
+  `%`/空格/`#`/`?` 编码。
 
 ## 已知差异
 
 - 路径宽度按字符数计算，CJK 双宽路径比终端列宽略宽；仓库段前的折行判断会因此偏晚。
+- 动态文本里的控制字符会被删掉；路径含控制字符时显示会少这几个字符，这是防终端
+  转义注入的代价。
 - 字形全部在主字体里：`✗`（U+2717）、`↑` `↓`、`×`、`≠`、`❯`。
   `✖`（U+2716）、`⇡` `⇣`、`≡` 不在 Maple Mono NL NF CN 里，已不用；`✗` 和 `×`
   同时出现时靠行和上下文区分。
@@ -258,6 +269,7 @@ bash -n ~/.bashrc ~/.bash_profile ~/.config/bash/init.sh \
     ~/.config/bash/scripts/*.sh ~/.config/bash/flyline/*.sh
 ~/.config/bash/scripts/repo_check.sh    # repo 段：模板段数契约 + 端到端场景（参考点、merge、符号链接、未 snapshot 的改动、snapshot 警告、书签冲突、jj 报错、共置仓库的两段、jj 段嵌在 git 工作树里、同层两个书签的 main,dev+），退出码必须是 0
 ~/.config/bash/scripts/git_check.sh     # git 段：分支/dirty/上游/操作中状态（rebase-merge、worktree）/detached/jj 记账 ref/bare/空仓库 + 宽度缓存，stash 不画；退出码必须是 0
+~/.config/bash/scripts/prompt_check.sh  # 提示符全局：动态文本转义（恶意 cwd 不执行命令）、~ 边界、标题控制字符；退出码必须是 0
 ~/.config/bash/widgets/repo.sh          # 仓库里输出单行、仓库外输出空，两种情况退出码都必须是 0
 bash -i -c 'type ll; flyline settings; flyline key list'   # 需要 pty
 mise bootstrap dotfiles status

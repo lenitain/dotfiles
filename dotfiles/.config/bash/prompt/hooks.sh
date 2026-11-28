@@ -1,17 +1,20 @@
 # 提示符钩子：窗口标题、OSC 7 目录上报、历史落盘。
 # 窗口标题在命令执行时由 PS0 补上程序名；PROMPT_COMMAND 的注册在 conf.d/prompt.sh。
+# shellcheck source=/dev/null
+. "${BASH_SOURCE[0]%/*}/lib.sh"
 
 __bash_prompt_title() {
     # stdout 不是终端时不发转义序列，避免污染重定向的输出。
     [ -t 1 ] || return 0
-    local cwd=${PWD/#$HOME/\~}
-    printf '\033]0;%s\007' "$cwd"
+    __bash_prompt_home_path
+    __bash_prompt_strip_control "$REPLY"
+    printf '\033]0;%s\007' "$REPLY"
 }
 
 # PS0 在命令开始执行前展开，此时历史里已经是刚读入的命令行。PS0 的命令替换 stdout
 # 是管道，不能按 -t 1 判断终端；PS0 本身只在交互提示符后展开，因此直接输出 OSC 0。
 __bash_prompt_title_running() {
-    local line command program cwd
+    local line command program
     local IFS=$' \t\n'
     line=$(HISTTIMEFORMAT= history 1) || return 0
     # history 的输出是「编号  命令行」，丢掉编号；多行命令只取第一行。
@@ -26,8 +29,12 @@ __bash_prompt_title_running() {
     program=${command%%[[:space:]]*}
     [ -n "$program" ] || return 0
     program=${program##*/}
-    cwd=${PWD/#$HOME/\~}
-    printf '\033]0;%s – %s\007' "$cwd" "$program"
+    __bash_prompt_strip_control "$program"
+    program=$REPLY
+    [ -n "$program" ] || return 0
+    __bash_prompt_home_path
+    __bash_prompt_strip_control "$REPLY"
+    printf '\033]0;%s – %s\007' "$REPLY" "$program"
 }
 
 # 窗口标题只能有一个 owner：/etc/bash.bashrc 会往 PROMPT_COMMAND 里塞一条
@@ -60,7 +67,11 @@ __bash_prompt_osc7() {
     # SSH 会话里报的是远端路径：本机没有这个目录，终端拿它开新终端会 chdir 失败。
     [ -z "${SSH_CONNECTION-}" ] || return 0
     # URI 里 % 是转义前缀：路径里的字面 % 要写成 %25，空格等也要编码。
-    local path=${PWD//\%/%25}
+    # 控制字符先删掉：它们能提前终止 OSC 或注入终端序列。
+    local path=$PWD
+    __bash_prompt_strip_control "$path"
+    path=$REPLY
+    path=${path//\%/%25}
     path=${path// /%20}
     path=${path//\#/%23}
     path=${path//\?/%3F}

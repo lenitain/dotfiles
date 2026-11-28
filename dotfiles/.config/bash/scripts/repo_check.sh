@@ -54,7 +54,7 @@ expect_segment() {  # want dir label [fn]
 # 场景：root → c1(main) → c2 → @(空)。最近的书签是祖先 main，
 # @ 离它 2 个提交，但空工作副本不计 → 仍画 +（不是书签上）。
 scenario_ancestor() {
-    local dir=$1
+    local dir=$1 raw
     mkdir -p "$dir" || return 1
     (
         cd "$dir" || exit 1
@@ -66,6 +66,11 @@ scenario_ancestor() {
         jj new >/dev/null 2>&1
     ) || return 1
     expect_segment "<id> main+ (empty)" "$dir" "祖先参考点"
+    raw=$(cd "$dir" && __bash_prompt_jj && printf '%s' "$repo_ansi")
+    case $raw in
+        *$'\e[1m\e[38;5;13m'*) ;;
+        *) report "change id 颜色：期望 bold bright magenta（\e[1m\e[38;5;13m）" ;;
+    esac
 }
 
 # 场景：改完文件、还没跑任何 jj 命令。提示符必须自己 snapshot，立刻画出 * 和 +；
