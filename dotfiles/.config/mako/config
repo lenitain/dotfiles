@@ -15,7 +15,7 @@ group-by=app-name
 default-timeout=5000
 
 # ---------- 布局 ----------
-width=600
+width=500
 height=400
 padding=14
 margin=12
